@@ -30,6 +30,12 @@ C:\Users\<用户名>\.config\OneScan\
 
 ## 插件使用
 
+> 使用前需要先配置一下黑白名单列表（否则只允许 `127.0.0.1` 地址扫描）
+
+![](imgs/config_host.png)
+
+### 主面板
+
 插件主面板如下
 
 ![](imgs/main_panel.png)
