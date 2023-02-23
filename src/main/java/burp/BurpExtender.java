@@ -287,8 +287,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         StringBuilder sb = new StringBuilder("/");
         for (String dirname : splitDirname) {
             if (StringUtils.isNotEmpty(dirname)) {
-                sb.append(dirname);
-                sb.append("/");
+                sb.append(dirname).append("/");
                 result.add(sb.toString());
             }
         }
@@ -297,8 +296,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     private void doPreRequest(IHttpRequestResponse httpReqResp, String urlPath) {
         Logger.debug("doPreRequest receive urlPath: " + urlPath);
-        IHttpService service = httpReqResp.getHttpService();
-        String request = buildRequestHeader(service, urlPath);
+        String request = buildRequestHeader(httpReqResp, urlPath);
         doBurpRequest(httpReqResp, request.getBytes());
     }
 
@@ -342,7 +340,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 构建请求头
      */
-    private String buildRequestHeader(IHttpService service, String urlPath) {
+    private String buildRequestHeader(IHttpRequestResponse httpReqResp, String urlPath) {
+        IHttpService service = httpReqResp.getHttpService();
         ArrayList<String> headerList = getHeaderList();
         StringBuilder request = new StringBuilder();
         // 请求头构造
@@ -384,11 +383,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String timestamp = String.valueOf(DateUtils.getTimestamp());
         String randomIP = IPUtils.randomIPv4();
         String randomUA = Utils.getRandomItem(Config.getList(Config.KEY_UA_LIST));
-        String mainDomain = DomainHelper.getDomain(domain);
+        String domainMain = DomainHelper.getDomain(domain);
+        String domainName = DomainHelper.getDomainName(domain);
         // 替换变量
         request = request.replace("{{host}}", host);
         request = request.replace("{{domain}}", domain);
-        request = request.replace("{{mdomain}}", mainDomain);
+        request = request.replace("{{domain.main}}", domainMain);
+        request = request.replace("{{domain.name}}", domainName);
         request = request.replace("{{protocol}}", protocol);
         request = request.replace("{{timestamp}}", timestamp);
         request = request.replace("{{random.ip}}", randomIP);

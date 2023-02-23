@@ -42,17 +42,42 @@ public class DomainHelper {
      * @return 主域名（例如：baidu.com）, 获取失败返回传入的fqdn参数
      */
     public static String getDomain(String fqdn) {
+        return getDomainWithDefault(fqdn, fqdn);
+    }
+
+    /**
+     * 获取主域名
+     *
+     * @param fqdn     域名、子域名等（例如：www.baidu.com）
+     * @param defValue 获取失败的默认返回值
+     * @return 主域名（例如：baidu.com）, 获取失败返回defValue参数
+     */
+    public static String getDomainWithDefault(String fqdn, String defValue) {
         if (IPUtils.hasIPv4(fqdn)) {
-            return fqdn;
+            return defValue;
         }
         String[] split = fqdn.split("\\.");
         List<String> list = Arrays.asList(split);
         LinkedList<String> parts = new LinkedList<>(list);
         String domain = queryDomain(parts, sTree);
         if (StringUtils.isEmpty(domain) || !domain.contains(".")) {
-            return fqdn;
+            return defValue;
         }
         return domain;
+    }
+
+    /**
+     * 获取主域名的名称
+     *
+     * @param fqdn 域名、子域名等（例如：www.baidu.com）
+     * @return 主域名的名称（例如：baidu）, 获取失败返回传入的fqdn参数
+     */
+    public static String getDomainName(String fqdn) {
+        String domain = getDomainWithDefault(fqdn, null);
+        if (domain == null) {
+            return fqdn;
+        }
+        return domain.split("\\.")[0];
     }
 
     private static String queryDomain(LinkedList<String> parts, Map<String, Object> node) {

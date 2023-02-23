@@ -73,7 +73,8 @@ Request配置界面如下
 ```text
 {{host}} - 原请求头中的Host
 {{domain}} - 原请求头中的Host（不包含端口号）
-{{mdomain}} - 主域名（如果domain是IP地址，那么该值也是IP地址）
+{{domain.main}} - 主域名（如：`www.google.com` => `google.com`；注意：如果domain是IP地址，那么该值也是IP地址）
+{{domain.name}} - 主域名的名称（如：`www.google.com` => `google`；注意：如果domain是IP地址，那么该值也是IP地址）
 {{protocol}} - 原请求头中的协议（http、https）
 {{timestamp}} - Unix时间戳（单位：秒）
 {{random.ip}} - 随机IPv4值

@@ -146,10 +146,10 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
                 if (StringUtils.isNotEmpty(text)) {
                     // 先处理换行
                     String[] lines = null;
-                    if (text.contains("\n")) {
-                        lines = text.split("\n");
-                    } else if (text.contains("\r\n")) {
+                    if (text.contains("\r\n")) {
                         lines = text.split("\r\n");
+                    } else if (text.contains("\n")) {
+                        lines = text.split("\n");
                     }
                     // 无换行符号，添加到列表
                     if (lines == null || lines.length == 0) {

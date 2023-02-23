@@ -12,13 +12,6 @@ import javax.swing.*;
  * 插件主类
  * <p>
  * Created by vaycore on 2022-08-07.
- * <p>
- * <p>
- * TODO:
- * 获取响应json字段，保存到目标文件，针对当前*.domain.com
- * <p>
- * 查找替换功能：
- * jsp  js%70
  */
 public class OneScan extends JTabbedPane {
 

@@ -60,7 +60,7 @@ public class Config {
         String version = Config.getVersion();
         if (!version.equals(Constants.PLUGIN_VERSION)) {
             // 在配置文件中更新版本号
-            put(KEY_VERSION, version);
+            put(KEY_VERSION, Constants.PLUGIN_VERSION);
         }
     }
 
