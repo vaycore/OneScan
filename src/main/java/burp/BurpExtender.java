@@ -1,6 +1,7 @@
 package burp;
 
 import burp.vaycore.common.helper.DomainHelper;
+import burp.vaycore.common.helper.QpsLimiter;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.*;
 import burp.vaycore.hae.HaE;
@@ -8,10 +9,14 @@ import burp.vaycore.onescan.OneScan;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.Constants;
+import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.ui.payloadlist.PayloadItem;
 import burp.vaycore.onescan.ui.payloadlist.PayloadRule;
+import burp.vaycore.onescan.ui.tab.ConfigPanel;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
+import burp.vaycore.onescan.ui.tab.config.OtherTab;
 import burp.vaycore.onescan.ui.widget.TaskTable;
+import org.json.HTTP;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,23 +37,25 @@ import java.util.concurrent.Executors;
  * Created by vaycore on 2022-08-07.
  */
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
-        TaskTable.OnTaskTableEventListener, ITab {
+        TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener {
 
     private IBurpExtenderCallbacks mCallbacks;
     private OneScan mOneScan;
     private DataBoardTab mDataBoardTab;
+    private ConfigPanel mConfigTab;
     private IMessageEditor mRequestTextEditor;
     private IMessageEditor mResponseTextEditor;
     private ExecutorService mThreadPool;
     private IHttpRequestResponse mCurrentReqResp;
     private static final Vector<String> sRepeatFilter = new Vector<>();
+    private QpsLimiter mQpsLimit;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
         initData(callbacks);
         initView();
         initEvent();
-        Logger.debug("register Extender ok! Log: " + Constants.PLUGIN_VERSION.contains("debug"));
+        Logger.debug("register Extender ok! Log: " + Constants.DEBUG);
         // 加载HaE插件
         HaE.loadPlugin(Config.getFilePath(Config.KEY_HAE_PLUGIN_PATH));
     }
@@ -58,24 +65,37 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         this.mThreadPool = Executors.newFixedThreadPool(50);
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
         // 初始化日志打印
-        Logger.init(Constants.PLUGIN_VERSION.contains("debug"), mCallbacks.getStdout(), mCallbacks.getStderr());
+        Logger.init(Constants.DEBUG, mCallbacks.getStdout(), mCallbacks.getStderr());
         // 初始化默认配置
         Config.init();
         // 初始化域名辅助类
         DomainHelper.init("public_suffix_list.json");
         // 初始化HaE插件
         HaE.init(this);
+        // 初始化QPS限制器
+        initQpsLimiter();
+    }
+
+    private void initQpsLimiter() {
+        // 检测范围，如果不符合条件，不创建限制器
+        int limit = StringUtils.parseInt(Config.get(Config.KEY_QPS_LIMIT));
+        if (limit > 0 && limit <= 9999) {
+            this.mQpsLimit = new QpsLimiter(limit);
+        }
     }
 
     private void initView() {
         mOneScan = new OneScan();
         mDataBoardTab = mOneScan.getDataBoardTab();
+        mConfigTab = mOneScan.getConfigPanel();
         mCallbacks.addSuiteTab(this);
         // 创建请求和响应控件
         mRequestTextEditor = mCallbacks.createMessageEditor(this, false);
         mResponseTextEditor = mCallbacks.createMessageEditor(this, false);
         mDataBoardTab.init(mRequestTextEditor.getComponent(), mResponseTextEditor.getComponent());
         mDataBoardTab.getTaskTable().setOnTaskTableEventListener(this);
+        // 注册事件
+        mConfigTab.getOtherTab().setOnTabEventListener(this);
     }
 
     private void initEvent() {
@@ -301,6 +321,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         sRepeatFilter.add(url);
         // 给每个任务创建线程
         mThreadPool.execute(() -> {
+            // 限制QPS
+            if (mQpsLimit != null) {
+                mQpsLimit.limit();
+            }
             Logger.debug("Do Send Request url: " + url);
             // 发起请求
             IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, requestBytes);
@@ -322,7 +346,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         ArrayList<String> headerList = getHeaderList();
         StringBuilder request = new StringBuilder();
         // 请求头构造
-        request.append("GET ").append(urlPath).append(" HTTP/1.1").append("\r\n");
+        request.append("GET ").append(urlPath).append(" HTTP/1.1").append(HTTP.CRLF);
         // 如果存在配置，直接加载配置的值，否则使用默认值
         if (headerList.size() > 0) {
             for (String headerItem : headerList) {
@@ -332,20 +356,20 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 }
                 String headerKey = headerItem.substring(0, splitIndex);
                 String headerValue = headerItem.substring(splitIndex + 2);
-                request.append(headerKey).append(": ").append(headerValue).append("\r\n");
+                request.append(headerKey).append(": ").append(headerValue).append(HTTP.CRLF);
             }
         } else {
             String referer = getHostByIHttpService(service) + "/";
-            request.append("Host: {{host}}").append("\r\n");
-            request.append("User-Agent: ").append("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4495.0 Safari/537.36").append("\r\n");
-            request.append("Referer: ").append(referer).append("\r\n");
-            request.append("Accept: ").append("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9").append("\r\n");
-            request.append("Accept-Language: ").append("zh-CN,zh;q=0.9,en;q=0.8").append("\r\n");
-            request.append("Accept-Encoding: ").append("gzip, deflate").append("\r\n");
-            request.append("Origin: ").append("https://www.baidu.com").append("\r\n");
-            request.append("Cache-Control: ").append("max-age=0").append("\r\n");
+            request.append("Host: {{host}}").append(HTTP.CRLF);
+            request.append("User-Agent: ").append("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4495.0 Safari/537.36").append(HTTP.CRLF);
+            request.append("Referer: ").append(referer).append(HTTP.CRLF);
+            request.append("Accept: ").append("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9").append(HTTP.CRLF);
+            request.append("Accept-Language: ").append("zh-CN,zh;q=0.9,en;q=0.8").append(HTTP.CRLF);
+            request.append("Accept-Encoding: ").append("gzip, deflate").append(HTTP.CRLF);
+            request.append("Origin: ").append("https://www.baidu.com").append(HTTP.CRLF);
+            request.append("Cache-Control: ").append("max-age=0").append(HTTP.CRLF);
         }
-        request.append("\r\n");
+        request.append(HTTP.CRLF);
         // 请求头构建完成后，设置里面包含的变量
         return setupVariable(service, request.toString());
     }
@@ -360,9 +384,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String timestamp = String.valueOf(DateUtils.getTimestamp());
         String randomIP = IPUtils.randomIPv4();
         String randomUA = Utils.getRandomItem(Config.getList(Config.KEY_UA_LIST));
+        String mainDomain = DomainHelper.getDomain(domain);
         // 替换变量
         request = request.replace("{{host}}", host);
         request = request.replace("{{domain}}", domain);
+        request = request.replace("{{mdomain}}", mainDomain);
         request = request.replace("{{protocol}}", protocol);
         request = request.replace("{{timestamp}}", timestamp);
         request = request.replace("{{random.ip}}", randomIP);
@@ -639,6 +665,17 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             } catch (Exception e) {
                 Logger.debug(e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public void onTabEventMethod(String action, Object... params) {
+        switch (action) {
+            case OtherTab.EVENT_QPS_LIMIT:
+                String limit = (String) params[0];
+                mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
+                Logger.debug("Event: change qps limit: " + limit);
+                break;
         }
     }
 }

@@ -1,14 +1,10 @@
 package burp.vaycore.onescan;
 
 import burp.vaycore.common.log.Logger;
-import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.Constants;
-import burp.vaycore.onescan.ui.payloadlist.PayloadItem;
-import burp.vaycore.onescan.ui.payloadlist.rule.AddPrefix;
 import burp.vaycore.onescan.ui.tab.ConfigPanel;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
-import org.json.JSONObject;
 
 import javax.swing.*;
 
@@ -27,6 +23,7 @@ import javax.swing.*;
 public class OneScan extends JTabbedPane {
 
     private DataBoardTab mDataBoardTab;
+    private ConfigPanel mConfigPanel;
 
     public OneScan() {
         loadModule();
@@ -42,12 +39,16 @@ public class OneScan extends JTabbedPane {
         mDataBoardTab = new DataBoardTab();
         addTab(mDataBoardTab.getTitleName(), mDataBoardTab);
         // 配置面板
-        ConfigPanel panel = new ConfigPanel();
-        addTab(panel.getTitleName(), panel);
+        mConfigPanel = new ConfigPanel();
+        addTab(mConfigPanel.getTitleName(), mConfigPanel);
     }
 
     public DataBoardTab getDataBoardTab() {
         return mDataBoardTab;
+    }
+
+    public ConfigPanel getConfigPanel() {
+        return mConfigPanel;
     }
 
     public static void main(String[] args) {

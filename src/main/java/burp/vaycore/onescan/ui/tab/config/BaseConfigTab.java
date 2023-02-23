@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.tab.config;
 
+import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.ui.base.BaseTab;
@@ -18,12 +19,7 @@ public abstract class BaseConfigTab extends BaseTab {
     @Override
     protected void initData() {
         setBorder(new EmptyBorder(5, 10, 5, 10));
-        setLayout(new VLayout(5));
-    }
-
-    @Override
-    protected void initView() {
-
+        setLayout(new VFlowLayout());
     }
 
     @Override

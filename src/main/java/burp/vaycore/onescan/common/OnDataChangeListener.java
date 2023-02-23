@@ -1,7 +1,5 @@
 package burp.vaycore.onescan.common;
 
-import burp.vaycore.onescan.ui.widget.SimpleWordlist;
-
 /**
  * 数据修改监听器
  * <p>

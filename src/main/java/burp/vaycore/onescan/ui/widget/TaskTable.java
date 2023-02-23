@@ -1,7 +1,5 @@
 package burp.vaycore.onescan.ui.widget;
 
-import burp.vaycore.common.helper.UIHelper;
-import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.bean.TaskData;

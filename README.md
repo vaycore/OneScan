@@ -73,6 +73,7 @@ Request配置界面如下
 ```text
 {{host}} - 原请求头中的Host
 {{domain}} - 原请求头中的Host（不包含端口号）
+{{mdomain}} - 主域名（如果domain是IP地址，那么该值也是IP地址）
 {{protocol}} - 原请求头中的协议（http、https）
 {{timestamp}} - Unix时间戳（单位：秒）
 {{random.ip}} - 随机IPv4值
@@ -94,6 +95,7 @@ Other配置界面如下
 
 ![](imgs/config_other.png)
 
+- `QPS` QPS限制，限制每秒请求的数量，最大值 `9999`
 - `Web name collect` Web目录名收集（例如：`http://xxx.com/wapi/xxx.html` 会将该 url 中的 `wapi` 写入到指定的文件中）
 - `Json field collect` Json字段收集（收集json格式响应包中的所有key值，保存到指定目录）
 - `Exclude suffix` 排除指定后缀的数据包

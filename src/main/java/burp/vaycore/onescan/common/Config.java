@@ -32,6 +32,7 @@ public class Config {
     public static final String KEY_JSON_FIELD_COLLECT_PATH = "json-field-collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
+    public static final String KEY_QPS_LIMIT = "qps-limit";
 
     private static ConfigManager mConfigManager;
     private static String mConfigPath;
@@ -47,6 +48,7 @@ public class Config {
         initDefaultResourceConfig(KEY_UA_LIST, "user_agent.txt");
         initDefaultResourceConfig(KEY_WHITE_LIST, "whitelist.txt");
         initDefaultResourceConfig(KEY_BLACK_LIST, "blacklist.txt");
+        initDefaultConfig(KEY_QPS_LIMIT, "1024");
         initDefaultConfig(KEY_WEB_NAME_COLLECT_PATH, getWorkDir() + "web_name.txt");
         initDefaultConfig(KEY_JSON_FIELD_COLLECT_PATH, getWorkDir() + "json-fields");
         initDefaultConfig(KEY_EXCLUDE_SUFFIX, "3g2|3gp|7z|aac|abw|aif|aifc|aiff|arc|au|avi|azw|bin|bmp|bz|" +
@@ -57,14 +59,8 @@ public class Config {
         // 版本更新，配置也需要更新，更新后保留旧配置
         String version = Config.getVersion();
         if (!version.equals(Constants.PLUGIN_VERSION)) {
-            String configPath = getConfigPath();
-            // 备份后删除原配置文件
-            String configData = FileUtils.readFileToString(configPath);
-            String oldPath = PathUtils.getParent(configPath) + File.separator + "config-v" + version + ".json";
-            FileUtils.writeFile(oldPath, configData);
-            FileUtils.deleteFile(configPath);
-            Logger.info("The version update is successful, the old configuration path: %s", oldPath);
-            init();
+            // 在配置文件中更新版本号
+            put(KEY_VERSION, version);
         }
     }
 
