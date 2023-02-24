@@ -6,9 +6,10 @@
 
     <groupId>burp.vaycore</groupId>
     <artifactId>onescan</artifactId>
-    <version>0.4.3</version>
+    <version>0.5.0</version>
 
     <properties>
+        <plugin.name>OneScan</plugin.name>
         <jdk.version>8</jdk.version>
         <maven.compiler.source>${jdk.version}</maven.compiler.source>
         <maven.compiler.target>${jdk.version}</maven.compiler.target>
@@ -43,7 +44,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>${project.artifactId}-${version}</finalName>
+                    <finalName>${plugin.name}-v${version}-jdk${jdk.version}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
