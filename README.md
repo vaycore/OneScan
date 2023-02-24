@@ -4,7 +4,8 @@ OneScan是一个递归目录扫描的BurpSuite插件。
 
 ## 插件介绍
 
-OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码变现。插件起初是为了发现站点的 `Swagger-API` 文档页面，例如有些站点将 `Swagger-API` 文档存放在当前接口同路径下（或者更深层次目录）。OneScan插件的出现可以快速发现这类页面和接口，只需要配置对应的字典即可。
+OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码变现。插件起初是为了发现站点的 `Swagger-API` 文档页面，例如有些站点将 `Swagger-API`
+文档存放在当前接口同路径下（或者更深层次目录）。OneScan插件的出现可以快速发现这类页面和接口，只需要配置对应的字典即可。
 
 ## 插件安装
 
@@ -40,7 +41,10 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/main_panel.png)
 
-主面板的 `Listen Proxy Message` 配置表示被动扫描，代理的请求包都会经过OneScan（建议配置完白名单再启用）
+- `Listen Proxy Message` 开关被动扫描，代理的请求包都会经过OneScan（建议配置完白名单再启用）
+- `Enable ExcludeHeader` 开关排除请求头，启用时，根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
+- `Disable HeaderReplace` 开关请求头替换，启用时，不使用 `Request -> Header` 中配置的请求头请求数据
+- `Disable DirScan` 开关递归扫描，启用时，不对目标进行递归扫描
 
 ### 主动扫描
 
@@ -49,6 +53,27 @@ C:\Users\<用户名>\.config\OneScan\
 ![](imgs/send_to_onescan.png)
 
 > 注意：白名单同样对主动扫描生效
+
+### 辅助面板
+
+提取请求和响应包中**JSON**格式的字段
+
+![](imgs/show_json_param.png)
+
+### 动态变量
+
+目前支持的动态变量如下：
+
+```text
+{{host}} - 原请求头中的Host
+{{domain}} - 原请求头中的Host（不包含端口号）
+{{domain.main}} - 主域名（如：`www.google.com` => `google.com`；注意：如果domain是IP地址，那么该值也是IP地址）
+{{domain.name}} - 主域名的名称（如：`www.google.com` => `google`；注意：如果domain是IP地址，那么该值也是IP地址）
+{{protocol}} - 原请求头中的协议（http、https）
+{{timestamp}} - Unix时间戳（单位：秒）
+{{random.ip}} - 随机IPv4值
+{{random.ua}} - 随机UserAgent值，随机源可配置
+```
 
 ### Payload
 
@@ -65,21 +90,12 @@ Request配置界面如下
 
 ![](imgs/config_request.png)
 
+- `QPS` QPS限制，限制每秒请求的数量，最大值 `9999`
+- `Include method` 配置请求方法白名单
+- `Exclude suffix` 排除指定后缀的数据包
 - `Header` 递归扫描过程的请求头配置，可配置变量
+- `Exclude header` 请求时排除请求头中对应的值
 - `UserAgent` 这里配置的是 `{{random.ua}}` 变量列表里的值
-
-目前包含的变量如下：
-
-```text
-{{host}} - 原请求头中的Host
-{{domain}} - 原请求头中的Host（不包含端口号）
-{{domain.main}} - 主域名（如：`www.google.com` => `google.com`；注意：如果domain是IP地址，那么该值也是IP地址）
-{{domain.name}} - 主域名的名称（如：`www.google.com` => `google`；注意：如果domain是IP地址，那么该值也是IP地址）
-{{protocol}} - 原请求头中的协议（http、https）
-{{timestamp}} - Unix时间戳（单位：秒）
-{{random.ip}} - 随机IPv4值
-{{random.ua}} - 随机UserAgent值，随机源可配置
-```
 
 ### Host
 
@@ -96,10 +112,8 @@ Other配置界面如下
 
 ![](imgs/config_other.png)
 
-- `QPS` QPS限制，限制每秒请求的数量，最大值 `9999`
 - `Web name collect` Web目录名收集（例如：`http://xxx.com/wapi/xxx.html` 会将该 url 中的 `wapi` 写入到指定的文件中）
 - `Json field collect` Json字段收集（收集json格式响应包中的所有key值，保存到指定目录）
-- `Exclude suffix` 排除指定后缀的数据包
 - `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮
 
 ## 插件演示
