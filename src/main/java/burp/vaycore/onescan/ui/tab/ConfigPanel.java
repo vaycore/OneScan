@@ -1,6 +1,6 @@
 package burp.vaycore.onescan.ui.tab;
 
-import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.ui.tab.config.*;
 
 import javax.swing.*;
@@ -11,12 +11,9 @@ import javax.swing.border.EmptyBorder;
  * <p>
  * Created by vaycore on 2022-08-07.
  */
-public class ConfigPanel extends JTabbedPane {
+public class ConfigPanel extends JTabbedPane implements OnTabEventListener {
 
-    private PayloadTab mPayloadTab;
-    private RequestTab mRequestTab;
-    private HostTab mHostTab;
-    private OtherTab mOtherTab;
+    private OnTabEventListener mOnTabEventListener;
 
     public ConfigPanel() {
         initView();
@@ -27,17 +24,19 @@ public class ConfigPanel extends JTabbedPane {
     }
 
     private void initView() {
-        mPayloadTab = new PayloadTab();
-        mRequestTab = new RequestTab();
-        mHostTab = new HostTab();
-        mOtherTab = new OtherTab();
-        addConfigTab(mPayloadTab);
-        addConfigTab(mRequestTab);
-        addConfigTab(mHostTab);
-        addConfigTab(mOtherTab);
+        addConfigTab(new PayloadTab());
+        addConfigTab(new RequestTab());
+        addConfigTab(new HostTab());
+        addConfigTab(new OtherTab());
     }
 
+    /**
+     * 添加配置页面Tab
+     *
+     * @param tab 配置页面布局
+     */
     private void addConfigTab(BaseConfigTab tab) {
+        tab.setOnTabEventListener(this);
         JScrollPane scrollPane = new JScrollPane(tab);
         // 设置滚轮速度
         scrollPane.getVerticalScrollBar().setUnitIncrement(30);
@@ -45,19 +44,14 @@ public class ConfigPanel extends JTabbedPane {
         addTab(tab.getTitleName(), scrollPane);
     }
 
-    public PayloadTab getPayloadTab() {
-        return mPayloadTab;
+    public void setOnTabEventListener(OnTabEventListener l) {
+        this.mOnTabEventListener = l;
     }
 
-    public RequestTab getRequestTab() {
-        return mRequestTab;
-    }
-
-    public HostTab getHostTab() {
-        return mHostTab;
-    }
-
-    public OtherTab getOtherTab() {
-        return mOtherTab;
+    @Override
+    public void onTabEventMethod(String action, Object... params) {
+        if (this.mOnTabEventListener != null) {
+            this.mOnTabEventListener.onTabEventMethod(action, params);
+        }
     }
 }

@@ -28,11 +28,13 @@ public class Config {
     public static final String KEY_UA_LIST = "user-agent-list";
     public static final String KEY_WHITE_LIST = "whitelist";
     public static final String KEY_BLACK_LIST = "blacklist";
+    public static final String KEY_QPS_LIMIT = "qps-limit";
     public static final String KEY_WEB_NAME_COLLECT_PATH = "web-name-collect-path";
     public static final String KEY_JSON_FIELD_COLLECT_PATH = "json-field-collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
-    public static final String KEY_QPS_LIMIT = "qps-limit";
+    public static final String KEY_INCLUDE_METHOD = "include-method";
+    public static final String KEY_EXCLUDE_HEADER = "exclude-header";
 
     private static ConfigManager mConfigManager;
     private static String mConfigPath;
@@ -56,11 +58,29 @@ public class Config {
                 "mjs|mp2|mp3|mpa|mpe|mpeg|mpg|mpkg|mpp|mpv2|odp|ods|odt|oga|ogv|ogx|otf|pbm|pdf|pgm|png|pnm|ppm|" +
                 "ppt|pptx|ra|ram|rar|ras|rgb|rmi|rtf|snd|svg|swf|tar|tif|tiff|ttf|vsd|wav|weba|webm|webp|woff|" +
                 "woff2|xbm|xls|xlsx|xpm|xul|xwd|zip|zip");
+        initDefaultConfig(KEY_INCLUDE_METHOD, "GET|POST");
+        initDefaultResourceConfig(KEY_EXCLUDE_HEADER, "exclude_header.txt");
         // 版本更新，配置也需要更新，更新后保留旧配置
         String version = Config.getVersion();
         if (!version.equals(Constants.PLUGIN_VERSION)) {
             // 在配置文件中更新版本号
-            put(KEY_VERSION, Constants.PLUGIN_VERSION);
+            putVersion(Constants.PLUGIN_VERSION);
+            // 如果包含{{mdomain}}，将整个配置文件的{{mdomain}}替换为{{domain.name}}
+            String configJson = FileUtils.readFileToString(mConfigPath);
+            if (configJson.contains("{{mdomain}}")) {
+                configJson = configJson.replace("{{mdomain}}", "{{domain.name}}");
+                boolean state = FileUtils.writeFile(mConfigPath, configJson);
+                if (state) {
+                    Logger.info("Replace all {{mdomain}} to {{domain.name}} ok!");
+                    init();
+                }
+            }
+            // 将remove-header-list配置项迁移到新字段
+            if (mConfigManager.hasKey("remove-header-list")) {
+                ArrayList<String> list = getList("remove-header-list");
+                putList(KEY_EXCLUDE_HEADER, list);
+                mConfigManager.remove("remove-header-list");
+            }
         }
     }
 
@@ -102,6 +122,22 @@ public class Config {
         put(KEY_VERSION, version);
     }
 
+    public static ArrayList<String> getPayloadList() {
+        return Config.getList(Config.KEY_PAYLOAD_LIST);
+    }
+
+    public static ArrayList<String> getWhitelist() {
+        return Config.getList(Config.KEY_WHITE_LIST);
+    }
+
+    public static ArrayList<String> getBlacklist() {
+        return Config.getList(Config.KEY_BLACK_LIST);
+    }
+
+    public static ArrayList<String> getHeaderList() {
+        return Config.getList(Config.KEY_HEADER_LIST);
+    }
+
     public static String getFilePath(String key) {
         return getFilePath(key, false);
     }
@@ -120,7 +156,7 @@ public class Config {
         }
         if (!dir.exists()) {
             boolean mkdirs = dir.mkdirs();
-            Logger.debug("Config item path mkdirs: " + mkdirs);
+            Logger.debug("Config item path mkdirs: %s", mkdirs);
         }
         return path;
     }
@@ -161,10 +197,6 @@ public class Config {
         ArrayList<PayloadItem> result = new ArrayList<>();
         if (items == null || items.isEmpty()) {
             return result;
-        }
-        Object testItem = items.get(0);
-        if (testItem instanceof PayloadItem) {
-            return mConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
         }
         for (HashMap<String, Object> itemMap : items) {
             PayloadItem item = new PayloadItem();

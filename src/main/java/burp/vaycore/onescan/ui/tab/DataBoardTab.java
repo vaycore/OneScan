@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.tab;
 
+import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.common.layout.VLayout;
@@ -17,6 +18,9 @@ public class DataBoardTab extends BaseTab {
 
     private TaskTable mTaskTable;
     private JCheckBox mListenProxyMessage;
+    private JCheckBox mEnableExcludeHeader;
+    private JCheckBox mDisableHeaderReplace;
+    private JCheckBox mDisableDirScan;
 
     @Override
     protected void initData() {
@@ -52,11 +56,20 @@ public class DataBoardTab extends BaseTab {
             return;
         }
         setLayout(new VLayout(0));
+
+        // 控制栏
+        JPanel controlPanel = new JPanel();
+        controlPanel.setFocusable(false);
+        controlPanel.setLayout(new HLayout(5));
+        add(controlPanel);
         // 代理监听开关
-        mListenProxyMessage = new JCheckBox("Listen Proxy Message", false);
-        mListenProxyMessage.setFocusable(false);
-        mListenProxyMessage.setMargin(new Insets(5, 5, 5, 5));
-        add(mListenProxyMessage);
+        mListenProxyMessage = newJCheckBox(controlPanel, "Listen Proxy Message");
+        // 启用请求头排除开关
+        mEnableExcludeHeader = newJCheckBox(controlPanel, "Enable ExcludeHeader");
+        // 禁用请求头替换功能
+        mDisableHeaderReplace = newJCheckBox(controlPanel, "Disable HeaderReplace");
+        // 禁用递归扫描功能
+        mDisableDirScan = newJCheckBox(controlPanel, "Disable DirScan");
 
         // 主面板
         JSplitPane mainSplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -81,14 +94,31 @@ public class DataBoardTab extends BaseTab {
         add(mainSplitPanel, "100%");
     }
 
+    private JCheckBox newJCheckBox(JPanel panel, String text) {
+        JCheckBox checkBox = new JCheckBox(text, false);
+        checkBox.setFocusable(false);
+        checkBox.setMargin(new Insets(5, 5, 5, 5));
+        panel.add(checkBox);
+        return checkBox;
+    }
+
     public TaskTable getTaskTable() {
         return mTaskTable;
     }
 
     public boolean hasListenProxyMessage() {
-        if (mListenProxyMessage == null) {
-            return false;
-        }
-        return mListenProxyMessage.isSelected();
+        return mListenProxyMessage != null && mListenProxyMessage.isSelected();
+    }
+
+    public boolean hasEnableExcludeHeader() {
+        return mEnableExcludeHeader != null && mEnableExcludeHeader.isSelected();
+    }
+
+    public boolean hasDisableHeaderReplace() {
+        return mDisableHeaderReplace != null && mDisableHeaderReplace.isSelected();
+    }
+
+    public boolean hasDisableDirScan() {
+        return mDisableDirScan != null && mDisableDirScan.isSelected();
     }
 }
