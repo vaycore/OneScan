@@ -5,8 +5,6 @@ import burp.IExtensionHelpers;
 import burp.IMessageEditorTab;
 import burp.IRequestInfo;
 import burp.vaycore.common.utils.JsonUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -32,7 +30,7 @@ public class ShowJsonParamsTab implements IMessageEditorTab {
 
     public boolean isEnabled(byte[] content, boolean isRequest) {
         boolean hasBody = this.hasBody(content);
-        return hasBody && this.hasJsonFormat(this.getBody(content));
+        return hasBody && JsonUtils.hasJson(this.getBody(content));
     }
 
     public void setMessage(byte[] content, boolean isRequest) {
@@ -47,7 +45,7 @@ public class ShowJsonParamsTab implements IMessageEditorTab {
         this.mTabbedPane.removeAll();
         if (hasBody(content)) {
             String body = this.getBody(content);
-            if (this.hasJsonFormat(body)) {
+            if (JsonUtils.hasJson(body)) {
                 ArrayList<String> keys = JsonUtils.findAllKeysByJson(body);
                 Object[][] jsonParams = new Object[keys.size()][1];
                 for (int i = 0; i < keys.size(); ++i) {
@@ -91,19 +89,5 @@ public class ShowJsonParamsTab implements IMessageEditorTab {
         int bodyOffset = info.getBodyOffset();
         int bodySize = content.length - bodyOffset;
         return new String(content, bodyOffset, bodySize);
-    }
-
-    private boolean hasJsonFormat(String json) {
-        try {
-            new JSONObject(json);
-            return true;
-        } catch (Exception var5) {
-            try {
-                new JSONArray(json);
-                return true;
-            } catch (Exception var4) {
-                return false;
-            }
-        }
     }
 }

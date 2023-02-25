@@ -17,8 +17,6 @@ import burp.vaycore.onescan.ui.tab.DataBoardTab;
 import burp.vaycore.onescan.ui.tab.config.RequestTab;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 import org.json.HTTP;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -618,7 +616,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         String respJson = new String(respBody, bodyOffset, bodySize);
         // 尝试解析，解析成功再查询所有key的值
-        if (hasJsonFormat(respJson)) {
+        if (JsonUtils.hasJson(respJson)) {
             ArrayList<String> list = FileUtils.readFileToList(savePath);
             ArrayList<String> keys = JsonUtils.findAllKeysByJson(respJson);
             if (list == null) {
@@ -632,20 +630,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
             FileUtils.writeFile(savePath, sb.toString(), true);
             Logger.debug("collectJsonField host: %s keys: %s", domain, keys.toString());
-        }
-    }
-
-    private boolean hasJsonFormat(String json) {
-        try {
-            new JSONObject(json);
-            return true;
-        } catch (Exception e) {
-            try {
-                new JSONArray(json);
-                return true;
-            } catch (Exception ex) {
-                return false;
-            }
         }
     }
 

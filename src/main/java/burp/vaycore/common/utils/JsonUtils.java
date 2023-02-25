@@ -1,6 +1,11 @@
 package burp.vaycore.common.utils;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,5 +62,38 @@ public class JsonUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * 检测字符串是否为Json格式
+     *
+     * @param text 字符串
+     * @return true=有效；false=无效
+     */
+    public static boolean hasJson(String text) {
+        if (StringUtils.isEmpty(text)) {
+            return false;
+        }
+        text = text.trim();
+        // 开关与结尾都是大括号，以对象方式解析
+        if (text.startsWith("{") && text.endsWith("}")) {
+            try {
+                JSONObject obj = new JSONObject(text);
+                Set<String> keys = obj.keySet();
+                return keys != null && !keys.isEmpty();
+            } catch (JSONException e) {
+                return false;
+            }
+        }
+        // 开关与结尾都是中括号，以数组方式解析
+        if (text.startsWith("[") && text.endsWith("]")) {
+            try {
+                JSONArray arr = new JSONArray(text);
+                return arr.length() > 0;
+            } catch (JSONException e) {
+                return false;
+            }
+        }
+        return false;
     }
 }
