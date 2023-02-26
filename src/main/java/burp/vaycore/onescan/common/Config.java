@@ -60,6 +60,13 @@ public class Config {
                 "woff2|xbm|xls|xlsx|xpm|xul|xwd|zip|zip");
         initDefaultConfig(KEY_INCLUDE_METHOD, "GET|POST");
         initDefaultResourceConfig(KEY_EXCLUDE_HEADER, "exclude_header.txt");
+        // 版本更新处理
+        onVersionUpgrade();
+        // 预加载一些需要实例化成对象的配置
+        onPreloadConfig();
+    }
+
+    private static void onVersionUpgrade() {
         // 版本更新，配置也需要更新，更新后保留旧配置
         String version = Config.getVersion();
         if (!version.equals(Constants.PLUGIN_VERSION)) {
@@ -82,6 +89,11 @@ public class Config {
                 mConfigManager.remove("remove-header-list");
             }
         }
+    }
+
+    private static void onPreloadConfig() {
+        // 处理 Payload Process 列表配置
+        preparePayloadProcessList();
     }
 
     public static String getConfigPath() {
@@ -191,31 +203,36 @@ public class Config {
         return mConfigManager.getList(key);
     }
 
+    private static void preparePayloadProcessList() {
+        ArrayList<HashMap<String, Object>> mapItems = mConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
+        ArrayList<PayloadItem> result = new ArrayList<>();
+        if (mapItems != null && !mapItems.isEmpty()) {
+            // 转换HashMap数据为PayloadItem对象
+            for (HashMap<String, Object> mapItem : mapItems) {
+                PayloadItem item = new PayloadItem();
+                item.setId((Integer) mapItem.get("id"));
+                item.setEnabled((Boolean) mapItem.get("enabled"));
+                item.setScope((Integer) mapItem.get("scope"));
+                PayloadRule rule = SimplePayloadList.getPayloadRuleByType((String) mapItem.get("ruleType"));
+                if (rule == null) {
+                    continue;
+                }
+                HashMap<String, Object> ruleMap = (HashMap<String, Object>) mapItem.get("rule");
+                ArrayList<String> ruleParamValues = (ArrayList<String>) ruleMap.get("paramValues");
+                for (int j = 0; j < rule.paramCount(); j++) {
+                    String paramValue = ruleParamValues.get(j);
+                    rule.setParamValue(j, paramValue);
+                }
+                item.setRule(rule);
+                result.add(item);
+            }
+        }
+        // 将列表缓存
+        put(Config.KEY_PAYLOAD_PROCESS_LIST, result);
+    }
+
     public static ArrayList<PayloadItem> getPayloadProcessList() {
         checkInit();
-        ArrayList<HashMap<String, Object>> items = mConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
-        ArrayList<PayloadItem> result = new ArrayList<>();
-        if (items == null || items.isEmpty()) {
-            return result;
-        }
-        for (HashMap<String, Object> itemMap : items) {
-            PayloadItem item = new PayloadItem();
-            item.setId((Integer) itemMap.get("id"));
-            item.setEnabled((Boolean) itemMap.get("enabled"));
-            item.setScope((Integer) itemMap.get("scope"));
-            PayloadRule rule = SimplePayloadList.getPayloadRuleByType((String) itemMap.get("ruleType"));
-            if (rule == null) {
-                continue;
-            }
-            HashMap<String, Object> ruleMap = (HashMap<String, Object>) itemMap.get("rule");
-            ArrayList<String> ruleParamValues = (ArrayList<String>) ruleMap.get("paramValues");
-            for (int j = 0; j < rule.paramCount(); j++) {
-                String paramValue = ruleParamValues.get(j);
-                rule.setParamValue(j, paramValue);
-            }
-            item.setRule(rule);
-            result.add(item);
-        }
-        return result;
+        return mConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
     }
 }
