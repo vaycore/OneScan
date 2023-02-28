@@ -2,6 +2,7 @@ package burp.vaycore.onescan.ui.tab.config;
 
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.OnDataChangeListener;
+import burp.vaycore.onescan.ui.base.BaseConfigTab;
 import burp.vaycore.onescan.ui.payloadlist.PayloadItem;
 import burp.vaycore.onescan.ui.payloadlist.SimplePayloadList;
 

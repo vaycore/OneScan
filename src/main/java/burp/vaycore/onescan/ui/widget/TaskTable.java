@@ -25,6 +25,7 @@ public class TaskTable extends JTable {
     private final Color mItemBgColor;
     private final Color mItemSelectColor;
     private final Color mItemBgColor2;
+    private final TableRowSorter<TaskTableModel> mTableRowSorter;
     private OnTaskTableEventListener mOnTaskTableEventListener;
     private int mLastSelectedRow;
 
@@ -108,9 +109,9 @@ public class TaskTable extends JTable {
         mTaskTableModel = new TaskTableModel();
         mLastSelectedRow = -1;
         setModel(mTaskTableModel);
-        setAutoCreateRowSorter(true);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        setRowSorter(new TableRowSorter<>(getModel()));
+        mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
+        setRowSorter(mTableRowSorter);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
         // 设置列宽参数
@@ -230,6 +231,13 @@ public class TaskTable extends JTable {
     }
 
     /**
+     * 设置过滤器
+     */
+    public void setRowFilter(RowFilter<TaskTableModel, Integer> filter) {
+        mTableRowSorter.setRowFilter(filter);
+    }
+
+    /**
      * 设置监听器
      *
      * @param l 监听器实现类
@@ -279,9 +287,9 @@ public class TaskTable extends JTable {
     /**
      * 列表适配器
      */
-    private static class TaskTableModel extends AbstractTableModel {
+    public static class TaskTableModel extends AbstractTableModel {
 
-        private final String[] COLUMN_NAMES = new String[]{
+        public static final String[] COLUMN_NAMES = new String[]{
                 "#", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Comment"};
         private final ArrayList<TaskData> mData;
 

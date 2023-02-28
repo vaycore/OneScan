@@ -160,6 +160,66 @@ public class UIHelper {
         JOptionPane.showConfirmDialog(JOptionPane.getRootFrame(), message, title, JOptionPane.DEFAULT_OPTION);
     }
 
+    /**
+     * 显示含有确定、取消的自定义组件对话框
+     *
+     * @param title 标题
+     * @param c     组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showCustomDialog(String title, JComponent c) {
+        return JOptionPane.showConfirmDialog(JOptionPane.getRootFrame(), c, title,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * 显示含有确定、取消的自定义组件对话框
+     *
+     * @param title 标题
+     * @param c     组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showCustomDialog(String title, String[] options, JComponent c) {
+        return JOptionPane.showOptionDialog(JOptionPane.getRootFrame(), c, title,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+    }
+
+    /**
+     * 创建分隔线UI
+     *
+     * @return UI对象
+     */
+    public static JPanel newDividerLine() {
+        JPanel panel = new JPanel();
+        panel.setPreferredSize(new Dimension(0, 1));
+        panel.setOpaque(true);
+        panel.setBackground(Color.LIGHT_GRAY);
+        return panel;
+    }
+
+    /**
+     * 将 JRadioButton 组件进行分组
+     *
+     * @param buttons 一个或多个 JRadioButton 组件
+     */
+    public static void createRadioGroup(JRadioButton... buttons) {
+        if (buttons == null || buttons.length == 0) {
+            return;
+        }
+        ButtonGroup group = new ButtonGroup();
+        for (JRadioButton button : buttons) {
+            if (button == null) {
+                continue;
+            }
+            group.add(button);
+        }
+    }
+
+    /**
+     * 刷新UI
+     *
+     * @param c 组件
+     */
     public static void refreshUI(Component c) {
         if (c == null) {
             return;
@@ -170,6 +230,9 @@ public class UIHelper {
         c.repaint();
     }
 
+    /**
+     * 在日志中打印所有内置的颜色值
+     */
     private static void printColorKeys() {
         List<String> colorKeys = getColorKeys();
         for (String colorKey : colorKeys) {

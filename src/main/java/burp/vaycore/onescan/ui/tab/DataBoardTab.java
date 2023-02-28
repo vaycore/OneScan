@@ -1,13 +1,21 @@
 package burp.vaycore.onescan.ui.tab;
 
+import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
-import burp.vaycore.onescan.bean.TaskData;
-import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.common.utils.IPUtils;
+import burp.vaycore.common.utils.Utils;
+import burp.vaycore.onescan.bean.FilterRule;
+import burp.vaycore.onescan.bean.TaskData;
+import burp.vaycore.onescan.common.TableFilter;
+import burp.vaycore.onescan.ui.base.BaseTab;
+import burp.vaycore.onescan.ui.widget.TableFilterPanel;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * 数据看板
@@ -21,6 +29,7 @@ public class DataBoardTab extends BaseTab {
     private JCheckBox mEnableExcludeHeader;
     private JCheckBox mDisableHeaderReplace;
     private JCheckBox mDisableDirScan;
+    private ArrayList<FilterRule> mLastFilters;
 
     @Override
     protected void initData() {
@@ -39,13 +48,13 @@ public class DataBoardTab extends BaseTab {
         // 添加测试数据
         for (int i = 0; i < 100; i++) {
             TaskData data = new TaskData();
-            data.setMethod("GET");
+            data.setMethod(i % 12 == 0 ? "POST" : "GET");
             data.setHost("https://www.baidu.com");
             data.setUrl("/?s=" + i);
             data.setTitle("百度一下，你就知道");
-            data.setIp("21.33.44.55");
+            data.setIp(IPUtils.randomIPv4());
             data.setStatus(200);
-            data.setLength(32151);
+            data.setLength(Utils.randomInt(99999));
             data.setReqResp(new Object());
             getTaskTable().addTaskData(data);
         }
@@ -59,8 +68,9 @@ public class DataBoardTab extends BaseTab {
 
         // 控制栏
         JPanel controlPanel = new JPanel();
+        controlPanel.setBorder(new EmptyBorder(0, 0, 0, 5));
         controlPanel.setFocusable(false);
-        controlPanel.setLayout(new HLayout(5));
+        controlPanel.setLayout(new HLayout(5, true));
         add(controlPanel);
         // 代理监听开关
         mListenProxyMessage = newJCheckBox(controlPanel, "Listen Proxy Message");
@@ -70,7 +80,11 @@ public class DataBoardTab extends BaseTab {
         mDisableHeaderReplace = newJCheckBox(controlPanel, "Disable HeaderReplace");
         // 禁用递归扫描功能
         mDisableDirScan = newJCheckBox(controlPanel, "Disable DirScan");
-
+        // 过滤设置
+        JButton filterBtn = new JButton("Filter");
+        filterBtn.addActionListener(e -> showSetupFilterDialog(mLastFilters));
+        controlPanel.add(new JPanel(), "1w");
+        controlPanel.add(filterBtn, "65px");
         // 主面板
         JSplitPane mainSplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         mainSplitPanel.setResizeWeight(0.55D);
@@ -120,5 +134,28 @@ public class DataBoardTab extends BaseTab {
 
     public boolean hasDisableDirScan() {
         return mDisableDirScan != null && mDisableDirScan.isSelected();
+    }
+
+    /**
+     * 设置过滤对话框
+     *
+     * @param rules 过滤规则
+     */
+    private void showSetupFilterDialog(ArrayList<FilterRule> rules) {
+        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, rules);
+        int state = UIHelper.showCustomDialog("Setup filter", new String[]{"OK", "Cancel", "Reset"}, panel);
+        if (state == JOptionPane.YES_OPTION) {
+            ArrayList<FilterRule> filterRules = panel.exportRules();
+            ArrayList<TableFilter> filters = new ArrayList<>();
+            for (FilterRule rule : filterRules) {
+                TableFilter filter = new TableFilter(rule);
+                filters.add(filter);
+            }
+            mTaskTable.setRowFilter(RowFilter.andFilter(filters));
+            mLastFilters = filterRules;
+        } else if (state == 2) {
+            mTaskTable.setRowFilter(null);
+            mLastFilters = null;
+        }
     }
 }

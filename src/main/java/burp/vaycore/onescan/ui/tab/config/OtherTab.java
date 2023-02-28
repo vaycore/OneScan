@@ -5,6 +5,7 @@ import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.hae.HaE;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

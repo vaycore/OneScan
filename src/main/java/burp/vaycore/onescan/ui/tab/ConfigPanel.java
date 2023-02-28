@@ -1,6 +1,7 @@
 package burp.vaycore.onescan.ui.tab;
 
 import burp.vaycore.onescan.common.OnTabEventListener;
+import burp.vaycore.onescan.ui.base.BaseConfigTab;
 import burp.vaycore.onescan.ui.tab.config.*;
 
 import javax.swing.*;

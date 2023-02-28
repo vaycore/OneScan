@@ -1,4 +1,4 @@
-package burp.vaycore.onescan.ui.tab.config;
+package burp.vaycore.onescan.ui.base;
 
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
@@ -6,7 +6,6 @@ import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.OnTabEventListener;
-import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.onescan.ui.widget.SimpleWordlist;
 
 import javax.swing.*;
@@ -59,15 +58,7 @@ public abstract class BaseConfigTab extends BaseTab {
             }
         }
         add(new JPanel(), "10px");
-        add(newDividerLine());
-    }
-
-    protected JPanel newDividerLine() {
-        JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(0, 1));
-        panel.setOpaque(true);
-        panel.setBackground(Color.LIGHT_GRAY);
-        return panel;
+        add(UIHelper.newDividerLine());
     }
 
     /**

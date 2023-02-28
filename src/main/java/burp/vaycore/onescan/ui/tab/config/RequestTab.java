@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.NumberFilter;
+import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
 /**
  * Request设置
