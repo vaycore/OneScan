@@ -8,7 +8,7 @@ OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码�
 文档存放在当前接口同路径下（或者更深层次目录）。OneScan插件的出现可以快速发现这类页面和接口，只需要配置对应的字典即可。
 
 > 参与开发人员：
-> 
+>
 > - 主要开发: vaycore
 > - 后续更新功能: Rural.Dog
 > - 产品经理: 0ne_1
@@ -51,6 +51,20 @@ C:\Users\<用户名>\.config\OneScan\
 - `Enable ExcludeHeader` 开关排除请求头，启用时，根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
 - `Disable HeaderReplace` 开关请求头替换，启用时，不使用 `Request -> Header` 中配置的请求头请求数据
 - `Disable DirScan` 开关递归扫描，启用时，不对目标进行递归扫描
+- `Filter` 设置数据过滤规则
+
+### 过滤规则配置
+
+点击主面板的`Filter`按钮，打开设置过滤规则对话框（插件`0.5.2`版本新增功能）
+
+![](imgs/setup_filter.png)
+
+- `Select column` 选择要过滤的列
+- `Add filter` 为选中列添加过滤条件
+- `Clear` 清除选中列的所有过滤规则
+- `Reset` 重置所有过滤规则
+- `Cancel` 取消本次的所有变更
+- `OK` 使配置的规则生效
 
 ### 主动扫描
 
