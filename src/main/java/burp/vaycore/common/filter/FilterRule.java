@@ -1,4 +1,4 @@
-package burp.vaycore.onescan.bean;
+package burp.vaycore.common.filter;
 
 import java.util.ArrayList;
 
@@ -85,6 +85,14 @@ public class FilterRule {
     public static final String[] OPERATE_ITEMS = {"请选择",
             "等于", "不等于", "大于", "大于等于", "小于", "小于等于",
             "开头是", "开头不是", "结尾是", "结尾不是", "包含", "不包含"};
+
+    /**
+     * 操作符
+     */
+    public static final String[] OPERATE_CHAR = {"",
+            "==", "!=", ">", ">=", "<", "<=",
+            "startsWith", "noStartsWith", "endsWith",
+            "noEndsWith", "contains", "noContains"};
 
     private final int columnIndex;
     private final ArrayList<Item> items;

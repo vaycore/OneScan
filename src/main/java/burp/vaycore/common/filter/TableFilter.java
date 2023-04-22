@@ -1,10 +1,9 @@
-package burp.vaycore.onescan.common;
+package burp.vaycore.common.filter;
 
 import burp.vaycore.common.utils.StringUtils;
-import burp.vaycore.onescan.bean.FilterRule;
-import burp.vaycore.onescan.ui.widget.TaskTable;
 
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 
 /**
@@ -12,7 +11,7 @@ import java.util.ArrayList;
  * <p>
  * Created by vaycore on 2023-02-27.
  */
-public class TableFilter extends RowFilter<TaskTable.TaskTableModel, Object> {
+public class TableFilter<T extends AbstractTableModel> extends RowFilter<T, Object> {
 
     private final FilterRule rule;
 
@@ -27,8 +26,8 @@ public class TableFilter extends RowFilter<TaskTable.TaskTableModel, Object> {
     }
 
     @Override
-    public boolean include(Entry<? extends TaskTable.TaskTableModel, ?> entry) {
-        TaskTable.TaskTableModel model = entry.getModel();
+    public boolean include(Entry<? extends T, ?> entry) {
+        T model = entry.getModel();
         Integer rowIndex = (Integer) entry.getIdentifier();
         int columnIndex = rule.getColumnIndex();
         Object valueObj = model.getValueAt(rowIndex, columnIndex);

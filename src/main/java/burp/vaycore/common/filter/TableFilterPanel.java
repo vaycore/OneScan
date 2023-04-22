@@ -1,13 +1,14 @@
-package burp.vaycore.onescan.ui.widget;
+package burp.vaycore.common.filter;
 
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
-import burp.vaycore.onescan.bean.FilterRule;
+import burp.vaycore.common.utils.StringUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -46,7 +47,7 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
     private void initView() {
         setPreferredSize(new Dimension(450, 260));
         setLayout(new VLayout(10));
-        // 选择过滤字段、重置
+        // 选择过滤字段，添加、清除字段过滤规则
         JPanel columnPanel = new JPanel();
         add(columnPanel);
         columnPanel.setLayout(new HLayout(10, true));
@@ -57,10 +58,12 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         mColumnList.addItemListener(this);
         columnPanel.add(mColumnList);
         columnPanel.add(new JPanel(), "1w");
+        // 添加过滤
         JButton addItemBtn = new JButton("Add filter");
         addItemBtn.setActionCommand("add-filter-item");
         addItemBtn.addActionListener(this);
         columnPanel.add(addItemBtn);
+        // 清除过滤
         JButton clearBtn = new JButton("Clear");
         clearBtn.setActionCommand("clear-filter-item");
         clearBtn.addActionListener(this);
@@ -125,8 +128,8 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         rulePanel.add(operateBox);
         JTextField input = new JTextField(value);
         rulePanel.add(input, "1w");
-        JButton delBtn = new JButton("Del");
-        rulePanel.add(delBtn);
+        JButton delBtn = new JButton("X");
+        rulePanel.add(delBtn, "40px");
         delBtn.setEnabled(logic > 0);
         delBtn.addActionListener(e -> {
             mRulesPanel.remove(panel);
@@ -206,17 +209,78 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         return -1;
     }
 
+    /**
+     * 导出过滤规则
+     *
+     * @return 过滤规则数据
+     */
     public ArrayList<FilterRule> exportRules() {
-        ArrayList<FilterRule> result = new ArrayList<>();
         // 导出前保存一下当前数据
         saveColumnRuleItem(mLastColumnIndex);
-        // 检测是否有数据
-        if (mRules.isEmpty()) {
-            return result;
+        return mRules;
+    }
+
+    /**
+     * 导出过滤规则表达式
+     *
+     * @return 返回过滤规则表达式
+     */
+    public String exportRulesText() {
+        StringBuilder result = new StringBuilder();
+        if (mRules == null || mRules.isEmpty()) {
+            return result.toString();
         }
-        // 导出数据
-        result.addAll(mRules);
-        return result;
+        for (FilterRule rule : mRules) {
+            int columnIndex = rule.getColumnIndex();
+            String columnName = mColumns[columnIndex];
+            ArrayList<FilterRule.Item> items = rule.getItems();
+            // 规则与规则之间是并且的关系
+            if (!StringUtils.isEmpty(result)) {
+                result.append(" && ");
+            }
+            for (FilterRule.Item item : items) {
+                int logic = item.getLogic();
+                int operate = item.getOperate();
+                String value = item.getValue();
+                if (logic > 0) {
+                    result.append(logic == FilterRule.LOGIC_AND ? " && " : " || ");
+                }
+                result.append(columnName);
+                String operateStr = FilterRule.OPERATE_CHAR[operate];
+                // 拼接操作符，区分运算符和方法处理
+                if (operate < FilterRule.OPERATE_START) {
+                    // 处理一下空串和非数字的显示格式
+                    if (StringUtils.isEmpty(value)) {
+                        value = "''";
+                    } else {
+                        if (!StringUtils.isNumeric(value)) {
+                            value = "'" + value + "'";
+                        }
+                    }
+                    result.append(" ").append(operateStr).append(" ");
+                    result.append(value);
+                } else {
+                    value = "'" + value + "'";
+                    result.append(".").append(operateStr).append("(");
+                    result.append(value).append(")");
+                }
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * 导出为表过滤器规则
+     *
+     * @return 表过滤器规则数据
+     */
+    public ArrayList<TableFilter<AbstractTableModel>> exportTableFilters() {
+        ArrayList<TableFilter<AbstractTableModel>> filters = new ArrayList<>();
+        for (FilterRule rule : mRules) {
+            TableFilter<AbstractTableModel> filter = new TableFilter<>(rule);
+            filters.add(filter);
+        }
+        return filters;
     }
 
     @Override
@@ -237,5 +301,48 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
                 setupData();
                 break;
         }
+    }
+
+    /**
+     * 显示设置对话框
+     *
+     * @param callback 对话框回调接口
+     */
+    public void showDialog(DialogCallback callback) {
+        int state = UIHelper.showCustomDialog("Setup filter", new String[]{"OK", "Cancel", "Reset"}, this);
+        if (state == JOptionPane.YES_OPTION) {
+            ArrayList<FilterRule> filterRules = exportRules();
+            ArrayList<TableFilter<AbstractTableModel>> filters = exportTableFilters();
+            String rulesText = exportRulesText();
+            if (callback != null) {
+                callback.onConfirm(filterRules, filters, rulesText);
+            }
+        } else if (callback != null) {
+            if (state == 2) {
+                callback.onReset();
+            } else {
+                callback.onCancel();
+            }
+        }
+    }
+
+    public interface DialogCallback {
+
+        /**
+         * 点击 Ok 按钮回调
+         */
+        void onConfirm(ArrayList<FilterRule> filterRules,
+                       ArrayList<TableFilter<AbstractTableModel>> filters,
+                       String rulesText);
+
+        /**
+         * 点击 Reset 按钮回调
+         */
+        void onReset();
+
+        /**
+         * 点击 Cancel 按钮回调
+         */
+        void onCancel();
     }
 }
