@@ -8,6 +8,7 @@ import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
 import burp.vaycore.onescan.manager.WordlistManager;
+import burp.vaycore.onescan.ui.tab.config.OtherTab;
 import burp.vaycore.onescan.ui.widget.SimpleWordlist;
 
 import javax.swing.*;
@@ -140,9 +141,13 @@ public abstract class BaseConfigTab extends BaseTab {
             if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
                 textField.setText(newPath);
                 Config.put(configKey, newPath);
-                UIHelper.showTipsDialog("Save success!");
+                // 对这个配置额外处理
                 if (configKey.equals(Config.KEY_WORDLIST_PATH)) {
                     WordlistManager.init(newPath, true);
+                    UIHelper.showTipsDialog("保存成功，需要重新加载插件");
+                    sendTabEvent(OtherTab.EVENT_UNLOAD_PLUGIN);
+                } else {
+                    UIHelper.showTipsDialog("Save success!");
                 }
             }
         });

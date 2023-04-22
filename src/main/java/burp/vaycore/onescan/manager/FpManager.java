@@ -40,15 +40,13 @@ public class FpManager {
         if (!sFpList.isEmpty()) {
             sFpList.clear();
         }
-
         String json = FileUtils.readFileToString(sFilePath);
         if (StringUtils.isEmpty(json)) {
             throw new IllegalArgumentException("fingerprint data is empty.");
-        } else {
-            List<FpData> data = GsonUtils.toList(json, FpData.class);
-            if (data != null && !data.isEmpty()) {
-                sFpList.addAll(data);
-            }
+        }
+        List<FpData> data = GsonUtils.toList(json, FpData.class);
+        if (data != null && !data.isEmpty()) {
+            sFpList.addAll(data);
         }
     }
 

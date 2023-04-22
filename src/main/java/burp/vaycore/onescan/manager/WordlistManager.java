@@ -33,19 +33,17 @@ public class WordlistManager {
         if (!FileUtils.exists(path)) {
             FileUtils.mkdirs(path);
         }
-
-        if (FileUtils.isDir(path)) {
-            sWordlistDir = path;
-            initDirs();
-            initDefaultWordlist(WordlistManager.KEY_PAYLOAD, "payload.txt", reInitFile);
-            initDefaultWordlist(WordlistManager.KEY_HEADERS, "header.txt", reInitFile);
-            initDefaultWordlist(WordlistManager.KEY_USER_AGENT, "user_agent.txt", reInitFile);
-            initDefaultWordlist(WordlistManager.KEY_WHITE_HOST, "whitelist.txt", reInitFile);
-            initDefaultWordlist(WordlistManager.KEY_BLACK_HOST, "blacklist.txt", reInitFile);
-            initDefaultWordlist(WordlistManager.KEY_EXCLUDE_HEADERS, "exclude_header.txt", reInitFile);
-        } else {
+        if (!FileUtils.isDir(path)) {
             throw new IllegalArgumentException("Wordlist path not found.");
         }
+        sWordlistDir = path;
+        initDirs();
+        initDefaultWordlist(WordlistManager.KEY_PAYLOAD, "payload.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_HEADERS, "header.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_USER_AGENT, "user_agent.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_WHITE_HOST, "whitelist.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_BLACK_HOST, "blacklist.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_EXCLUDE_HEADERS, "exclude_header.txt", reInitFile);
     }
 
     private static void initDirs() {
@@ -70,20 +68,20 @@ public class WordlistManager {
     }
 
     private static void initDefaultWordlist(String key, String resName, boolean reInitFile) {
-        if (reInitFile || !Config.hasKey(key)) {
-            List<String> itemList = getItemList(key);
-            String defaultItem = "default";
-            if (!itemList.isEmpty()) {
-                defaultItem = itemList.contains("default") ? "default" : (String) itemList.get(0);
-            }
-
-            Config.put(key, defaultItem);
-            if (!wordlistFileExists(key)) {
-                InputStream is = Config.class.getClassLoader().getResourceAsStream(resName);
-                ArrayList<String> list = FileUtils.readStreamToList(is);
-                putList(key, list);
-            }
-
+        if (!reInitFile && Config.hasKey(key)) {
+            return;
+        }
+        List<String> itemList = getItemList(key);
+        String defaultItem = "default";
+        if (!itemList.isEmpty()) {
+            defaultItem = itemList.contains("default") ? "default" : itemList.get(0);
+        }
+        Config.put(key, defaultItem);
+        // 检测一下对应字典文件是否存在，以免造成覆盖配置的问题
+        if (!wordlistFileExists(key)) {
+            InputStream is = Config.class.getClassLoader().getResourceAsStream(resName);
+            ArrayList<String> list = FileUtils.readStreamToList(is);
+            putList(key, list);
         }
     }
 

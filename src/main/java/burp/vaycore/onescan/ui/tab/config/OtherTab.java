@@ -20,6 +20,7 @@ import java.awt.event.ActionListener;
 public class OtherTab extends BaseConfigTab implements ActionListener {
 
     private JTextField mHaEPluginPath;
+    public static final String EVENT_UNLOAD_PLUGIN = "event-unload-plugin";
 
     protected void initView() {
         addFileConfigPanel("Web name collect", "Select a file path", Config.KEY_WEB_NAME_COLLECT_PATH);

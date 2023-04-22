@@ -15,6 +15,7 @@ import burp.vaycore.onescan.info.OneScanInfoTab;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
+import burp.vaycore.onescan.ui.tab.config.OtherTab;
 import burp.vaycore.onescan.ui.tab.config.RequestTab;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
@@ -772,6 +773,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             String limit = (String) params[0];
             mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
             Logger.debug("Event: change qps limit: %s", limit);
+        } else if (OtherTab.EVENT_UNLOAD_PLUGIN.equals(action)) {
+            mCallbacks.unloadExtension();
         }
     }
 
