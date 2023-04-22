@@ -1,3 +1,8 @@
-baidu.com
-google.com
-github.com
+*.google.*
+*.github.*
+*.shodan.io
+*.fofa.info
+*.adblockplus.org
+*.bing.com
+*.gov.cn
+*.edu.cn
