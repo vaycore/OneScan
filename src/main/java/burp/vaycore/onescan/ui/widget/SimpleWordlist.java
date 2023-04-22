@@ -15,6 +15,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 简单的字典列表展示
@@ -29,11 +30,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     private String mAction;
     private OnDataChangeListener mOnDataChangeListener;
 
-    public SimpleWordlist() {
-        this(null);
-    }
-
-    public SimpleWordlist(ArrayList<String> wordlist) {
+    public SimpleWordlist(List<String> wordlist) {
         mListModel = new DefaultListModel<>();
         mListModel.addListDataListener(this);
         initData(wordlist);
@@ -51,7 +48,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         return this.mAction;
     }
 
-    private void initData(ArrayList<String> wordlist) {
+    private void initData(List<String> wordlist) {
         setListData(wordlist);
     }
 
@@ -60,8 +57,8 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
      *
      * @param list 数据列表
      */
-    public void setListData(ArrayList<String> list) {
-        if (list == null || list.isEmpty()) {
+    public void setListData(List<String> list) {
+        if (list == null) {
             return;
         }
         mListModel.removeAllElements();
@@ -75,8 +72,8 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
      *
      * @return 列表数据
      */
-    public ArrayList<String> getListData() {
-        ArrayList<String> result = new ArrayList<>();
+    public List<String> getListData() {
+        List<String> result = new ArrayList<>();
         for (int i = 0; i < mListModel.size(); i++) {
             result.add(mListModel.get(i));
         }
@@ -174,7 +171,10 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
                 mTfInputItem.requestFocus();
                 break;
             case "clear-item":
-                mListModel.removeAllElements();
+                int state = UIHelper.showOkCancelDialog("确认清空列表？");
+                if (state == JOptionPane.OK_OPTION) {
+                    mListModel.removeAllElements();
+                }
                 break;
         }
         // 以下是需要用到选中下标才能进行操作
