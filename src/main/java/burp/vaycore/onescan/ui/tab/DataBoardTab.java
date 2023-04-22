@@ -1,19 +1,23 @@
 package burp.vaycore.onescan.ui.tab;
 
-import burp.vaycore.common.helper.UIHelper;
+import burp.vaycore.common.filter.FilterRule;
+import burp.vaycore.common.filter.TableFilter;
+import burp.vaycore.common.filter.TableFilterPanel;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
 import burp.vaycore.common.utils.Utils;
-import burp.vaycore.onescan.bean.FilterRule;
+import burp.vaycore.common.widget.HintTextField;
+import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
-import burp.vaycore.onescan.common.TableFilter;
+import burp.vaycore.onescan.common.DialogCallbackAdapter;
+import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
-import burp.vaycore.onescan.ui.widget.TableFilterPanel;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 
@@ -30,6 +34,7 @@ public class DataBoardTab extends BaseTab {
     private JCheckBox mDisableHeaderReplace;
     private JCheckBox mDisableDirScan;
     private ArrayList<FilterRule> mLastFilters;
+    private HintTextField mFilterRuleText;
 
     @Override
     protected void initData() {
@@ -55,6 +60,11 @@ public class DataBoardTab extends BaseTab {
             data.setIp(IPUtils.randomIPv4());
             data.setStatus(200);
             data.setLength(Utils.randomInt(99999));
+            FpData fp = Utils.getRandomItem(FpManager.getList());
+            if (fp != null) {
+                data.setFingerprint(fp.getName());
+            }
+            data.setComment("");
             data.setReqResp(new Object());
             getTaskTable().addTaskData(data);
         }
@@ -81,9 +91,13 @@ public class DataBoardTab extends BaseTab {
         // 禁用递归扫描功能
         mDisableDirScan = newJCheckBox(controlPanel, "Disable DirScan");
         // 过滤设置
-        JButton filterBtn = new JButton("Filter");
-        filterBtn.addActionListener(e -> showSetupFilterDialog(mLastFilters));
         controlPanel.add(new JPanel(), "1w");
+        mFilterRuleText = new HintTextField();
+        mFilterRuleText.setEditable(false);
+        mFilterRuleText.setHintText("No filter rules.");
+        controlPanel.add(mFilterRuleText, "3w");
+        JButton filterBtn = new JButton("Filter");
+        filterBtn.addActionListener(e -> showSetupFilterDialog());
         controlPanel.add(filterBtn, "65px");
         // 主面板
         JSplitPane mainSplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -138,24 +152,23 @@ public class DataBoardTab extends BaseTab {
 
     /**
      * 设置过滤对话框
-     *
-     * @param rules 过滤规则
      */
-    private void showSetupFilterDialog(ArrayList<FilterRule> rules) {
-        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, rules);
-        int state = UIHelper.showCustomDialog("Setup filter", new String[]{"OK", "Cancel", "Reset"}, panel);
-        if (state == JOptionPane.YES_OPTION) {
-            ArrayList<FilterRule> filterRules = panel.exportRules();
-            ArrayList<TableFilter> filters = new ArrayList<>();
-            for (FilterRule rule : filterRules) {
-                TableFilter filter = new TableFilter(rule);
-                filters.add(filter);
+    private void showSetupFilterDialog() {
+        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, mLastFilters);
+        panel.showDialog(new DialogCallbackAdapter() {
+            @Override
+            public void onConfirm(ArrayList<FilterRule> filterRules, ArrayList<TableFilter<AbstractTableModel>> filters, String rulesText) {
+                mTaskTable.setRowFilter(RowFilter.andFilter(filters));
+                mFilterRuleText.setText(rulesText);
+                mLastFilters = filterRules;
             }
-            mTaskTable.setRowFilter(RowFilter.andFilter(filters));
-            mLastFilters = filterRules;
-        } else if (state == 2) {
-            mTaskTable.setRowFilter(null);
-            mLastFilters = null;
-        }
+
+            @Override
+            public void onReset() {
+                mTaskTable.setRowFilter(null);
+                mFilterRuleText.setText("");
+                mLastFilters = null;
+            }
+        });
     }
 }

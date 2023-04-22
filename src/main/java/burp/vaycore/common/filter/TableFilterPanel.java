@@ -330,6 +330,10 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
 
         /**
          * 点击 Ok 按钮回调
+         *
+         * @param filterRules 过滤规则
+         * @param filters     处理成Swing直接使用的过滤规则
+         * @param rulesText   规则表达式
          */
         void onConfirm(ArrayList<FilterRule> filterRules,
                        ArrayList<TableFilter<AbstractTableModel>> filters,
