@@ -1,6 +1,6 @@
 package burp.vaycore.common.utils;
 
-import java.io.File;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -132,6 +132,38 @@ public class ClassUtils {
             return value;
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    /**
+     * 深拷贝对象
+     *
+     * @param obj 要拷贝的对象（类需要实现 {@link java.io.Serializable} 接口）
+     * @return 拷贝完成的对象（拷贝过程异常返回null）
+     */
+    public static <T extends Serializable> T deepCopy(T obj) {
+        if (obj == null) {
+            return null;
+        }
+        ByteArrayOutputStream bos = null;
+        ObjectOutputStream oos = null;
+        ByteArrayInputStream bis = null;
+        ObjectInputStream ois = null;
+        try {
+            bos = new ByteArrayOutputStream();
+            oos = new ObjectOutputStream(bos);
+            oos.writeObject(obj);
+            bis = new ByteArrayInputStream(bos.toByteArray());
+            ois = new ObjectInputStream(bis);
+            return (T) ois.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            IOUtils.closeIO(oos);
+            IOUtils.closeIO(bos);
+            IOUtils.closeIO(ois);
+            IOUtils.closeIO(bis);
         }
     }
 }
