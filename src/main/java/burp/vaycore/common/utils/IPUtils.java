@@ -46,4 +46,37 @@ public class IPUtils {
         }
         return StringUtils.join(ipv4, ".");
     }
+
+    /**
+     * 随机内网IP地址
+     *
+     * @return 返回一个随机的内网IP地址
+     */
+    public static String randomIPv4ForLocal() {
+        long[][] range = new long[][]{
+                {167772161L, 184549375L},
+                {2886729728L, 2887778303L},
+                {3232235520L, 3232301055L},
+        };
+        Random random = new Random();
+        int index = random.nextInt(3);
+        long start = range[index][0];
+        int bound = (int) (range[index][1] - range[index][0]);
+        return numToIPv4(start + random.nextInt(bound));
+    }
+
+    /**
+     * 数字转换为IP地址
+     *
+     * @param num 数字
+     * @return 返回IP地址字符串
+     */
+    public static String numToIPv4(long num) {
+        int[] b = new int[4];
+        b[0] = (int) (num >> 24 & 255L);
+        b[1] = (int) (num >> 16 & 255L);
+        b[2] = (int) (num >> 8 & 255L);
+        b[3] = (int) (num & 255L);
+        return b[0] + "." + b[1] + "." + b[2] + "." + b[3];
+    }
 }
