@@ -15,6 +15,7 @@ public class TaskData {
     private String ip;
     private int status;
     private int length;
+    private String fingerprint;
     private String comment;
     // 辅助的数据
     private Object reqResp;
@@ -82,6 +83,14 @@ public class TaskData {
 
     public void setLength(int length) {
         this.length = length;
+    }
+
+    public String getFingerprint() {
+        return fingerprint;
+    }
+
+    public void setFingerprint(String fingerprint) {
+        this.fingerprint = fingerprint;
     }
 
     public String getComment() {
