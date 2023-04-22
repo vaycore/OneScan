@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.NumberFilter;
+import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
 /**
@@ -28,11 +29,11 @@ public class RequestTab extends BaseConfigTab {
         // 根据后缀过滤请求包
         addTextConfigPanel("Exclude suffix", "Proxy message suffix filter", 50, Config.KEY_EXCLUDE_SUFFIX);
         // 请求头配置
-        addWordListPanel("Header", "Request header options", Config.KEY_HEADER_LIST);
+        addWordListPanel("Header", "Request header options", WordlistManager.KEY_HEADERS);
         // 排除请求头配置
-        addWordListPanel("Exclude header", "Exclude request header by key", Config.KEY_EXCLUDE_HEADER);
+        addWordListPanel("Exclude header", "Exclude request header by key", WordlistManager.KEY_EXCLUDE_HEADERS);
         // 请求头UserAgent配置
-        addWordListPanel("UserAgent", "Set {{random.ua}} list options", Config.KEY_UA_LIST);
+        addWordListPanel("UserAgent", "Set {{random.ua}} list options", WordlistManager.KEY_USER_AGENT);
     }
 
     @Override
@@ -42,22 +43,15 @@ public class RequestTab extends BaseConfigTab {
 
     @Override
     protected boolean onTextConfigSave(String configKey, String text) {
-        switch (configKey) {
-            case Config.KEY_QPS_LIMIT:
-                if (StringUtils.isEmpty(text) || text.length() > 4) {
-                    UIHelper.showTipsDialog("QPS limit value invalid");
-                    return false;
-                }
-                Config.put(configKey, text);
-                sendTabEvent(EVENT_QPS_LIMIT, text);
-                break;
-            case Config.KEY_INCLUDE_METHOD:
-            case Config.KEY_EXCLUDE_SUFFIX:
-                Config.put(configKey, text);
-                break;
-            default:
-                return super.onTextConfigSave(configKey, text);
+        if (Config.KEY_QPS_LIMIT.equals(configKey)) {
+            if (StringUtils.isEmpty(text) || text.length() > 4) {
+                UIHelper.showTipsDialog("QPS limit value invalid");
+                return false;
+            }
+            Config.put(configKey, text);
+            sendTabEvent(EVENT_QPS_LIMIT, text);
+            return true;
         }
-        return true;
+        return super.onTextConfigSave(configKey, text);
     }
 }

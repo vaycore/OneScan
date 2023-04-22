@@ -6,12 +6,16 @@ import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.OnTabEventListener;
+import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
+import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.widget.SimpleWordlist;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.PopupMenuEvent;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * 通用配置页面基类
@@ -88,6 +92,65 @@ public abstract class BaseConfigTab extends BaseTab {
     }
 
     /**
+     * 添加文件配置项
+     *
+     * @param title     配置项标题
+     * @param subTitle  配置项说明
+     * @param configKey 配置文件中的Key
+     */
+    protected void addFileConfigPanel(String title, String subTitle, String configKey) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new HLayout(3));
+        String filePath = Config.getFilePath(configKey);
+        JTextField textField = new JTextField(filePath, 35);
+        textField.setEditable(false);
+        panel.add(textField);
+        JButton button = new JButton("Select file...");
+        button.addActionListener((e) -> {
+            String oldPath = Config.getFilePath(configKey);
+            String newPath = UIHelper.selectFileDialog("Select a file", oldPath);
+            if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
+                textField.setText(newPath);
+                Config.put(configKey, newPath);
+                UIHelper.showTipsDialog("Save success!");
+            }
+        });
+        panel.add(button);
+        this.addConfigItem(title, subTitle, panel);
+    }
+
+    /**
+     * 添加目录配置项
+     *
+     * @param title     配置项标题
+     * @param subTitle  配置项说明
+     * @param configKey 配置文件中的Key
+     */
+    protected void addDirectoryConfigPanel(String title, String subTitle, String configKey) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new HLayout(3));
+        String dirPath = Config.getFilePath(configKey);
+        JTextField textField = new JTextField(dirPath, 35);
+        textField.setEditable(false);
+        panel.add(textField);
+        JButton button = new JButton("Select directory...");
+        button.addActionListener((e) -> {
+            String oldPath = Config.getFilePath(configKey, true);
+            String newPath = UIHelper.selectDirDialog("Select a directory", oldPath);
+            if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
+                textField.setText(newPath);
+                Config.put(configKey, newPath);
+                UIHelper.showTipsDialog("Save success!");
+                if (configKey.equals(Config.KEY_WORDLIST_PATH)) {
+                    WordlistManager.init(newPath, true);
+                }
+            }
+        });
+        panel.add(button);
+        this.addConfigItem(title, subTitle, panel);
+    }
+
+    /**
      * 添加字典配置项
      *
      * @param title     配置项标题
@@ -95,12 +158,41 @@ public abstract class BaseConfigTab extends BaseTab {
      * @param configKey 配置文件中的Key
      */
     protected void addWordListPanel(String title, String subTitle, String configKey) {
-        SimpleWordlist wordlist = new SimpleWordlist(Config.getList(configKey));
-        wordlist.setOnDataChangeListener(action -> {
-            ArrayList<String> listData = wordlist.getListData();
-            Config.putList(configKey, listData);
+        SimpleWordlist wordlist = new SimpleWordlist(WordlistManager.getList(configKey));
+        wordlist.setOnDataChangeListener((action) -> {
+            java.util.List<String> listData = wordlist.getListData();
+            WordlistManager.putList(configKey, listData);
         });
-        addConfigItem(title, subTitle, wordlist);
+        JPanel panel = new JPanel();
+        panel.setLayout(new HLayout(0, true));
+        JComboBox<String> cb = new JComboBox<>(new Vector<>(WordlistManager.getItemList(configKey)));
+        cb.setSelectedItem(WordlistManager.getItem(configKey));
+        cb.addPopupMenuListener(new PopupMenuListenerAdapter() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                List<String> configItems = WordlistManager.getItemList(configKey);
+                String curItem = (String) cb.getSelectedItem();
+                cb.removeAllItems();
+                cb.addItem(curItem);
+                for (String item : configItems) {
+                    if (!item.equals(curItem)) {
+                        cb.addItem(item);
+                    }
+                }
+            }
+        });
+        cb.addItemListener((e) -> {
+            String item = e.getItem().toString();
+            String oldItem = WordlistManager.getItem(configKey);
+            if (oldItem.equals(item)) {
+                return;
+            }
+            WordlistManager.putItem(configKey, item);
+            List<String> list = WordlistManager.getList(configKey);
+            wordlist.setListData(list);
+        });
+        panel.add(cb, "440px");
+        this.addConfigItem(title, subTitle, wordlist, panel);
     }
 
     /**
@@ -141,6 +233,7 @@ public abstract class BaseConfigTab extends BaseTab {
      * @return 用户定义保存状态（true=保存成功；false=保存取消）
      */
     protected boolean onTextConfigSave(String configKey, String text) {
-        return false;
+        Config.put(configKey, text);
+        return true;
     }
 }

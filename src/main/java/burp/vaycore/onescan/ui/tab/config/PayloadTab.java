@@ -2,9 +2,10 @@ package burp.vaycore.onescan.ui.tab.config;
 
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.OnDataChangeListener;
+import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
-import burp.vaycore.onescan.ui.payloadlist.PayloadItem;
-import burp.vaycore.onescan.ui.payloadlist.SimplePayloadList;
+import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
+import burp.vaycore.onescan.ui.widget.payloadlist.SimplePayloadList;
 
 import java.util.ArrayList;
 
@@ -20,7 +21,7 @@ public class PayloadTab extends BaseConfigTab implements OnDataChangeListener {
     @Override
     protected void initView() {
         // payload 列表配置
-        addWordListPanel("Payload", "Set payload list", Config.KEY_PAYLOAD_LIST);
+        addWordListPanel("Payload", "Set payload list", WordlistManager.KEY_PAYLOAD);
 
         // payload process 列表配置
         mProcessList = new SimplePayloadList(Config.getPayloadProcessList());

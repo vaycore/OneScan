@@ -1,6 +1,6 @@
 package burp.vaycore.onescan.ui.tab.config;
 
-import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
 /**
@@ -13,9 +13,9 @@ public class HostTab extends BaseConfigTab {
     @Override
     protected void initView() {
         // Host白名单配置
-        addWordListPanel("Host Whitelist", "Host Whitelist options", Config.KEY_WHITE_LIST);
+        addWordListPanel("Host Whitelist", "Host Whitelist options", WordlistManager.KEY_WHITE_HOST);
         // Host黑名单配置
-        addWordListPanel("Host Blacklist", "Host Blacklist options", Config.KEY_BLACK_LIST);
+        addWordListPanel("Host Blacklist", "Host Blacklist options", WordlistManager.KEY_BLACK_HOST);
     }
 
     @Override

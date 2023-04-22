@@ -5,6 +5,7 @@ import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.hae.HaE;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
 import javax.swing.*;
@@ -18,15 +19,14 @@ import java.awt.event.ActionListener;
  */
 public class OtherTab extends BaseConfigTab implements ActionListener {
 
-    private JTextField mWebNameCollectPath;
-    private JTextField mJsonFieldCollectPath;
     private JTextField mHaEPluginPath;
 
-    @Override
     protected void initView() {
-        addConfigItem("Web name collect", "Select a file path", newWebNameCollectPanel());
-        addConfigItem("Json field collect", "Select a directory path", newJsonFieldCollectPanel());
+        addFileConfigPanel("Web name collect", "Select a file path", Config.KEY_WEB_NAME_COLLECT_PATH);
+        addDirectoryConfigPanel("Json field collect", "Select a directory path", Config.KEY_JSON_FIELD_COLLECT_PATH);
+        addDirectoryConfigPanel("Wordlist Directory", "Set Wordlist directory path", Config.KEY_WORDLIST_PATH);
         addConfigItem("HaE", "Set HaE plugin file path", newHaEPluginPathPanel());
+        addConfigItem("Clear Temp", "Clear fingerprint check temp", newFpClearTempPanel());
     }
 
     @Override
@@ -34,53 +34,30 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
         return "Other";
     }
 
-    private JPanel newWebNameCollectPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(3));
-
-        mWebNameCollectPath = new JTextField(getWebNameCollectPath(), 35);
-        mWebNameCollectPath.setEditable(false);
-        panel.add(mWebNameCollectPath);
-
-        JButton button = new JButton("Select file...");
-        button.setActionCommand("web-name-collect-select-file");
-        button.addActionListener(this);
-        panel.add(button);
-        return panel;
-    }
-
-    private JPanel newJsonFieldCollectPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(3));
-
-        mJsonFieldCollectPath = new JTextField(getJsonFieldCollectPath(), 35);
-        mJsonFieldCollectPath.setEditable(false);
-        panel.add(mJsonFieldCollectPath);
-
-        JButton button = new JButton("Select directory...");
-        button.setActionCommand("json-field-collect-select-dir");
-        button.addActionListener(this);
-        panel.add(button);
-        return panel;
-    }
-
     private JPanel newHaEPluginPathPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new HLayout(3));
-
         mHaEPluginPath = new JTextField(getHaEPluginPath(), 35);
         mHaEPluginPath.setEditable(false);
         panel.add(mHaEPluginPath);
-
         JButton button = new JButton("Select file...");
         button.setActionCommand("hae-plugin-select-file");
         button.addActionListener(this);
         panel.add(button);
-
         JButton unload = new JButton("Unload");
         unload.setActionCommand("hae-plugin-unload");
         unload.addActionListener(this);
         panel.add(unload);
+        return panel;
+    }
+
+    private JPanel newFpClearTempPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new HLayout());
+        JButton button = new JButton("Clear");
+        button.setActionCommand("clear-fingerprint-check-temp");
+        button.addActionListener(this);
+        panel.add(button);
         return panel;
     }
 
@@ -91,24 +68,6 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
         String filepath;
         boolean state;
         switch (action) {
-            case "web-name-collect-select-file":
-                oldPath = getWebNameCollectPath();
-                filepath = UIHelper.selectFileDialog("Select a file", oldPath);
-                if (StringUtils.isEmpty(filepath) || oldPath.equals(filepath)) {
-                    return;
-                }
-                mWebNameCollectPath.setText(filepath);
-                Config.put(Config.KEY_WEB_NAME_COLLECT_PATH, filepath);
-                break;
-            case "json-field-collect-select-dir":
-                oldPath = getJsonFieldCollectPath();
-                filepath = UIHelper.selectDirDialog("Select a directory", oldPath);
-                if (StringUtils.isEmpty(filepath) || oldPath.equals(filepath)) {
-                    return;
-                }
-                mJsonFieldCollectPath.setText(filepath);
-                Config.put(Config.KEY_JSON_FIELD_COLLECT_PATH, filepath);
-                break;
             case "hae-plugin-select-file":
                 oldPath = getHaEPluginPath();
                 filepath = UIHelper.selectFileDialog("Select a file", oldPath);
@@ -130,17 +89,23 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                     UIHelper.showTipsDialog("HaE unload success!");
                 }
                 break;
+            case "clear-fingerprint-check-temp":
+                String count = FpManager.getTempCount();
+                if ("0".equals(count)) {
+                    UIHelper.showTipsDialog("Temp is empty.");
+                    return;
+                }
+
+                String msg = String.format("存在%s条指纹识别缓存，是否清空缓存？", count);
+                int ret = UIHelper.showOkCancelDialog(msg);
+                if (ret == 0) {
+                    FpManager.clearTemp();
+                    UIHelper.showTipsDialog("Clear success.");
+                }
+                break;
             default:
                 break;
         }
-    }
-
-    private String getWebNameCollectPath() {
-        return Config.getFilePath(Config.KEY_WEB_NAME_COLLECT_PATH);
-    }
-
-    private String getJsonFieldCollectPath() {
-        return Config.getFilePath(Config.KEY_JSON_FIELD_COLLECT_PATH, true);
     }
 
     private String getHaEPluginPath() {
