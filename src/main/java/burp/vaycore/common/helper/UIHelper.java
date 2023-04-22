@@ -156,8 +156,61 @@ public class UIHelper {
         showTipsDialog("提示", message);
     }
 
+    public static void showTipsDialog(String message, Component parentComponent) {
+        showTipsDialog("提示", message, parentComponent);
+    }
+
     public static void showTipsDialog(String title, String message) {
-        JOptionPane.showConfirmDialog(JOptionPane.getRootFrame(), message, title, JOptionPane.DEFAULT_OPTION);
+        showTipsDialog(title, message, null);
+    }
+
+    public static void showTipsDialog(String title, String message, Component parentComponent) {
+        JOptionPane.showConfirmDialog(parentComponent, message, title, JOptionPane.DEFAULT_OPTION);
+    }
+
+    /**
+     * 显示含有确定、取消的消息提示对话框
+     *
+     * @param message 提示消息
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showOkCancelDialog(String message) {
+        return showOkCancelDialog("提示", message);
+    }
+
+    /**
+     * 显示含有确定、取消的消息提示对话框
+     *
+     * @param message         提示消息
+     * @param parentComponent 父级组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showOkCancelDialog(String message, Component parentComponent) {
+        return showOkCancelDialog("提示", message, parentComponent);
+    }
+
+    /**
+     * 显示含有确定、取消的消息提示对话框
+     *
+     * @param title   标题
+     * @param message 消息
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showOkCancelDialog(String title, String message) {
+        return showOkCancelDialog(title, message, null);
+    }
+
+    /**
+     * 显示含有确定、取消的消息提示对话框
+     *
+     * @param title           标题
+     * @param message         消息
+     * @param parentComponent 父级组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showOkCancelDialog(String title, String message, Component parentComponent) {
+        return JOptionPane.showConfirmDialog(parentComponent, message, title,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
     }
 
     /**
@@ -168,7 +221,19 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showCustomDialog(String title, JComponent c) {
-        return JOptionPane.showConfirmDialog(JOptionPane.getRootFrame(), c, title,
+        return showCustomDialog(title, c, null);
+    }
+
+    /**
+     * 显示含有确定、取消的自定义组件对话框
+     *
+     * @param title           标题
+     * @param c               组件
+     * @param parentComponent 父级组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showCustomDialog(String title, JComponent c, Component parentComponent) {
+        return JOptionPane.showConfirmDialog(parentComponent, c, title,
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
     }
 
@@ -180,7 +245,19 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showCustomDialog(String title, String[] options, JComponent c) {
-        return JOptionPane.showOptionDialog(JOptionPane.getRootFrame(), c, title,
+        return showCustomDialog(title, options, c, null);
+    }
+
+    /**
+     * 显示含有确定、取消的自定义组件对话框
+     *
+     * @param title           标题
+     * @param c               组件
+     * @param parentComponent 父级组件
+     * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
+     */
+    public static int showCustomDialog(String title, String[] options, JComponent c, Component parentComponent) {
+        return JOptionPane.showOptionDialog(parentComponent, c, title,
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
     }
 
