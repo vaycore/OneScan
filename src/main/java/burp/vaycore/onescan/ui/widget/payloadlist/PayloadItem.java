@@ -1,4 +1,4 @@
-package burp.vaycore.onescan.ui.payloadlist;
+package burp.vaycore.onescan.ui.widget.payloadlist;
 
 /**
  * Payload数据
@@ -9,7 +9,7 @@ public class PayloadItem {
 
     private int id;
     private boolean enabled;
-    private PayloadRule payloadRule;
+    private PayloadRule rule;
     private int scope;
     private String ruleType;
 
@@ -30,14 +30,14 @@ public class PayloadItem {
     }
 
     public PayloadRule getRule() {
-        return payloadRule;
+        return rule;
     }
 
     public void setRule(PayloadRule payloadRule) {
         if (payloadRule == null) {
             return;
         }
-        this.payloadRule = payloadRule;
+        this.rule = payloadRule;
         this.ruleType = payloadRule.getClass().getSimpleName();
     }
 

@@ -1,4 +1,4 @@
-package burp.vaycore.onescan.ui.payloadlist;
+package burp.vaycore.onescan.ui.widget.payloadlist;
 
 import burp.vaycore.common.utils.StringUtils;
 

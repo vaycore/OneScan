@@ -1,17 +1,17 @@
-package burp.vaycore.onescan.ui.payloadlist.rule;
+package burp.vaycore.onescan.ui.widget.payloadlist.rule;
 
-import burp.vaycore.onescan.ui.payloadlist.PayloadRule;
+import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 
 /**
- * 添加后缀
+ * 添加前缀
  * <p>
- * Created by vaycore on 2022-09-06.
+ * Created by vaycore on 2022-09-02.
  */
-public class AddSuffix extends PayloadRule {
+public class AddPrefix extends PayloadRule {
 
     @Override
     public String ruleName() {
-        return "Add suffix";
+        return "Add prefix";
     }
 
     @Override
@@ -21,18 +21,18 @@ public class AddSuffix extends PayloadRule {
 
     @Override
     public String paramName(int index) {
-        return "Suffix";
+        return "Prefix";
     }
 
     @Override
     public String toDescribe() {
         String[] values = getParamValues();
-        return "Add Suffix: " + values[0];
+        return "Add Prefix: " + values[0];
     }
 
     @Override
     public String handleProcess(String content) {
         String[] values = getParamValues();
-        return content + values[0];
+        return values[0] + content;
     }
 }

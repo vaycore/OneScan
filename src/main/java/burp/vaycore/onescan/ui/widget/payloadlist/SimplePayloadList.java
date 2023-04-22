@@ -1,4 +1,4 @@
-package burp.vaycore.onescan.ui.payloadlist;
+package burp.vaycore.onescan.ui.widget.payloadlist;
 
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
@@ -7,9 +7,9 @@ import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.common.OnDataChangeListener;
-import burp.vaycore.onescan.ui.payloadlist.rule.AddPrefix;
-import burp.vaycore.onescan.ui.payloadlist.rule.AddSuffix;
-import burp.vaycore.onescan.ui.payloadlist.rule.MatchReplace;
+import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddPrefix;
+import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddSuffix;
+import burp.vaycore.onescan.ui.widget.payloadlist.rule.MatchReplace;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,7 +32,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
             MatchReplace.class,
     };
 
-    private PayloadListModel mListModel;
+    private final PayloadListModel mListModel;
     private JTable mListView;
     private String mAction;
     private OnDataChangeListener mOnDataChangeListener;
@@ -156,7 +156,10 @@ public class SimplePayloadList extends JPanel implements ActionListener {
                 mListModel.add(newItem);
                 break;
             case "clear-item":
-                mListModel.clearAll();
+                int state = UIHelper.showOkCancelDialog("确认清空列表？");
+                if (state == JOptionPane.OK_OPTION) {
+                    mListModel.clearAll();
+                }
                 break;
         }
         int index = mListView.getSelectedRow();

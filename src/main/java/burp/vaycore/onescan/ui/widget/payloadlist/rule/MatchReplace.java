@@ -1,6 +1,6 @@
-package burp.vaycore.onescan.ui.payloadlist.rule;
+package burp.vaycore.onescan.ui.widget.payloadlist.rule;
 
-import burp.vaycore.onescan.ui.payloadlist.PayloadRule;
+import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 
 /**
  * 匹配和替换
