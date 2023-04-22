@@ -1,9 +1,9 @@
 package burp.vaycore.common.helper;
 
 import burp.vaycore.common.utils.FileUtils;
+import burp.vaycore.common.utils.GsonUtils;
 import burp.vaycore.common.utils.IPUtils;
 import burp.vaycore.common.utils.StringUtils;
-import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -32,7 +32,7 @@ public class DomainHelper {
     public static void init(String resName) {
         InputStream is = DomainHelper.class.getClassLoader().getResourceAsStream(resName);
         String json = FileUtils.readStreamToString(is);
-        sTree = new JSONObject(json).toMap();
+        sTree = GsonUtils.toMap(json);
     }
 
     /**
