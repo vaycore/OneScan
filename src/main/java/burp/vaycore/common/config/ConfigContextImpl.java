@@ -1,9 +1,9 @@
 package burp.vaycore.common.config;
 
 import burp.vaycore.common.utils.FileUtils;
+import burp.vaycore.common.utils.GsonUtils;
 import burp.vaycore.common.utils.PathUtils;
 import burp.vaycore.common.utils.StringUtils;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.util.HashMap;
@@ -47,7 +47,7 @@ public class ConfigContextImpl implements ConfigContext {
             return;
         }
         String configData = FileUtils.readFileToString(mConfigPath);
-        Map<String, Object> configMap = new JSONObject(configData).toMap();
+        Map<String, Object> configMap = GsonUtils.toMap(configData);
         if (configMap == null || configMap.isEmpty()) {
             return;
         }
@@ -88,7 +88,7 @@ public class ConfigContextImpl implements ConfigContext {
      * 执行写入文件操作
      */
     private void doWriteFile() {
-        String configData = new JSONObject(mConfigCache).toString();
+        String configData = GsonUtils.toJson(mConfigCache);
         FileUtils.writeFile(mConfigPath, configData);
     }
 }
