@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
+import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
@@ -62,5 +64,29 @@ public class Utils {
         }
         int r = randomInt(list.size() - 1);
         return list.get(r);
+    }
+
+    public static String md5(String data) {
+        return md5(data.getBytes());
+    }
+
+    public static String md5(byte[] bytes) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(bytes);
+            byte[] digest = md.digest();
+            return bytesToHex(digest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String bytesToHex(byte[] data) {
+        if (data == null || data.length == 0) {
+            return "";
+        }
+        BigInteger bigInt = new BigInteger(1, data);
+        return bigInt.toString(16);
     }
 }
