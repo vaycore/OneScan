@@ -1,11 +1,8 @@
 package burp.vaycore.common.utils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,22 +74,13 @@ public class JsonUtils {
         text = text.trim();
         // 开关与结尾都是大括号，以对象方式解析
         if (text.startsWith("{") && text.endsWith("}")) {
-            try {
-                JSONObject obj = new JSONObject(text);
-                Set<String> keys = obj.keySet();
-                return keys != null && !keys.isEmpty();
-            } catch (JSONException e) {
-                return false;
-            }
+            Map<String, Object> map = GsonUtils.toMap(text);
+            return map != null && !map.isEmpty();
         }
         // 开关与结尾都是中括号，以数组方式解析
         if (text.startsWith("[") && text.endsWith("]")) {
-            try {
-                JSONArray arr = new JSONArray(text);
-                return arr.length() > 0;
-            } catch (JSONException e) {
-                return false;
-            }
+            List<Object> list = GsonUtils.toList(text, Object.class);
+            return list != null && !list.isEmpty();
         }
         return false;
     }
