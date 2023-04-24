@@ -17,7 +17,7 @@ public class HtmlUtils {
     private static final Pattern sTitleRegex;
 
     static {
-        sTitleRegex = Pattern.compile("<\\s*title.*>([^<]+)<\\s*/\\s*title>",
+        sTitleRegex = Pattern.compile("<\\s*title.*?>([^<]+)<\\s*/\\s*title>",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     }
 
