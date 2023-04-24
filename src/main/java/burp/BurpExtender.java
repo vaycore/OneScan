@@ -40,10 +40,7 @@ import java.util.concurrent.Executors;
  */
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
         TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory {
-    /**
-     * 设置请求信息的同步锁
-     */
-    private static final String MESSAGE_LOCK = "MESSAGE-LOCK";
+
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
     private OneScan mOneScan;
@@ -719,25 +716,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 清空记录时，同时也清空去重过滤列表
             sRepeatFilter.clear();
         }
-        // 如果数据太大，尝试调用线程设置请求信息
-        int totalLength = getRequest().length + getResponse().length;
-        if (totalLength >= 256000) {
-            mRequestTextEditor.setMessage("Loading...".getBytes(), true);
-            mResponseTextEditor.setMessage("Loading...".getBytes(), false);
-            mThreadPool.execute(() -> {
-                synchronized (MESSAGE_LOCK) {
-                    refreshReqRespMessage();
-                }
-            });
-        } else {
-            refreshReqRespMessage();
-        }
+        mRequestTextEditor.setMessage("Loading...".getBytes(), true);
+        mResponseTextEditor.setMessage("Loading...".getBytes(), false);
+        new Thread(this::refreshReqRespMessage).start();
     }
 
     /**
      * 刷新请求响应信息
      */
-    private void refreshReqRespMessage() {
+    private synchronized void refreshReqRespMessage() {
         mRequestTextEditor.setMessage(getRequest(), true);
         mResponseTextEditor.setMessage(getResponse(), false);
     }
