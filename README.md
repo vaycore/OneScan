@@ -65,10 +65,10 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/main_panel.png)
 
-- `Listen Proxy Message` 开关被动扫描，代理的请求包都会经过OneScan（建议配置完白名单再启用）
-- `Enable ExcludeHeader` 开关排除请求头，启用时，根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
-- `Disable HeaderReplace` 开关请求头替换，启用时，不使用 `Request -> Header` 中配置的请求头请求数据
-- `Disable DirScan` 开关递归扫描，启用时，不对目标进行递归扫描
+- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过OneScan（建议配置白名单后启用）
+- `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
+- `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
+- `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
 - `Filter` 设置数据过滤规则
 
 #### 过滤规则配置
