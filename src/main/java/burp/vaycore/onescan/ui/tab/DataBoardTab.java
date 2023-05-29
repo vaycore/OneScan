@@ -10,6 +10,7 @@ import burp.vaycore.common.utils.Utils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
+import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.DialogCallbackAdapter;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
@@ -30,9 +31,9 @@ public class DataBoardTab extends BaseTab {
 
     private TaskTable mTaskTable;
     private JCheckBox mListenProxyMessage;
-    private JCheckBox mEnableExcludeHeader;
-    private JCheckBox mDisableHeaderReplace;
-    private JCheckBox mDisableDirScan;
+    private JCheckBox mExcludeHeader;
+    private JCheckBox mReplaceHeader;
+    private JCheckBox mDirScan;
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
 
@@ -83,13 +84,13 @@ public class DataBoardTab extends BaseTab {
         controlPanel.setLayout(new HLayout(5, true));
         add(controlPanel);
         // 代理监听开关
-        mListenProxyMessage = newJCheckBox(controlPanel, "Listen Proxy Message");
-        // 启用请求头排除开关
-        mEnableExcludeHeader = newJCheckBox(controlPanel, "Enable ExcludeHeader");
-        // 禁用请求头替换功能
-        mDisableHeaderReplace = newJCheckBox(controlPanel, "Disable HeaderReplace");
-        // 禁用递归扫描功能
-        mDisableDirScan = newJCheckBox(controlPanel, "Disable DirScan");
+        mListenProxyMessage = newJCheckBox(controlPanel, "Listen Proxy Message", Config.KEY_ENABLE_LISTEN_PROXY);
+        // 请求头排除开关
+        mExcludeHeader = newJCheckBox(controlPanel, "Exclude Header", Config.KEY_ENABLE_EXCLUDE_HEADER);
+        // 请求头替换开关
+        mReplaceHeader = newJCheckBox(controlPanel, "Replace Header", Config.KEY_ENABLE_REPLACE_HEADER);
+        // 递归扫描开关
+        mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
         // 过滤设置
         controlPanel.add(new JPanel(), "1w");
         mFilterRuleText = new HintTextField();
@@ -122,11 +123,20 @@ public class DataBoardTab extends BaseTab {
         add(mainSplitPanel, "100%");
     }
 
-    private JCheckBox newJCheckBox(JPanel panel, String text) {
-        JCheckBox checkBox = new JCheckBox(text, false);
+    private JCheckBox newJCheckBox(JPanel panel, String text, String configKey) {
+        JCheckBox checkBox = new JCheckBox(text, Config.getBoolean(configKey));
         checkBox.setFocusable(false);
         checkBox.setMargin(new Insets(5, 5, 5, 5));
         panel.add(checkBox);
+        checkBox.addActionListener(e -> {
+            boolean configSelected = Config.getBoolean(configKey);
+            boolean selected = checkBox.isSelected();
+            if (selected == configSelected) {
+                return;
+            }
+            // 保存配置
+            Config.put(configKey, String.valueOf(selected));
+        });
         return checkBox;
     }
 
@@ -138,16 +148,16 @@ public class DataBoardTab extends BaseTab {
         return mListenProxyMessage != null && mListenProxyMessage.isSelected();
     }
 
-    public boolean hasEnableExcludeHeader() {
-        return mEnableExcludeHeader != null && mEnableExcludeHeader.isSelected();
+    public boolean hasExcludeHeader() {
+        return mExcludeHeader != null && mExcludeHeader.isSelected();
     }
 
-    public boolean hasDisableHeaderReplace() {
-        return mDisableHeaderReplace != null && mDisableHeaderReplace.isSelected();
+    public boolean hasReplaceHeader() {
+        return mReplaceHeader != null && mReplaceHeader.isSelected();
     }
 
-    public boolean hasDisableDirScan() {
-        return mDisableDirScan != null && mDisableDirScan.isSelected();
+    public boolean hasDirScan() {
+        return mDirScan != null && mDirScan.isSelected();
     }
 
     /**

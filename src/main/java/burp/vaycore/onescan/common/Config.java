@@ -22,6 +22,7 @@ import java.util.ArrayList;
  * Created by vaycore on 2022-08-19.
  */
 public class Config {
+    // 配置项
     public static final String KEY_VERSION = "version";
     public static final String KEY_PAYLOAD_PROCESS_LIST = "payload-process-list";
     public static final String KEY_QPS_LIMIT = "qps-limit";
@@ -31,6 +32,11 @@ public class Config {
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
     public static final String KEY_INCLUDE_METHOD = "include-method";
     public static final String KEY_WORDLIST_PATH = "dict-path";
+    // 首页开关配置项
+    public static final String KEY_ENABLE_LISTEN_PROXY = "enable-listen-proxy";
+    public static final String KEY_ENABLE_EXCLUDE_HEADER = "enable-exclude-header";
+    public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
+    public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
     private static ConfigManager sConfigManager;
     private static String sConfigPath;
 
@@ -48,6 +54,11 @@ public class Config {
                 "woff2|xbm|xls|xlsx|xpm|xul|xwd|zip|zip");
         initDefaultConfig(Config.KEY_INCLUDE_METHOD, "GET|POST");
         initDefaultConfig(Config.KEY_WORDLIST_PATH, getWorkDir() + "wordlist");
+        // 默认开关配置
+        initDefaultConfig(Config.KEY_ENABLE_LISTEN_PROXY, "false");
+        initDefaultConfig(Config.KEY_ENABLE_EXCLUDE_HEADER, "false");
+        initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
+        initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
         // 初始化字典管理
         WordlistManager.init(get(Config.KEY_WORDLIST_PATH));
         // 初始化指纹管理
@@ -71,13 +82,12 @@ public class Config {
 
     private static void onVersionUpgrade() {
         String version = getVersion();
-        if (!version.equals("1.0.0")) {
-            putVersion("1.0.0");
+        if (!version.equals(Constants.PLUGIN_VERSION)) {
+            putVersion(Constants.PLUGIN_VERSION);
             upgradeDomain();
             upgradeRemoveHeaderList();
             upgradeWordlist();
         }
-
     }
 
     private static void upgradeDomain() {
@@ -199,6 +209,12 @@ public class Config {
     public static String get(String key) {
         checkInit();
         return sConfigManager.get(key);
+    }
+
+    public static boolean getBoolean(String key) {
+        checkInit();
+        String value = sConfigManager.get(key);
+        return "true".equals(value);
     }
 
     public static ArrayList<String> getList(String key) {

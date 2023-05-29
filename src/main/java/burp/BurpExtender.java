@@ -180,7 +180,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 收集响应包中的Json字段信息
         collectJsonField(httpReqResp);
         // 检测是否禁用递归扫描
-        if (!mDataBoardTab.hasDisableDirScan()) {
+        if (mDataBoardTab.hasDirScan()) {
             // 一级目录一级目录递减访问
             for (int i = pathDict.size() - 1; i >= 0; i--) {
                 String path = pathDict.get(i);
@@ -398,7 +398,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private byte[] handleExcludeHeader(IHttpRequestResponse httpReqResp, byte[] request) {
-        boolean state = mDataBoardTab.hasEnableExcludeHeader();
+        boolean state = mDataBoardTab.hasExcludeHeader();
         List<String> excludeHeader = WordlistManager.getExcludeHeader();
         if (!state || excludeHeader.isEmpty()) {
             return request;
@@ -434,7 +434,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 请求头构造
         request.append("GET ").append(urlPath).append(" HTTP/1.1").append("\r\n");
         // 如果存在配置并且未禁用替换请求头，直接加载配置的值，否则使用原请求包的请求头
-        if (!mDataBoardTab.hasDisableHeaderReplace() && headerList.size() > 0) {
+        if (mDataBoardTab.hasReplaceHeader() && headerList.size() > 0) {
             for (String headerItem : headerList) {
                 int splitIndex = headerItem.indexOf(": ");
                 if (splitIndex == -1) {
