@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.manager;
 
+import burp.vaycore.common.helper.IconHash;
 import burp.vaycore.common.utils.*;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.FpRule;
@@ -135,6 +136,7 @@ public class FpManager {
         String body = "";
         String title = "";
         String bodyMd5 = "";
+        String bodyHash = "";
         if (data.startsWith("HTTP/") && data.contains("\r\n\r\n")) {
             int offset = data.indexOf("\r\n\r\n") + 4;
             header = data.substring(0, offset);
@@ -144,6 +146,7 @@ public class FpManager {
             byte[] bodyBytes = Arrays.copyOfRange(dataBytes, offset, dataBytes.length);
             title = HtmlUtils.findTitleByHtmlBody(bodyBytes, charset.name());
             bodyMd5 = Utils.md5(bodyBytes);
+            bodyHash = IconHash.hash(bodyBytes);
             data = "";
         }
         // 参数引用
@@ -153,6 +156,7 @@ public class FpManager {
         matchField.put(FpRule.MATCH_BODY, body);
         matchField.put(FpRule.MATCH_TITLE, title);
         matchField.put(FpRule.MATCH_BODY_MD5, bodyMd5);
+        matchField.put(FpRule.MATCH_BODY_HASH, bodyHash);
         matchField.put(FpRule.MATCH_BANNER, data);
         // 匹配指纹规则
         List<FpData> result = list.parallelStream().filter((item) -> {

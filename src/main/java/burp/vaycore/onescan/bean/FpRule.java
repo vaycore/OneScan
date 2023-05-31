@@ -35,6 +35,11 @@ public class FpRule implements Serializable {
     public static final String MATCH_BODY_MD5 = "bodyMd5";
 
     /**
+     * Body 数据的 Hash 值
+     */
+    public static final String MATCH_BODY_HASH = "bodyHash";
+
+    /**
      * 其它协议的 Banner 值
      */
     public static final String MATCH_BANNER = "banner";
