@@ -28,6 +28,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -546,22 +547,22 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private TaskData buildTaskData(IHttpRequestResponse httpReqResp) {
         IRequestInfo request = mHelpers.analyzeRequest(httpReqResp);
-        byte[] respBody = httpReqResp.getResponse();
+        byte[] respBytes = httpReqResp.getResponse();
         // 获取所需要的参数
         String method = request.getMethod();
         URL url = request.getUrl();
         String host = getHostByUrl(url);
         String reqUrl = getReqUrl(url);
-        String title = HtmlUtils.findTitleByHtmlBody(respBody);
+        String title = HtmlUtils.findTitleByHtmlBody(respBytes);
         String ip = findIpByHost(url.getHost());
         int status = -1;
         int length = -1;
         // 存在响应对象，获取状态和响应包大小
-        if (respBody != null && respBody.length > 0) {
-            IResponseInfo response = mHelpers.analyzeResponse(respBody);
+        if (respBytes != null && respBytes.length > 0) {
+            IResponseInfo response = mHelpers.analyzeResponse(respBytes);
             status = response.getStatusCode();
             // 处理响应 body 的长度
-            length = respBody.length - response.getBodyOffset();
+            length = respBytes.length - response.getBodyOffset();
             if (length < 0) {
                 length = 0;
             }
@@ -646,8 +647,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private void collectJsonField(IHttpRequestResponse httpReqResp) {
         String host = httpReqResp.getHttpService().getHost();
         String domain = DomainHelper.getDomain(host);
-        byte[] respBody = httpReqResp.getResponse();
-        if (respBody == null || respBody.length == 0) {
+        byte[] respBytes = httpReqResp.getResponse();
+        if (respBytes == null || respBytes.length == 0) {
             return;
         }
         // 保存路径
@@ -657,14 +658,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String savePath = saveDir + File.separator + host + ".txt";
 
         // 解析响应
-        IResponseInfo respInfo = mHelpers.analyzeResponse(respBody);
+        IResponseInfo respInfo = mHelpers.analyzeResponse(respBytes);
         int bodyOffset = respInfo.getBodyOffset();
-        int bodySize = respBody.length - bodyOffset;
+        int bodySize = respBytes.length - bodyOffset;
         // 检测响应包是否没有body内容
         if (bodySize <= 0) {
             return;
         }
-        String respJson = new String(respBody, bodyOffset, bodySize);
+        String respJson = new String(respBytes, bodyOffset, bodySize);
         // 尝试解析，解析成功再查询所有key的值
         if (JsonUtils.hasJson(respJson)) {
             ArrayList<String> list = FileUtils.readFileToList(savePath);
@@ -738,7 +739,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             if (data.getReqResp() == null) {
                 continue;
             }
-            byte[] reqBody = ((IHttpRequestResponse) data.getReqResp()).getRequest();
+            byte[] reqBytes = ((IHttpRequestResponse) data.getReqResp()).getRequest();
             String url = data.getHost() + data.getUrl();
             try {
                 URL u = new URL(url);
@@ -747,11 +748,26 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 if (port == -1) {
                     port = useHttps ? 443 : 80;
                 }
-                mCallbacks.sendToRepeater(u.getHost(), port, useHttps, reqBody, null);
+                mCallbacks.sendToRepeater(u.getHost(), port, useHttps, reqBytes, null);
             } catch (Exception e) {
                 Logger.debug(e.getMessage());
             }
         }
+    }
+
+    @Override
+    public byte[] getBodyByTaskData(TaskData data) {
+        if (data == null || data.getReqResp() == null) {
+            return new byte[]{};
+        }
+        mCurrentReqResp = (IHttpRequestResponse) data.getReqResp();
+        byte[] respBytes = mCurrentReqResp.getResponse();
+        if (respBytes == null || respBytes.length <= 0) {
+            return new byte[]{};
+        }
+        IResponseInfo info = mCallbacks.getHelpers().analyzeResponse(respBytes);
+        int offset = info.getBodyOffset();
+        return Arrays.copyOfRange(respBytes, offset, respBytes.length);
     }
 
     @Override

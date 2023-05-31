@@ -1,7 +1,11 @@
 package burp.vaycore.onescan.ui.widget;
 
+import burp.vaycore.common.helper.IconHash;
+import burp.vaycore.common.helper.UIHelper;
+import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.TaskData;
 
 import javax.swing.*;
@@ -32,7 +36,6 @@ public class TaskTable extends JTable {
     private final MouseListener mMenuItemClick = new MouseAdapter() {
         @Override
         public void mousePressed(MouseEvent e) {
-            super.mousePressed(e);
             JMenuItem item = (JMenuItem) e.getComponent();
             String action = item.getActionCommand();
             int[] selectedRows = getSelectedRows();
@@ -47,17 +50,49 @@ public class TaskTable extends JTable {
                 case "send-to-repeater":
                     ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
                     for (int index : selectedRows) {
-                        int realIndex = convertRowIndexToModel(index);
-                        TaskData data = mTaskTableModel.mData.get(realIndex);
+                        TaskData data = getTaskData(index);
                         newData.add(data);
                     }
                     if (mOnTaskTableEventListener != null) {
                         mOnTaskTableEventListener.onSendToRepeater(newData);
                     }
                     break;
+                case "fetch-body-md5":
+                case "fetch-body-hash":
+                    if (mOnTaskTableEventListener == null) {
+                        break;
+                    }
+                    StringBuilder result = new StringBuilder();
+                    for (int index : selectedRows) {
+                        TaskData data = getTaskData(index);
+                        byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
+                        String value;
+                        if ("fetch-body-md5".equals(action)) {
+                            value = Utils.md5(bodyBytes);
+                        } else {
+                            value = IconHash.hash(bodyBytes);
+                        }
+                        if (!StringUtils.isEmpty(result)) {
+                            result.append("\n\n");
+                        }
+                        result.append(String.format("#%d：\n%s", data.getId(), value));
+                    }
+                    showTextAreaDialog(item.getText(), result.toString());
+                    break;
             }
         }
     };
+
+    private static void showTextAreaDialog(String title, String text) {
+        JPanel panel = new JPanel();
+        panel.setPreferredSize(new Dimension(400, 150));
+        panel.setLayout(new VLayout());
+        JTextArea area = new JTextArea(text);
+        area.setEditable(false);
+        JScrollPane pane = new JScrollPane(area);
+        panel.add(pane, "1w");
+        UIHelper.showCustomDialog(title, new String[]{"Close"}, panel);
+    }
 
     @Override
     public TableCellRenderer getCellRenderer(int row, int column) {
@@ -78,8 +113,7 @@ public class TaskTable extends JTable {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int rowIndex, int columnIndex) {
                 Component c = renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, rowIndex, columnIndex);
-                int index = convertRowIndexToModel(rowIndex);
-                TaskData data = mTaskTableModel.mData.get(index);
+                TaskData data = getTaskData(rowIndex);
                 String highlight = data.getHighlight();
                 Color bgColor;
                 // 检测是否需要显示高亮颜色
@@ -181,21 +215,20 @@ public class TaskTable extends JTable {
 
     private void showPopupMenu(int x, int y) {
         JPopupMenu menu = new JPopupMenu();
-        // 清空所有记录
-        JMenuItem clearAll = new JMenuItem("清空所有记录");
-        clearAll.setActionCommand("clean-all");
-        clearAll.addMouseListener(mMenuItemClick);
-        menu.add(clearAll);
-
-        // 发送到 Repeater
-        JMenuItem sendToRepeater = new JMenuItem("发送选中项到Repeater");
-        sendToRepeater.setActionCommand("send-to-repeater");
-        sendToRepeater.addMouseListener(mMenuItemClick);
-        menu.add(sendToRepeater);
+        addPopupMenuItem(menu, "清空所有记录", "clean-all");
+        addPopupMenuItem(menu, "发送选中项到Repeater", "send-to-repeater");
+        addPopupMenuItem(menu, "获取bodyMd5值", "fetch-body-md5");
+        addPopupMenuItem(menu, "获取bodyHash值", "fetch-body-hash");
         menu.setLightWeightPopupEnabled(true);
-
         // 显示菜单
         menu.show(this, x, y);
+    }
+
+    private void addPopupMenuItem(JPopupMenu menu, String name, String actionCommand) {
+        JMenuItem item = new JMenuItem(name);
+        item.setActionCommand(actionCommand);
+        item.addMouseListener(mMenuItemClick);
+        menu.add(item);
     }
 
     private Color findColorByName(String colorName) {
@@ -263,7 +296,8 @@ public class TaskTable extends JTable {
      * @return 任务数据
      */
     private TaskData getTaskData(int rowIndex) {
-        return mTaskTableModel.mData.get(convertRowIndexToModel(rowIndex));
+        int index = convertRowIndexToModel(rowIndex);
+        return mTaskTableModel.mData.get(index);
     }
 
     /**
@@ -283,6 +317,14 @@ public class TaskTable extends JTable {
          * @param list 数据列表
          */
         void onSendToRepeater(ArrayList<TaskData> list);
+
+        /**
+         * 获取 TaskData 中包含的响应 Body 字节数据
+         *
+         * @param data TaskData 实例
+         * @return 响应 Body 字节数据
+         */
+        byte[] getBodyByTaskData(TaskData data);
     }
 
     /**
