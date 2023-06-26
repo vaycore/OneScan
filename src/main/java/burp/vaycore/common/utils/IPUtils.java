@@ -24,7 +24,7 @@ public class IPUtils {
     /**
      * 检测是否为IPv4地址
      *
-     * @param ip IP地址
+     * @param ip IPv4地址
      * @return true=是；false=否
      */
     public static boolean hasIPv4(String ip) {
@@ -33,9 +33,9 @@ public class IPUtils {
     }
 
     /**
-     * 随机IP地址
+     * 随机IPv4地址
      *
-     * @return 返回一个随机IP地址
+     * @return 返回一个随机IPv4地址
      */
     public static String randomIPv4() {
         String[] ipv4 = new String[4];
@@ -48,9 +48,9 @@ public class IPUtils {
     }
 
     /**
-     * 随机内网IP地址
+     * 随机内网IPv4地址
      *
-     * @return 返回一个随机的内网IP地址
+     * @return 返回一个随机的内网IPv4地址
      */
     public static String randomIPv4ForLocal() {
         long[][] range = new long[][]{
@@ -66,17 +66,35 @@ public class IPUtils {
     }
 
     /**
-     * 数字转换为IP地址
+     * 数字转换为IPv4地址
      *
      * @param num 数字
-     * @return 返回IP地址字符串
+     * @return 返回IPv4地址字符串
      */
     public static String numToIPv4(long num) {
         int[] b = new int[4];
-        b[0] = (int) (num >> 24 & 255L);
-        b[1] = (int) (num >> 16 & 255L);
-        b[2] = (int) (num >> 8 & 255L);
-        b[3] = (int) (num & 255L);
+        b[0] = (int) (num >> 24 & 0xFF);
+        b[1] = (int) (num >> 16 & 0xFF);
+        b[2] = (int) (num >> 8 & 0xFF);
+        b[3] = (int) (num & 0xFF);
         return b[0] + "." + b[1] + "." + b[2] + "." + b[3];
+    }
+
+    /**
+     * IPv4地址转换为数字
+     * @param ip IPv4地址
+     * @return 数字（转换失败返回：-1）
+     */
+    public static long ipv4ToNum(String ip) {
+        if (StringUtils.isEmpty(ip) || !hasIPv4(ip)) {
+            return -1;
+        }
+        String[] split = ip.split("\\.");
+        long result = 0;
+        result += Long.parseLong(split[0]) << 24;
+        result += Long.parseLong(split[1]) << 16;
+        result += Long.parseLong(split[2]) << 8;
+        result += Long.parseLong(split[3]);
+        return result;
     }
 }
