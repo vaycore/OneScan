@@ -188,8 +188,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 // 拼接字典，发起请求
                 List<String> list = WordlistManager.getPayload();
                 for (String dict : list) {
-                    if (dict.startsWith("/")) {
-                        dict = dict.substring(1);
+                    if (path.endsWith("/")) {
+                        path = path.substring(0, path.length() - 1);
                     }
                     String urlPath = path + dict;
                     doPreRequest(httpReqResp, urlPath);
