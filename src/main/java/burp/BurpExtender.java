@@ -198,7 +198,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 原始请求也需要经过 Payload Process 处理（需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
-            doBurpRequest(httpReqResp, httpReqResp.getRequest());
+            doBurpRequest(httpReqResp, httpReqResp.getRequest(), true);
         } else {
             Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
         }
@@ -363,6 +363,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 使用Burp自带的请求
      */
     private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request) {
+        doBurpRequest(httpReqResp, request, false);
+    }
+
+    /**
+     * 使用Burp自带的请求
+     *
+     * @param fromProxy 是否来自代理请求
+     */
+    private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request, boolean fromProxy) {
         IHttpService service = httpReqResp.getHttpService();
         // 处理排除请求头
         request = handleExcludeHeader(httpReqResp, request);
@@ -392,6 +401,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             HaE.processHttpMessage(newReqResp);
             // 构建展示的数据包
             TaskData data = buildTaskData(newReqResp);
+            // 用于过滤代理数据包
+            data.setFrom(fromProxy ? "Proxy" : "Scan");
             mDataBoardTab.getTaskTable().addTaskData(data);
             // 收集任务响应包中返回的Json字段信息
             collectJsonField(newReqResp);

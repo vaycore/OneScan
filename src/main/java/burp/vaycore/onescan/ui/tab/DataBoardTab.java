@@ -66,6 +66,7 @@ public class DataBoardTab extends BaseTab {
                 data.setFingerprint(fp.getName());
             }
             data.setComment("");
+            data.setFrom("Proxy");
             data.setReqResp(new Object());
             getTaskTable().addTaskData(data);
         }
@@ -76,7 +77,6 @@ public class DataBoardTab extends BaseTab {
             return;
         }
         setLayout(new VLayout(0));
-
         // 控制栏
         JPanel controlPanel = new JPanel();
         controlPanel.setBorder(new EmptyBorder(0, 0, 0, 5));
@@ -92,7 +92,7 @@ public class DataBoardTab extends BaseTab {
         // 递归扫描开关
         mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
         // 过滤设置
-        controlPanel.add(new JPanel(), "1w");
+        controlPanel.add(new JPanel(), "30%");
         mFilterRuleText = new HintTextField();
         mFilterRuleText.setEditable(false);
         mFilterRuleText.setHintText("No filter rules.");

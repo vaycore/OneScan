@@ -8,6 +8,7 @@ package burp.vaycore.onescan.bean;
 public class TaskData {
     // 展示的数据
     private int id;
+    private String from;
     private String method;
     private String host;
     private String url;
@@ -27,6 +28,14 @@ public class TaskData {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
     }
 
     public String getMethod() {

@@ -178,15 +178,16 @@ public class TaskTable extends JTable {
 
     private void initColumnWidth() {
         setColumnWidth(0, 70);
-        setColumnWidth(1, 70);
-        setColumnWidth(2, 200);
-        setColumnWidth(3, 240);
-        setColumnWidth(4, 200);
-        setColumnWidth(5, 125);
-        setColumnWidth(6, 50);
-        setColumnWidth(7, 100);
-        setColumnWidth(8, 300);
-        setColumnWidth(9, 200);
+        setColumnWidth(1, 45);
+        setColumnWidth(2, 70);
+        setColumnWidth(3, 200);
+        setColumnWidth(4, 240);
+        setColumnWidth(5, 200);
+        setColumnWidth(6, 125);
+        setColumnWidth(7, 50);
+        setColumnWidth(8, 100);
+        setColumnWidth(9, 300);
+        setColumnWidth(10, 200);
     }
 
     private void setColumnWidth(int columnIndex, int width) {
@@ -333,7 +334,7 @@ public class TaskTable extends JTable {
     public static class TaskTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                "#", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment"};
+                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment"};
         private final ArrayList<TaskData> mData;
 
         public TaskTableModel() {
