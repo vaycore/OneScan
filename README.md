@@ -59,31 +59,6 @@ C:\Users\<用户名>\.config\OneScan\
 
 ## 插件说明
 
-### Databoard数据看板
-
-插件数据看板说明如下
-
-![](imgs/main_panel.png)
-
-- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过OneScan（建议配置白名单后启用）
-- `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
-- `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
-- `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
-- `Filter` 设置数据过滤规则
-
-#### 过滤规则配置
-
-点击主面板的`Filter`按钮，打开设置过滤规则对话框（插件`0.5.2`版本新增功能）
-
-![](imgs/setup_filter.png)
-
-- `Select column` 选择要过滤的列
-- `Add filter` 为选中列添加过滤条件
-- `Clear` 清除选中列的所有过滤规则
-- `Reset` 重置所有过滤规则
-- `Cancel` 取消本次的所有变更
-- `OK` 使配置的规则生效
-
 ### 主动扫描
 
 可以从BurpSuite其它位置发送到OneScan主动扫描
@@ -111,6 +86,31 @@ C:\Users\<用户名>\.config\OneScan\
 {{random.local-ip}} - 随机内网IPv4值
 {{random.ua}} - 随机UserAgent值，随机源可配置
 ```
+
+### Databoard数据看板
+
+插件数据看板说明如下
+
+![](imgs/main_panel.png)
+
+- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过OneScan（建议配置白名单后启用）
+- `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
+- `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
+- `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
+- `Filter` 设置数据过滤规则
+
+#### 过滤规则配置
+
+点击主面板的`Filter`按钮，打开设置过滤规则对话框（插件`0.5.2`版本新增功能）
+
+![](imgs/setup_filter.png)
+
+- `Select column` 选择要过滤的列
+- `Add filter` 为选中列添加过滤条件
+- `Clear` 清除选中列的所有过滤规则
+- `Reset` 重置所有过滤规则
+- `Cancel` 取消本次的所有变更
+- `OK` 使配置的规则生效
 
 ### Config配置
 
