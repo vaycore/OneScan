@@ -98,6 +98,8 @@ C:\Users\<用户名>\.config\OneScan\
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
 - `Filter` 设置数据过滤规则
+- `Import url` 导入 Url 目标进行扫描
+- `Stop` 停止正在扫描的任务
 
 #### 过滤规则配置
 
@@ -184,13 +186,14 @@ Other配置界面如下
 
 #### 指纹规则说明
 
-包含六种数据源
+包含七种数据源
 
 - `header` Header
 - `server` Header 中的 Server 值
 - `body` Body 数据
 - `title` Html 标题
 - `bodyMd5` Body 数据 MD5 值
+- `bodyHash` Body 数据 Hash 值
 - `banner` 其它协议的 Banner 信息（HTTP协议无法匹配该值）
 
 共有十种匹配方法
