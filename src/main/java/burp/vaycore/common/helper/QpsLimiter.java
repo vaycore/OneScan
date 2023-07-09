@@ -39,7 +39,7 @@ public class QpsLimiter {
     /**
      * 对执行点进行限制
      */
-    public void limit() {
+    public void limit() throws InterruptedException {
         long sleepMillis = 0;
         synchronized (QpsLimiter.class) {
             long curTime = System.currentTimeMillis();
@@ -51,13 +51,9 @@ public class QpsLimiter {
             this.accessTime[this.position++] = curTime;
             this.position = this.position % this.limit;
         }
-        // 如果为0，没必要sleep
+        // 如果为0，没必要 sleep
         if (sleepMillis > 0) {
-            try {
-                Thread.sleep(sleepMillis);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            Thread.sleep(sleepMillis);
         }
     }
 }

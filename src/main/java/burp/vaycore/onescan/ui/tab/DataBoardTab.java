@@ -3,6 +3,7 @@ package burp.vaycore.onescan.ui.tab;
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.filter.TableFilter;
 import burp.vaycore.common.filter.TableFilterPanel;
+import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
@@ -14,6 +15,7 @@ import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.DialogCallbackAdapter;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
+import burp.vaycore.onescan.ui.widget.SimpleWordlist;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 
 import javax.swing.*;
@@ -21,6 +23,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 数据看板
@@ -28,6 +31,9 @@ import java.util.ArrayList;
  * Created by vaycore on 2022-08-07.
  */
 public class DataBoardTab extends BaseTab {
+
+    public static final String EVENT_IMPORT_URL = "event-import-url";
+    public static final String EVENT_STOP_TASK = "event-stop-task";
 
     private TaskTable mTaskTable;
     private JCheckBox mListenProxyMessage;
@@ -91,12 +97,20 @@ public class DataBoardTab extends BaseTab {
         mReplaceHeader = newJCheckBox(controlPanel, "Replace Header", Config.KEY_ENABLE_REPLACE_HEADER);
         // 递归扫描开关
         mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
+        // 导入Url
+        JButton importUrlBtn = new JButton("Import url");
+        importUrlBtn.addActionListener((e) -> importUrl());
+        controlPanel.add(importUrlBtn);
+        // 停止按钮
+        JButton stopBtn = new JButton("Stop");
+        stopBtn.addActionListener((e) -> stopTask());
+        controlPanel.add(stopBtn);
         // 过滤设置
-        controlPanel.add(new JPanel(), "30%");
+        controlPanel.add(new JPanel(), "1w");
         mFilterRuleText = new HintTextField();
         mFilterRuleText.setEditable(false);
         mFilterRuleText.setHintText("No filter rules.");
-        controlPanel.add(mFilterRuleText, "3w");
+        controlPanel.add(mFilterRuleText, "1w");
         JButton filterBtn = new JButton("Filter");
         filterBtn.addActionListener(e -> showSetupFilterDialog());
         controlPanel.add(filterBtn, "65px");
@@ -138,6 +152,32 @@ public class DataBoardTab extends BaseTab {
             Config.put(configKey, String.valueOf(selected));
         });
         return checkBox;
+    }
+
+    private void importUrl() {
+        JPanel panel = new JPanel(new VLayout());
+        panel.setPreferredSize(new Dimension(440, 400));
+        SimpleWordlist wordlist = new SimpleWordlist();
+        panel.add(wordlist, "1w");
+        int ret = UIHelper.showCustomDialog("Import Url", panel, this);
+        if (ret == JOptionPane.OK_OPTION) {
+            List<String> data = wordlist.getListData();
+            if (data.isEmpty()) {
+                return;
+            }
+            sendTabEvent(EVENT_IMPORT_URL, data);
+        }
+    }
+
+    private void stopTask() {
+        sendTabEvent(EVENT_STOP_TASK);
+        // 提示信息
+        String message = hasListenProxyMessage() ?
+                "Stop OK!\nSet 'Listen Proxy Message' temporarily to off" :
+                "Stop OK!";
+        // 停止后，将代理监听关闭
+        mListenProxyMessage.setSelected(false);
+        UIHelper.showTipsDialog(message);
     }
 
     public TaskTable getTaskTable() {

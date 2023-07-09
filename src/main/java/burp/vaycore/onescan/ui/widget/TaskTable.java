@@ -207,11 +207,15 @@ public class TaskTable extends JTable {
 
     @Override
     public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-        JComponent component = (JComponent) super.prepareRenderer(renderer, row, column);
-        if (component instanceof JLabel) {
-            ((JLabel) component).setHorizontalAlignment(JLabel.LEFT);
+        try {
+            JComponent component = (JComponent) super.prepareRenderer(renderer, row, column);
+            if (component instanceof JLabel) {
+                ((JLabel) component).setHorizontalAlignment(JLabel.LEFT);
+            }
+            return component;
+        } catch (Exception e) {
+            return new JLabel();
         }
-        return component;
     }
 
     private void showPopupMenu(int x, int y) {

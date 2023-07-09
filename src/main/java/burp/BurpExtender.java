@@ -10,6 +10,7 @@ import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.Constants;
+import burp.vaycore.onescan.common.HttpReqRespAdapter;
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.info.OneScanInfoTab;
 import burp.vaycore.onescan.manager.FpManager;
@@ -42,6 +43,16 @@ import java.util.concurrent.Executors;
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
         TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory {
 
+    /**
+     * 任务线程数量
+     */
+    private static final int TASK_THREAD_COUNT = 50;
+
+    /**
+     * 指纹识别线程数量
+     */
+    private static final int FP_THREAD_COUNT = 10;
+
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
     private OneScan mOneScan;
@@ -52,6 +63,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private ExecutorService mFpThreadPool;
     private IHttpRequestResponse mCurrentReqResp;
     private static final Vector<String> sRepeatFilter = new Vector<>();
+    private static final Vector<String> sWaitTasks = new Vector<>();
     private QpsLimiter mQpsLimit;
 
     @Override
@@ -67,8 +79,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private void initData(IBurpExtenderCallbacks callbacks) {
         this.mCallbacks = callbacks;
         this.mHelpers = callbacks.getHelpers();
-        this.mThreadPool = Executors.newFixedThreadPool(50);
-        this.mFpThreadPool = Executors.newFixedThreadPool(10);
+        this.mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        this.mFpThreadPool = Executors.newFixedThreadPool(FP_THREAD_COUNT);
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
         // 初始化日志打印
         Logger.init(Constants.DEBUG, mCallbacks.getStdout(), mCallbacks.getStderr());
@@ -96,7 +108,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mOneScan = new OneScan();
         mDataBoardTab = mOneScan.getDataBoardTab();
         // 注册事件
+        mDataBoardTab.setOnTabEventListener(this);
         mOneScan.getConfigPanel().setOnTabEventListener(this);
+        // 将页面添加到 BurpSuite
         mCallbacks.addSuiteTab(this);
         // 创建请求和响应控件
         mRequestTextEditor = mCallbacks.createMessageEditor(this, false);
@@ -116,7 +130,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             sendToOneScanItem.addActionListener((event) -> {
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
-                    doScan(httpReqResp, false);
+                    doScan(httpReqResp, "Send");
                 }
             });
             items.add(sendToOneScanItem);
@@ -140,67 +154,68 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public void processProxyMessage(boolean messageIsRequest, IInterceptedProxyMessage message) {
-        // 当请求和响应都有的时候，启用线程识别指纹，将识别结果缓存起来
-        if (!messageIsRequest) {
-            mFpThreadPool.execute(() -> FpManager.check(message.getMessageInfo().getResponse()));
+        // 当请求和响应都有的时候，才进行下一步操作
+        if (messageIsRequest) {
+            return;
         }
+        // 开启线程识别指纹，将识别结果缓存起来
+        mFpThreadPool.execute(() -> FpManager.check(message.getMessageInfo().getResponse()));
         // 检测开关状态
         if (!mDataBoardTab.hasListenProxyMessage()) {
             return;
         }
-        // 当请求和响应都有的时候，才进行下一步操作
-        if (messageIsRequest) return;
         IHttpRequestResponse httpReqResp = message.getMessageInfo();
         // 扫描任务
-        doScan(httpReqResp, true);
+        doScan(httpReqResp, "Proxy");
     }
 
-    private void doScan(IHttpRequestResponse httpReqResp, boolean fromProxy) {
+    private void doScan(IHttpRequestResponse httpReqResp, String from) {
         IRequestInfo request = mHelpers.analyzeRequest(httpReqResp);
         String host = httpReqResp.getHttpService().getHost();
         // 对来自代理的包进行检测，检测请求方法是否需要拦截
-        if (fromProxy) {
+        if (from.equals("Proxy")) {
             String method = request.getMethod();
             if (includeMethodFilter(method)) {
                 // 拦截不匹配的请求方法
                 Logger.debug("doScan filter request method: %s, host: %s", method, host);
                 return;
             }
-            // 检测Host是否在白名单、黑名单列表中
+            // 检测 Host 是否在白名单、黑名单列表中
             if (hostWhitelistFilter(host) || hostBlacklistFilter(host)) {
-                Logger.debug("doScan whitelist、blacklist filter host: %s", host);
+                Logger.debug("doScan whitelist and blacklist filter host: %s", host);
                 return;
             }
         }
         // 生成任务
         URL url = request.getUrl();
+        // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
+        if (!proxyExcludeSuffixFilter(url)) {
+            doBurpRequest(httpReqResp, httpReqResp.getRequest(), from);
+        } else {
+            Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
+        }
+        // 检测是否禁用递归扫描
+        if (!mDataBoardTab.hasDirScan()) {
+            return;
+        }
         Logger.debug("doScan receive: %s%s", getHostByUrl(url), url.getPath());
         ArrayList<String> pathDict = getUrlPathDict(url.getPath());
         // 收集一下Web应用名的信息
         collectWebName(pathDict);
         // 收集响应包中的Json字段信息
         collectJsonField(httpReqResp);
-        // 检测是否禁用递归扫描
-        if (mDataBoardTab.hasDirScan()) {
-            // 一级目录一级目录递减访问
-            for (int i = pathDict.size() - 1; i >= 0; i--) {
-                String path = pathDict.get(i);
-                // 拼接字典，发起请求
-                List<String> list = WordlistManager.getPayload();
-                for (String dict : list) {
-                    if (path.endsWith("/")) {
-                        path = path.substring(0, path.length() - 1);
-                    }
-                    String urlPath = path + dict;
-                    doPreRequest(httpReqResp, urlPath);
+        // 一级目录一级目录递减访问
+        for (int i = pathDict.size() - 1; i >= 0; i--) {
+            String path = pathDict.get(i);
+            // 拼接字典，发起请求
+            List<String> list = WordlistManager.getPayload();
+            for (String dict : list) {
+                if (path.endsWith("/")) {
+                    path = path.substring(0, path.length() - 1);
                 }
+                String urlPath = path + dict;
+                doPreRequest(httpReqResp, urlPath);
             }
-        }
-        // 原始请求也需要经过 Payload Process 处理（需要过滤一些后缀的流量）
-        if (!proxyExcludeSuffixFilter(url)) {
-            doBurpRequest(httpReqResp, httpReqResp.getRequest(), true);
-        } else {
-            Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
         }
     }
 
@@ -363,15 +378,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 使用Burp自带的请求
      */
     private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request) {
-        doBurpRequest(httpReqResp, request, false);
+        doBurpRequest(httpReqResp, request, "Scan");
     }
 
     /**
      * 使用Burp自带的请求
      *
-     * @param fromProxy 是否来自代理请求
+     * @param from 请求来源
      */
-    private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request, boolean fromProxy) {
+    private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request, String from) {
         IHttpService service = httpReqResp.getHttpService();
         // 处理排除请求头
         request = handleExcludeHeader(httpReqResp, request);
@@ -380,20 +395,39 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 请求头构建完成后，需要进行 Payload Processing 处理
         IRequestInfo requestInfo = mHelpers.analyzeRequest(service, requestBytes);
         String url = getHostByIHttpService(service) + requestInfo.getUrl().getPath();
-        Logger.debug("doBurpRequest build ok! url: %s", url);
         if (sRepeatFilter.contains(url)) {
             Logger.debug("doBurpRequest intercept url: %s", url);
             return;
         }
-        // 添加去重
-        sRepeatFilter.add(url);
+        Logger.debug("doBurpRequest build ok! url: %s", url);
+        // 线程池关闭后，不接收任何任务
+        if (mThreadPool.isShutdown()) {
+            Logger.info("Thread pool is shutdown, intercept url: %s", url);
+            return;
+        }
+        // 将 URL 添加到去重列表
+        sRepeatFilter.addElement(url);
+        sWaitTasks.addElement(url);
         // 给每个任务创建线程
         mThreadPool.execute(() -> {
             // 限制QPS
             if (mQpsLimit != null) {
-                mQpsLimit.limit();
+                try {
+                    mQpsLimit.limit();
+                } catch (InterruptedException e) {
+                    // 将等待的任务从过滤列表删除，并清空等待任务列表
+                    if (!sWaitTasks.isEmpty()) {
+                        sRepeatFilter.removeAll(sWaitTasks);
+                        sWaitTasks.clear();
+                    }
+                    return;
+                }
             }
             Logger.debug("Do Send Request url: %s", url);
+            // 开始发送请求前，移除等待列表中的 URL 链接
+            if (sWaitTasks.contains(url)) {
+                sWaitTasks.removeElement(url);
+            }
             // 发起请求
             IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, requestBytes);
             Logger.debug("Request result url: %s", url);
@@ -402,7 +436,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 构建展示的数据包
             TaskData data = buildTaskData(newReqResp);
             // 用于过滤代理数据包
-            data.setFrom(fromProxy ? "Proxy" : "Scan");
+            data.setFrom(from);
             mDataBoardTab.getTaskTable().addTaskData(data);
             // 收集任务响应包中返回的Json字段信息
             collectJsonField(newReqResp);
@@ -417,6 +451,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         IRequestInfo info = mHelpers.analyzeRequest(httpReqResp.getHttpService(), request);
         List<String> headers = info.getHeaders();
+        if (headers == null || headers.isEmpty()) {
+            return request;
+        }
         StringBuilder sb = new StringBuilder();
         // 把第一行排除
         sb.append(headers.get(0)).append("\r\n");
@@ -737,8 +774,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 刷新请求响应信息
      */
     private synchronized void refreshReqRespMessage() {
-        mRequestTextEditor.setMessage(getRequest(), true);
-        mResponseTextEditor.setMessage(getResponse(), false);
+        byte[] request = getRequest();
+        byte[] response = getResponse();
+        if (request == null || request.length == 0) {
+            request = "".getBytes();
+        }
+        if (response == null || response.length == 0) {
+            response = "".getBytes();
+        }
+        mRequestTextEditor.setMessage(request, true);
+        mResponseTextEditor.setMessage(response, false);
     }
 
     @Override
@@ -783,13 +828,51 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public void onTabEventMethod(String action, Object... params) {
-        if (RequestTab.EVENT_QPS_LIMIT.equals(action)) {
-            String limit = (String) params[0];
-            mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
-            Logger.debug("Event: change qps limit: %s", limit);
-        } else if (OtherTab.EVENT_UNLOAD_PLUGIN.equals(action)) {
-            mCallbacks.unloadExtension();
+        switch (action) {
+            case RequestTab.EVENT_QPS_LIMIT:
+                changeQpsLimit(String.valueOf(params[0]));
+                break;
+            case OtherTab.EVENT_UNLOAD_PLUGIN:
+                mCallbacks.unloadExtension();
+                break;
+            case DataBoardTab.EVENT_IMPORT_URL:
+                importUrl((List<?>) params[0]);
+                break;
+            case DataBoardTab.EVENT_STOP_TASK:
+                stopAllTask();
+                break;
         }
+    }
+
+    private void changeQpsLimit(String limit) {
+        mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
+        Logger.debug("Event: change qps limit: %s", limit);
+    }
+
+    private void importUrl(List<?> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        // 处理导入的 URL 数据
+        new Thread(() -> {
+            for (Object item : list) {
+                try {
+                    IHttpRequestResponse httpReqResp = new HttpReqRespAdapter(String.valueOf(item));
+                    doScan(httpReqResp, "Import");
+                } catch (IllegalArgumentException e) {
+                    Logger.error("Import error: " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+
+    private void stopAllTask() {
+        mThreadPool.shutdownNow();
+        // 停止后，重新初始化线程池
+        mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        // 重新初始化 QPS 限制器
+        String limit = Config.get(Config.KEY_QPS_LIMIT);
+        mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
     }
 
     @Override

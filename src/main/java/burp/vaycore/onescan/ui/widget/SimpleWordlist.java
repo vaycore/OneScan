@@ -30,6 +30,10 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     private String mAction;
     private OnDataChangeListener mOnDataChangeListener;
 
+    public SimpleWordlist() {
+        this(null);
+    }
+
     public SimpleWordlist(List<String> wordlist) {
         mListModel = new DefaultListModel<>();
         mListModel.addListDataListener(this);
