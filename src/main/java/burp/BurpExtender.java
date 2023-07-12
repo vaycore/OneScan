@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * 插件入口
@@ -190,7 +191,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         URL url = request.getUrl();
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
-            doBurpRequest(httpReqResp, httpReqResp.getRequest(), from);
+            doBurpRequest(httpReqResp, null, from);
         } else {
             Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
         }
@@ -214,7 +215,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     path = path.substring(0, path.length() - 1);
                 }
                 String urlPath = path + dict;
-                doPreRequest(httpReqResp, urlPath);
+                doBurpRequest(httpReqResp, urlPath, "Scan");
             }
         }
     }
@@ -368,28 +369,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return result;
     }
 
-    private void doPreRequest(IHttpRequestResponse httpReqResp, String urlPath) {
-        Logger.debug("doPreRequest receive urlPath: %s", urlPath);
-        String request = buildRequestHeader(httpReqResp, urlPath);
-        doBurpRequest(httpReqResp, request.getBytes());
-    }
-
-    /**
-     * 使用Burp自带的请求
-     */
-    private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request) {
-        doBurpRequest(httpReqResp, request, "Scan");
-    }
-
     /**
      * 使用Burp自带的请求
      *
      * @param from 请求来源
      */
-    private void doBurpRequest(IHttpRequestResponse httpReqResp, byte[] request, String from) {
+    private void doBurpRequest(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
         // 处理排除请求头
-        request = handleExcludeHeader(httpReqResp, request);
+        byte[] request = handleHeader(httpReqResp, pathWithQuery, from);
         // 处理请求包
         byte[] requestBytes = handlePayloadProcess(service, request);
         // 请求头构建完成后，需要进行 Payload Processing 处理
@@ -443,66 +431,96 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         });
     }
 
-    private byte[] handleExcludeHeader(IHttpRequestResponse httpReqResp, byte[] request) {
-        boolean state = mDataBoardTab.hasExcludeHeader();
-        List<String> excludeHeader = WordlistManager.getExcludeHeader();
-        if (!state || excludeHeader.isEmpty()) {
-            return request;
-        }
-        IRequestInfo info = mHelpers.analyzeRequest(httpReqResp.getHttpService(), request);
-        List<String> headers = info.getHeaders();
-        if (headers == null || headers.isEmpty()) {
-            return request;
-        }
-        StringBuilder sb = new StringBuilder();
-        // 把第一行排除
-        sb.append(headers.get(0)).append("\r\n");
-        for (int i = 1; i < headers.size(); i++) {
-            String headerItem = headers.get(i);
-            String headerKey = headerItem.split(": ")[0];
-            if (!excludeHeader.contains(headerKey)) {
-                sb.append(headerItem).append("\r\n");
-            }
-        }
-        sb.append("\r\n");
-        // 判断是否有body
-        int bodySize = request.length - info.getBodyOffset();
-        if (bodySize > 0) {
-            sb.append(new String(request, info.getBodyOffset(), bodySize));
-        }
-        return sb.toString().getBytes();
-    }
-
     /**
-     * 构建请求头
+     * 处理请求头
+     *
+     * @param httpReqResp   Burp 的 HTTP 请求响应接口
+     * @param pathWithQuery 请求路径，或者请求路径+Query（示例：/xxx、/xxx/index?a=xxx&b=xxx）
+     * @param from          数据来源
+     * @return 处理完成的数据包
      */
-    private String buildRequestHeader(IHttpRequestResponse httpReqResp, String urlPath) {
+    private byte[] handleHeader(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
-        List<String> headerList = WordlistManager.getHeader();
+        // 配置的请求头
+        List<String> configHeader = getHeader();
+        // 要排除的请求头KEY列表
+        List<String> excludeHeader = getExcludeHeader();
+        // 数据包自带的请求头
+        IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
+        List<String> headers = info.getHeaders();
+        // 构建请求头
         StringBuilder request = new StringBuilder();
-        // 请求头构造
-        request.append("GET ").append(urlPath).append(" HTTP/1.1").append("\r\n");
-        // 如果存在配置并且未禁用替换请求头，直接加载配置的值，否则使用原请求包的请求头
-        if (mDataBoardTab.hasReplaceHeader() && headerList.size() > 0) {
-            for (String headerItem : headerList) {
-                int splitIndex = headerItem.indexOf(": ");
-                if (splitIndex == -1) {
-                    continue;
-                }
-                String headerKey = headerItem.substring(0, splitIndex);
-                String headerValue = headerItem.substring(splitIndex + 2);
-                request.append(headerKey).append(": ").append(headerValue).append("\r\n");
-            }
+        // 根据数据来源区分两种请求头
+        if (from.equals("Scan")) {
+            request.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
         } else {
-            IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
-            List<String> headers = info.getHeaders();
-            for (int i = 1; i < headers.size(); i++) {
-                request.append(headers.get(i)).append("\r\n");
+            request.append(headers.get(0)).append("\r\n");
+        }
+        // 请求头的参数处理（顺带处理排除的请求头）
+        for (int i = 1; i < headers.size(); i++) {
+            String item = headers.get(i);
+            String key = item.split(": ")[0];
+            // 是否需要排除当前KEY（优先级最高）
+            if (excludeHeader.contains(key)) {
+                continue;
             }
+            // 检测配置中是否存在当前请求头KEY
+            List<String> matchList = configHeader.stream().filter(configHeaderItem -> {
+                if (StringUtils.isNotEmpty(configHeaderItem) && configHeaderItem.contains(": ")) {
+                    String configHeaderKey = configHeaderItem.split(": ")[0];
+                    // 是否需要排除当前KEY
+                    if (excludeHeader.contains(key)) {
+                        return false;
+                    }
+                    return configHeaderKey.equals(key);
+                }
+                return false;
+            }).collect(Collectors.toList());
+            // 配置中存在匹配项，替换为配置中的数据
+            if (matchList.size() > 0) {
+                for (String matchItem : matchList) {
+                    request.append(matchItem).append("\r\n");
+                }
+                // 将已经添加的数据从列表中移除
+                configHeader.removeAll(matchList);
+            } else {
+                // 不存在匹配项，填充原数据
+                request.append(item).append("\r\n");
+            }
+        }
+        // 将配置里剩下的值全部填充到请求头中
+        for (String item : configHeader) {
+            String key = item.split(": ")[0];
+            if (excludeHeader.contains(key)) {
+                continue;
+            }
+            request.append(item).append("\r\n");
         }
         request.append("\r\n");
+        // 如果当前数据来源不是 Scan，可能会包含 POST 请求，判断是否存在 body 数据
+        if (!from.equals("Scan")) {
+            byte[] httpRequest = httpReqResp.getRequest();
+            int bodySize = httpRequest.length - info.getBodyOffset();
+            if (bodySize > 0) {
+                request.append(new String(httpRequest, info.getBodyOffset(), bodySize));
+            }
+        }
         // 请求头构建完成后，设置里面包含的变量
-        return setupVariable(service, request.toString());
+        return setupVariable(service, request.toString()).getBytes();
+    }
+
+    private List<String> getHeader() {
+        if (!mDataBoardTab.hasReplaceHeader()) {
+            return new ArrayList<>();
+        }
+        return WordlistManager.getHeader();
+    }
+
+    private List<String> getExcludeHeader() {
+        if (!mDataBoardTab.hasExcludeHeader()) {
+            return new ArrayList<>();
+        }
+        return WordlistManager.getExcludeHeader();
     }
 
     private String setupVariable(IHttpService service, String request) {

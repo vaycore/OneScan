@@ -3,6 +3,7 @@ package burp.vaycore.onescan.common;
 import burp.IHttpRequestResponse;
 import burp.IHttpService;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.UrlUtils;
 
 import java.net.URL;
 
@@ -39,7 +40,7 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
     }
 
     private StringBuilder buildRequest(URL url) {
-        return new StringBuilder().append("GET ").append(getPathWithQuery(url)).append(" HTTP/1.1").append("\r\n")
+        return new StringBuilder().append("GET ").append(UrlUtils.toPathWithQuery(url)).append(" HTTP/1.1").append("\r\n")
                 .append("Host: ").append(getHostByUrl(url)).append("\r\n")
                 .append("Accept: ").append("text/html,application/xhtml+xml,")
                 .append("application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;")
@@ -59,18 +60,6 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
             host += ":" + port;
         }
         return host;
-    }
-
-    private String getPathWithQuery(URL url) {
-        String result = url.getPath();
-        if (StringUtils.isEmpty(result)) {
-            result = "/";
-        }
-        String query = url.getQuery();
-        if (!StringUtils.isEmpty(query)) {
-            result += "?" + query;
-        }
-        return result;
     }
 
     private IHttpService buildHttpServer(URL url) {
