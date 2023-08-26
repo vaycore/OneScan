@@ -191,7 +191,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         URL url = request.getUrl();
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
-            doBurpRequest(httpReqResp, null, from);
+            runScanTask(httpReqResp, null, from);
         } else {
             Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
         }
@@ -215,7 +215,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     path = path.substring(0, path.length() - 1);
                 }
                 String urlPath = path + dict;
-                doBurpRequest(httpReqResp, urlPath, "Scan");
+                runScanTask(httpReqResp, urlPath, "Scan");
             }
         }
     }
@@ -391,18 +391,34 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * 使用Burp自带的请求
+     * 运行扫描任务
      *
-     * @param from 请求来源
+     * @param httpReqResp   请求响应实例
+     * @param pathWithQuery 路径+query参数
+     * @param from          请求来源
      */
-    private void doBurpRequest(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
+    private void runScanTask(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
+        boolean mergePayloadProcessing = mDataBoardTab.hasMergePayloadProcessing();
         // 处理排除请求头
         byte[] request = handleHeader(httpReqResp, pathWithQuery, from);
-        // 处理请求包
+        if (!mergePayloadProcessing) {
+            doBurpRequest(service, request, from);
+        }
+        // 进行 Payload Processing 处理后，再次请求数据包
         byte[] requestBytes = handlePayloadProcess(service, request);
-        // 请求头构建完成后，需要进行 Payload Processing 处理
-        IRequestInfo requestInfo = mHelpers.analyzeRequest(service, requestBytes);
+        doBurpRequest(service, requestBytes, from);
+    }
+
+    /**
+     * 使用Burp自带的方式请求
+     *
+     * @param service     请求目标服务实例
+     * @param reqRawBytes 请求数据包
+     * @param from        请求来源
+     */
+    private void doBurpRequest(IHttpService service, byte[] reqRawBytes, String from) {
+        IRequestInfo requestInfo = mHelpers.analyzeRequest(service, reqRawBytes);
         String url = getHostByIHttpService(service) + requestInfo.getUrl().getPath();
         if (sRepeatFilter.contains(url)) {
             Logger.debug("doBurpRequest intercept url: %s", url);
@@ -438,7 +454,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 sWaitTasks.removeElement(url);
             }
             // 发起请求
-            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, requestBytes, true);
+            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, reqRawBytes, true);
             Logger.debug("Request result url: %s", url);
             // HaE提取信息
             HaE.processHttpMessage(newReqResp);

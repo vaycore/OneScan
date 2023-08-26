@@ -39,6 +39,7 @@ public class Config {
     public static final String KEY_ENABLE_EXCLUDE_HEADER = "enable-exclude-header";
     public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
     public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
+    public static final String KEY_ENABLE_MERGE_PAYLOAD_PROCESSING = "merge-payload-processing";
     private static ConfigManager sConfigManager;
     private static String sConfigPath;
     // 配置常量值
@@ -66,6 +67,7 @@ public class Config {
         initDefaultConfig(Config.KEY_ENABLE_EXCLUDE_HEADER, "false");
         initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
         initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
+        initDefaultConfig(Config.KEY_ENABLE_MERGE_PAYLOAD_PROCESSING, "true");
         // 初始化字典管理
         WordlistManager.init(get(Config.KEY_WORDLIST_PATH));
         // 初始化指纹管理

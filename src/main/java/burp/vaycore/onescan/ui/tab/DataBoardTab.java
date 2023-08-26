@@ -42,6 +42,7 @@ public class DataBoardTab extends BaseTab {
     private JCheckBox mDirScan;
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
+    private JCheckBox mMergePayloadProcessing;
 
     @Override
     protected void initData() {
@@ -97,6 +98,8 @@ public class DataBoardTab extends BaseTab {
         mReplaceHeader = newJCheckBox(controlPanel, "Replace Header", Config.KEY_ENABLE_REPLACE_HEADER);
         // 递归扫描开关
         mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
+        // 合并Payload Processing请求
+        mMergePayloadProcessing = newJCheckBox(controlPanel, "Merge Payload Processing", Config.KEY_ENABLE_MERGE_PAYLOAD_PROCESSING);
         // 导入Url
         JButton importUrlBtn = new JButton("Import url");
         importUrlBtn.addActionListener((e) -> importUrl());
@@ -110,7 +113,7 @@ public class DataBoardTab extends BaseTab {
         mFilterRuleText = new HintTextField();
         mFilterRuleText.setEditable(false);
         mFilterRuleText.setHintText("No filter rules.");
-        controlPanel.add(mFilterRuleText, "1w");
+        controlPanel.add(mFilterRuleText, "2w");
         JButton filterBtn = new JButton("Filter");
         filterBtn.addActionListener(e -> showSetupFilterDialog());
         controlPanel.add(filterBtn, "65px");
@@ -122,14 +125,12 @@ public class DataBoardTab extends BaseTab {
         mTaskTable = new TaskTable();
         JScrollPane scrollPane = new JScrollPane(mTaskTable);
         scrollPane.setPreferredSize(new Dimension(scrollPane.getWidth(), 0));
-
         // 请求和响应面板
         JSplitPane dataSplitPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         dataSplitPanel.setResizeWeight(0.5D);
         dataSplitPanel.setDividerSize(3);
         dataSplitPanel.add(requestTextEditor, JSplitPane.LEFT);
         dataSplitPanel.add(responseTextEditor, JSplitPane.RIGHT);
-
         // 添加子面板控件
         mainSplitPanel.add(scrollPane, JSplitPane.LEFT);
         mainSplitPanel.add(dataSplitPanel, JSplitPane.RIGHT);
@@ -198,6 +199,10 @@ public class DataBoardTab extends BaseTab {
 
     public boolean hasDirScan() {
         return mDirScan != null && mDirScan.isSelected();
+    }
+
+    public boolean hasMergePayloadProcessing() {
+        return mMergePayloadProcessing != null && mMergePayloadProcessing.isSelected();
     }
 
     /**
