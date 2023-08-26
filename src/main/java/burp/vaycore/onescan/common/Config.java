@@ -76,7 +76,6 @@ public class Config {
             String content = FileUtils.readStreamToString(is);
             FileUtils.writeFile(path, content);
         }
-
         FpManager.init(path);
     }
 

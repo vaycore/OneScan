@@ -417,7 +417,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 sWaitTasks.removeElement(url);
             }
             // 发起请求
-            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, requestBytes);
+            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, requestBytes, true);
             Logger.debug("Request result url: %s", url);
             // HaE提取信息
             HaE.processHttpMessage(newReqResp);
@@ -454,7 +454,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (from.equals("Scan")) {
             request.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
         } else {
-            request.append(headers.get(0)).append("\r\n");
+            String reqLine = headers.get(0);
+            int start = reqLine.lastIndexOf("HTTP/");
+            reqLine = reqLine.substring(0, start) + "HTTP/1.1";
+            request.append(reqLine).append("\r\n");
         }
         // 请求头的参数处理（顺带处理排除的请求头）
         for (int i = 1; i < headers.size(); i++) {
@@ -531,7 +534,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         String domain = service.getHost();
         String timestamp = String.valueOf(DateUtils.getTimestamp());
-        String randomIP = IPUtils.randomIPv4ForLocal();
+        String randomIP = IPUtils.randomIPv4();
         String randomLocalIP = IPUtils.randomIPv4ForLocal();
         String randomUA = Utils.getRandomItem(WordlistManager.getUserAgent());
         String domainMain = DomainHelper.getDomain(domain);
@@ -722,7 +725,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         saveDir = saveDir + File.separator + domain;
         FileUtils.mkdirs(saveDir);
         String savePath = saveDir + File.separator + host + ".txt";
-
         // 解析响应
         IResponseInfo respInfo = mHelpers.analyzeResponse(respBytes);
         int bodyOffset = respInfo.getBodyOffset();

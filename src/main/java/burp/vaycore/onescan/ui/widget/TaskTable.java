@@ -169,7 +169,7 @@ public class TaskTable extends JTable {
             @Override
             public void mouseReleased(MouseEvent e) {
                 // 鼠标右键事件
-                if (e.getButton() == 3) {
+                if (e.getButton() == MouseEvent.BUTTON3) {
                     showPopupMenu(e.getX(), e.getY());
                 }
             }
