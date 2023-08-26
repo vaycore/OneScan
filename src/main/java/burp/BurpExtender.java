@@ -454,7 +454,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 sWaitTasks.removeElement(url);
             }
             // 发起请求
-            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, reqRawBytes, true);
+            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
             Logger.debug("Request result url: %s", url);
             // HaE提取信息
             HaE.processHttpMessage(newReqResp);
@@ -502,6 +502,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             String key = item.split(": ")[0];
             // 是否需要排除当前KEY（优先级最高）
             if (excludeHeader.contains(key)) {
+                continue;
+            }
+            // 如果是扫描的请求，将 Content-Length 排除
+            if (from.equals("Scan") && "Content-Length".equals(key)) {
                 continue;
             }
             // 检测配置中是否存在当前请求头KEY
