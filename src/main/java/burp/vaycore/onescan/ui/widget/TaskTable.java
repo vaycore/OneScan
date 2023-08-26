@@ -3,6 +3,7 @@ package burp.vaycore.onescan.ui.widget;
 import burp.vaycore.common.helper.IconHash;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
@@ -16,6 +17,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 /**
@@ -78,6 +81,24 @@ public class TaskTable extends JTable {
                         result.append(String.format("#%d：\n%s", data.getId(), value));
                     }
                     showTextAreaDialog(item.getText(), result.toString());
+                    break;
+                case "add-to-black-host":
+                    if (mOnTaskTableEventListener == null) {
+                        break;
+                    }
+                    ArrayList<String> hosts = new ArrayList<>();
+                    for (int index : selectedRows) {
+                        TaskData data = getTaskData(index);
+                        try {
+                            String host = new URL(data.getHost()).getHost();
+                            if (!hosts.contains(host)) {
+                                hosts.add(host);
+                            }
+                        } catch (MalformedURLException ex) {
+                            Logger.error(ex.getMessage());
+                        }
+                    }
+                    mOnTaskTableEventListener.addToBlackHost(hosts);
                     break;
             }
         }
@@ -224,6 +245,7 @@ public class TaskTable extends JTable {
         addPopupMenuItem(menu, "发送选中项到Repeater", "send-to-repeater");
         addPopupMenuItem(menu, "获取bodyMd5值", "fetch-body-md5");
         addPopupMenuItem(menu, "获取bodyHash值", "fetch-body-hash");
+        addPopupMenuItem(menu, "添加Host到黑名单", "add-to-black-host");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
         menu.show(this, x, y);
@@ -330,6 +352,13 @@ public class TaskTable extends JTable {
          * @return 响应 Body 字节数据
          */
         byte[] getBodyByTaskData(TaskData data);
+
+        /**
+         * 添加 Host 列表到黑名单
+         *
+         * @param hosts 黑名单列表
+         */
+        void addToBlackHost(ArrayList<String> hosts);
     }
 
     /**

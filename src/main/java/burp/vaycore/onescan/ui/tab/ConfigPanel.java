@@ -15,6 +15,7 @@ import javax.swing.border.EmptyBorder;
 public class ConfigPanel extends JTabbedPane implements OnTabEventListener {
 
     private OnTabEventListener mOnTabEventListener;
+    private HostTab mHostTab;
 
     public ConfigPanel() {
         initView();
@@ -27,8 +28,18 @@ public class ConfigPanel extends JTabbedPane implements OnTabEventListener {
     private void initView() {
         addConfigTab(new PayloadTab());
         addConfigTab(new RequestTab());
-        addConfigTab(new HostTab());
+        mHostTab = new HostTab();
+        addConfigTab(mHostTab);
         addConfigTab(new OtherTab());
+    }
+
+    /**
+     * 刷新 HostTab 页面
+     */
+    public void refreshHostTab() {
+        if (mHostTab != null) {
+            mHostTab.reInitView();
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.common.OnDataChangeListener;
 import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.config.OtherTab;
@@ -191,7 +192,12 @@ public abstract class BaseConfigTab extends BaseTab {
             }
             WordlistManager.putItem(configKey, item);
             List<String> list = WordlistManager.getList(configKey);
+            // 切换时数据量过大，可能造成卡顿，先临时取消监听器；设置完成数据后再添加回来
+            OnDataChangeListener old = wordlist.getOnDataChangeListener();
+            wordlist.setOnDataChangeListener(null);
             wordlist.setListData(list);
+            wordlist.setOnDataChangeListener(old);
+            old.onDataChange(wordlist.getActionCommand());
         });
         panel.add(cb, "440px");
         this.addConfigItem(title, subTitle, wordlist, panel);
@@ -207,5 +213,13 @@ public abstract class BaseConfigTab extends BaseTab {
     protected boolean onTextConfigSave(String configKey, String text) {
         Config.put(configKey, text);
         return true;
+    }
+
+    /**
+     * 重新初始化页面
+     */
+    public void reInitView() {
+        removeAll();
+        initView();
     }
 }

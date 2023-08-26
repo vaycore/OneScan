@@ -847,6 +847,21 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     @Override
+    public void addToBlackHost(ArrayList<String> hosts) {
+        if (hosts == null || hosts.isEmpty()) {
+            return;
+        }
+        List<String> list = WordlistManager.getList(WordlistManager.KEY_BLACK_HOST);
+        for (String host : hosts) {
+            if (!list.contains(host)) {
+                list.add(host);
+            }
+        }
+        WordlistManager.putList(WordlistManager.KEY_BLACK_HOST, list);
+        mOneScan.getConfigPanel().refreshHostTab();
+    }
+
+    @Override
     public void onTabEventMethod(String action, Object... params) {
         switch (action) {
             case RequestTab.EVENT_QPS_LIMIT:
@@ -891,8 +906,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 停止后，重新初始化线程池
         mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
         // 重新初始化 QPS 限制器
-        String limit = Config.get(Config.KEY_QPS_LIMIT);
-        mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
+        initQpsLimiter();
     }
 
     @Override

@@ -85,12 +85,21 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     }
 
     /**
-     * 添加数据监听器
+     * 添加数据修改监听器
      *
      * @param l 监听器
      */
     public void setOnDataChangeListener(OnDataChangeListener l) {
         this.mOnDataChangeListener = l;
+    }
+
+    /**
+     * 获取数据修改监听器
+     *
+     * @return 监听器实例
+     */
+    public OnDataChangeListener getOnDataChangeListener() {
+        return this.mOnDataChangeListener;
     }
 
     private void initView() {
