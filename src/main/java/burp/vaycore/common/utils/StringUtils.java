@@ -145,4 +145,23 @@ public class StringUtils {
         }
         return false;
     }
+
+    /**
+     * 匹配指定字符串出现的次数
+     *
+     * @param input 输入的字符串
+     * @param match 要匹配的字符串
+     * @return 未找到返回0
+     */
+    public static int countMatches(String input, String match) {
+        if (StringUtils.isEmpty(input) || StringUtils.isEmpty(match)) {
+            return input == null && match == null ? 1 : 0;
+        }
+        int result = 0;
+        for (int i = 0; i >= 0; i = input.indexOf(match, i)) {
+            i += match.length();
+            result++;
+        }
+        return result;
+    }
 }

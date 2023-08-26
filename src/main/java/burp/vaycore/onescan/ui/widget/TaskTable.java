@@ -218,9 +218,10 @@ public class TaskTable extends JTable {
     @Override
     public void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
         super.changeSelection(rowIndex, columnIndex, toggle, extend);
+        int index = convertRowIndexToModel(rowIndex);
         // 当其它行被选中时，调用监听器
-        if (mLastSelectedRow != rowIndex && mOnTaskTableEventListener != null) {
-            mLastSelectedRow = rowIndex;
+        if (mLastSelectedRow != index && mOnTaskTableEventListener != null) {
+            mLastSelectedRow = index;
             TaskData data = getTaskData(rowIndex);
             mOnTaskTableEventListener.onChangeSelection(data);
         }

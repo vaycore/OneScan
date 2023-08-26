@@ -1,11 +1,15 @@
 package burp.vaycore.onescan.ui.tab.config;
 
 import burp.vaycore.common.helper.UIHelper;
+import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.NumberFilter;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
+
+import javax.swing.*;
+import java.awt.event.ItemEvent;
 
 /**
  * Request设置
@@ -23,7 +27,9 @@ public class RequestTab extends BaseConfigTab {
     protected void initView() {
         // QPS限制器配置
         addTextConfigPanel("QPS", "Set http request QPS limit",
-                20, Config.KEY_QPS_LIMIT).addKeyListener(new NumberFilter());
+                20, Config.KEY_QPS_LIMIT).addKeyListener(new NumberFilter(4));
+        // 控制递归层数
+        addScanLevelConfigPanel();
         // 过滤请求方法
         addTextConfigPanel("Include method", "Set request method whitelist", 20, Config.KEY_INCLUDE_METHOD);
         // 根据后缀过滤请求包
@@ -36,6 +42,40 @@ public class RequestTab extends BaseConfigTab {
         addWordListPanel("UserAgent", "Set {{random.ua}} list options", WordlistManager.KEY_USER_AGENT);
     }
 
+    protected void addScanLevelConfigPanel() {
+        String configKey = Config.KEY_SCAN_LEVEL;
+        String direct = Config.get(Config.KEY_SCAN_LEVEL_DIRECT);
+        // 单选按钮布局
+        JPanel radioPanel = new JPanel(new HLayout(10));
+        JRadioButton left = new JRadioButton("Left to right");
+        left.setSelected(Config.DIRECT_LEFT.equals(direct));
+        radioPanel.add(left);
+        JRadioButton right = new JRadioButton("Right to left");
+        right.setSelected(!Config.DIRECT_LEFT.equals(direct));
+        radioPanel.add(right);
+        UIHelper.createRadioGroup(left, right);
+        // 选项变更，保存配置
+        left.addItemListener(e -> {
+            int state = e.getStateChange();
+            String newDirect = state == ItemEvent.SELECTED ? Config.DIRECT_LEFT : Config.DIRECT_RIGHT;
+            Config.put(Config.KEY_SCAN_LEVEL_DIRECT, newDirect);
+        });
+        // 输入框布局
+        JPanel textFieldPanel = new JPanel(new HLayout(3));
+        JTextField textField = new JTextField(Config.get(configKey), 20);
+        textField.addKeyListener(new NumberFilter(2));
+        textFieldPanel.add(textField);
+        JButton button = new JButton("Save");
+        button.addActionListener(e -> {
+            boolean state = onTextConfigSave(configKey, textField.getText());
+            if (state) {
+                UIHelper.showTipsDialog("Save success!");
+            }
+        });
+        textFieldPanel.add(button);
+        addConfigItem("Scan level", "Set directory scan level", radioPanel, textFieldPanel);
+    }
+
     @Override
     public String getTitleName() {
         return "Request";
@@ -44,13 +84,20 @@ public class RequestTab extends BaseConfigTab {
     @Override
     protected boolean onTextConfigSave(String configKey, String text) {
         if (Config.KEY_QPS_LIMIT.equals(configKey)) {
-            if (StringUtils.isEmpty(text) || text.length() > 4) {
-                UIHelper.showTipsDialog("QPS limit value invalid");
+            int value = StringUtils.parseInt(text, -1);
+            if (value < 1 || value > 9999) {
+                UIHelper.showTipsDialog("QPS limit value invalid.(range: 1-9999)");
                 return false;
             }
             Config.put(configKey, text);
             sendTabEvent(EVENT_QPS_LIMIT, text);
             return true;
+        } else if (Config.KEY_SCAN_LEVEL.equals(configKey)) {
+            int value = StringUtils.parseInt(text, -1);
+            if (value < 1 || value > 99) {
+                UIHelper.showTipsDialog("Scan Level value invalid.(range: 1-99)");
+                return false;
+            }
         }
         return super.onTextConfigSave(configKey, text);
     }

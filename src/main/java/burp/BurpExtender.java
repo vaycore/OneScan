@@ -346,9 +346,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private ArrayList<String> getUrlPathDict(String urlPath) {
+        String direct = Config.get(Config.KEY_SCAN_LEVEL_DIRECT);
+        int scanLevel = StringUtils.parseInt(Config.get(Config.KEY_SCAN_LEVEL));
         ArrayList<String> result = new ArrayList<>();
         result.add("/");
         if (StringUtils.isEmpty(urlPath) || "/".equals(urlPath)) {
+            return result;
+        }
+        // 限制方向从左往右，并且扫描层级为1
+        if (Config.DIRECT_LEFT.equals(direct) && scanLevel <= 1) {
             return result;
         }
         // 结尾如果不是'/'符号，去掉访问的文件
@@ -359,13 +365,28 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (splitDirname.length == 0) {
             return result;
         }
+        // 限制方向从右往左，默认不扫描根目录
+        if (Config.DIRECT_RIGHT.equals(direct) && scanLevel < splitDirname.length) {
+            result.remove("/");
+        }
         StringBuilder sb = new StringBuilder("/");
         for (String dirname : splitDirname) {
             if (StringUtils.isNotEmpty(dirname)) {
                 sb.append(dirname).append("/");
+                int level = StringUtils.countMatches(sb.toString(), "/");
+                // 根据不同方向，限制目录层级
+                if (Config.DIRECT_LEFT.equals(direct) && level > scanLevel) {
+                    continue;
+                } else if (Config.DIRECT_RIGHT.equals(direct)) {
+                    level = splitDirname.length - level;
+                    if (level >= scanLevel) {
+                        continue;
+                    }
+                }
                 result.add(sb.toString());
             }
         }
+
         return result;
     }
 
