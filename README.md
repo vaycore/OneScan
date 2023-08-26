@@ -97,6 +97,7 @@ C:\Users\<用户名>\.config\OneScan\
 - `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
+- `Merge Payload Processing` 开关合并目录扫描与Payload Processing扫描（默认启用），关闭后发送请求数量将多一倍
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 Url 目标进行扫描
 - `Stop` 停止正在扫描的任务
@@ -131,7 +132,8 @@ Request配置界面如下
 
 ![](imgs/config_request.png)
 
-- `QPS` QPS限制，限制每秒请求的数量，最大值 `9999`
+- `QPS` QPS限制，限制每秒请求的数量，范围（`1-9999`）
+- `Scan level` 限制目录扫描层级，范围（`1-99`）。限制方向：`Left to right`（从左往右），`Right to left`（从右往左）
 - `Include method` 配置请求方法白名单
 - `Exclude suffix` 排除指定后缀的数据包
 - `Header` 递归扫描过程的请求头配置，可配置变量
