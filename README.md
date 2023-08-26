@@ -234,6 +234,10 @@ Connection: close
 
 ![](imgs/main_panel_test.png)
 
+## OneScan交流群
+
+![](imgs/chat_group.jpg)
+
 ## END
 
 - 代码写的很乱，还请师傅们见谅
