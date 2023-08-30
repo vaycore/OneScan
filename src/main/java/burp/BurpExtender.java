@@ -580,17 +580,35 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String randomUA = Utils.getRandomItem(WordlistManager.getUserAgent());
         String domainMain = DomainHelper.getDomain(domain);
         String domainName = DomainHelper.getDomainName(domain);
+        String subdomain = getSubdomain(domain);
         // 替换变量
         request = request.replace("{{host}}", host);
         request = request.replace("{{domain}}", domain);
         request = request.replace("{{domain.main}}", domainMain);
         request = request.replace("{{domain.name}}", domainName);
+        request = request.replace("{{subdomain}}", subdomain);
         request = request.replace("{{protocol}}", protocol);
         request = request.replace("{{timestamp}}", timestamp);
         request = request.replace("{{random.ip}}", randomIP);
         request = request.replace("{{random.local-ip}}", randomLocalIP);
         request = request.replace("{{random.ua}}", randomUA);
         return request;
+    }
+
+    /**
+     * 获取子域名（如果没有子域名，则返回主域名的名称）
+     *
+     * @param domain 域名（格式示例：www.xxx.com）
+     * @return 失败返回传入的domain参数
+     */
+    private String getSubdomain(String domain) {
+        if (IPUtils.hasIPv4(domain)) {
+            return domain;
+        }
+        if (!domain.contains(".")) {
+            return domain;
+        }
+        return domain.split("\\.")[0];
     }
 
     private byte[] handlePayloadProcess(IHttpService service, byte[] requestBytes) {
