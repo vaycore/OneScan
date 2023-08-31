@@ -92,10 +92,25 @@ public class Config {
         String version = getVersion();
         if (!version.equals(Constants.PLUGIN_VERSION)) {
             putVersion(Constants.PLUGIN_VERSION);
+            backupConfig(version);
             upgradeDomain();
             upgradeRemoveHeaderList();
             upgradeWordlist();
         }
+    }
+
+    /**
+     * 备份配置（从0.x版本升级到1.x时备份）
+     */
+    private static void backupConfig(String oldVersion) {
+        if (!oldVersion.startsWith("0.")) {
+            return;
+        }
+        String bakPath = sConfigPath + ".bak";
+        String content = FileUtils.readFileToString(sConfigPath);
+        FileUtils.writeFile(bakPath, content);
+        Logger.info("Welcome to update version %s, the configuration file has been backed up to the %s",
+                Constants.PLUGIN_VERSION, bakPath);
     }
 
     private static void upgradeDomain() {
