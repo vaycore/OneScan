@@ -30,4 +30,26 @@ public class UrlUtils {
         }
         return result;
     }
+
+    /**
+     * 转换为 URI 格式字符串
+     * <p>示例格式：/api/v1、/api/v1/get?a=1&b=2、/api/v1/get?a=1#xxx</p>
+     *
+     * @param url url 实例
+     */
+    public static String toURI(URL url) {
+        String result = url.getPath();
+        if (StringUtils.isEmpty(result)) {
+            result = "/";
+        }
+        String query = url.getQuery();
+        if (StringUtils.isNotEmpty(query)) {
+            result += "?" + query;
+        }
+        String fragment = url.getRef();
+        if (StringUtils.isNotEmpty(fragment)) {
+            result += "#" + fragment;
+        }
+        return result;
+    }
 }

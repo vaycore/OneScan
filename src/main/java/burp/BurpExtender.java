@@ -171,11 +171,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private void doScan(IHttpRequestResponse httpReqResp, String from) {
-        IRequestInfo request = mHelpers.analyzeRequest(httpReqResp);
+        IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         String host = httpReqResp.getHttpService().getHost();
         // 对来自代理的包进行检测，检测请求方法是否需要拦截
         if (from.equals("Proxy")) {
-            String method = request.getMethod();
+            String method = info.getMethod();
             if (includeMethodFilter(method)) {
                 // 拦截不匹配的请求方法
                 Logger.debug("doScan filter request method: %s, host: %s", method, host);
@@ -188,10 +188,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 生成任务
-        URL url = request.getUrl();
+        URL url = info.getUrl();
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
-            runScanTask(httpReqResp, null, from);
+            runScanTask(httpReqResp, info, null, from);
         } else {
             Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
         }
@@ -215,7 +215,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     path = path.substring(0, path.length() - 1);
                 }
                 String urlPath = path + dict;
-                runScanTask(httpReqResp, urlPath, "Scan");
+                runScanTask(httpReqResp, info, urlPath, "Scan");
             }
         }
     }
@@ -397,11 +397,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param pathWithQuery 路径+query参数
      * @param from          请求来源
      */
-    private void runScanTask(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
+    private void runScanTask(IHttpRequestResponse httpReqResp, IRequestInfo info, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
         boolean mergePayloadProcessing = mDataBoardTab.hasMergePayloadProcessing();
-        // 处理排除请求头
-        byte[] request = handleHeader(httpReqResp, pathWithQuery, from);
+        // 处理请求头
+        byte[] request = handleHeader(httpReqResp, info, pathWithQuery, from);
+        // 处理请求头失败时，丢弃该任务
+        if (request == null) {
+            return;
+        }
+        // 检测是否需要分离PayloadProcessing请求
         if (!mergePayloadProcessing) {
             doBurpRequest(service, request, from);
         }
@@ -418,8 +423,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param from        请求来源
      */
     private void doBurpRequest(IHttpService service, byte[] reqRawBytes, String from) {
-        IRequestInfo requestInfo = mHelpers.analyzeRequest(service, reqRawBytes);
-        String url = getHostByIHttpService(service) + requestInfo.getUrl().getPath();
+        IRequestInfo info = mHelpers.analyzeRequest(service, reqRawBytes);
+        String url = getHostByIHttpService(service) + info.getUrl().getPath();
         if (sRepeatFilter.contains(url)) {
             Logger.debug("doBurpRequest intercept url: %s", url);
             return;
@@ -474,16 +479,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param httpReqResp   Burp 的 HTTP 请求响应接口
      * @param pathWithQuery 请求路径，或者请求路径+Query（示例：/xxx、/xxx/index?a=xxx&b=xxx）
      * @param from          数据来源
-     * @return 处理完成的数据包
+     * @return 处理完成的数据包，失败时返回null
      */
-    private byte[] handleHeader(IHttpRequestResponse httpReqResp, String pathWithQuery, String from) {
+    private byte[] handleHeader(IHttpRequestResponse httpReqResp, IRequestInfo info, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
         // 配置的请求头
         List<String> configHeader = getHeader();
         // 要排除的请求头KEY列表
         List<String> excludeHeader = getExcludeHeader();
         // 数据包自带的请求头
-        IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         List<String> headers = info.getHeaders();
         // 构建请求头
         StringBuilder request = new StringBuilder();
@@ -504,7 +508,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             if (excludeHeader.contains(key)) {
                 continue;
             }
-            // 如果是扫描的请求，将 Content-Length 排除
+            // 如果是扫描的请求（只有 GET 请求），将 Content-Length 排除
             if (from.equals("Scan") && "Content-Length".equals(key)) {
                 continue;
             }
@@ -512,7 +516,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             List<String> matchList = configHeader.stream().filter(configHeaderItem -> {
                 if (StringUtils.isNotEmpty(configHeaderItem) && configHeaderItem.contains(": ")) {
                     String configHeaderKey = configHeaderItem.split(": ")[0];
-                    // 是否需要排除当前KEY
+                    // 检测是否需要排除当前KEY
                     if (excludeHeader.contains(key)) {
                         return false;
                     }
@@ -535,6 +539,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 将配置里剩下的值全部填充到请求头中
         for (String item : configHeader) {
             String key = item.split(": ")[0];
+            // 检测是否需要排除当前KEY
             if (excludeHeader.contains(key)) {
                 continue;
             }
@@ -550,7 +555,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 请求头构建完成后，设置里面包含的变量
-        return setupVariable(service, request.toString()).getBytes();
+        String reqRawStr = setupVariable(service, info, request.toString());
+        if (reqRawStr == null) {
+            return null;
+        }
+        return reqRawStr.getBytes();
     }
 
     private List<String> getHeader() {
@@ -567,7 +576,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return WordlistManager.getExcludeHeader();
     }
 
-    private String setupVariable(IHttpService service, String request) {
+    /**
+     * 给数据包填充动态变量
+     *
+     * @param service 请求目标实例
+     * @param info    请求信息实例
+     * @param request 请求数据包实例
+     * @return 处理失败返回null
+     */
+    private String setupVariable(IHttpService service, IRequestInfo info, String request) {
         String protocol = service.getProtocol();
         String host = service.getHost() + ":" + service.getPort();
         if (service.getPort() == 80 || service.getPort() == 443) {
@@ -581,6 +598,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String domainMain = DomainHelper.getDomain(domain);
         String domainName = DomainHelper.getDomainName(domain);
         String subdomain = getSubdomain(domain);
+        String webroot = getWebrootByURL(info.getUrl());
+        // 如果包含 webroot 变量，且 webroot 解析为 null 时，丢弃当前请求
+        if (request.contains("{{webroot}}") && webroot == null) {
+            return null;
+        } else if (webroot != null) {
+            request = request.replace("{{webroot}}", webroot);
+        }
         // 替换变量
         request = request.replace("{{host}}", host);
         request = request.replace("{{domain}}", domain);
@@ -611,15 +635,43 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return domain.split("\\.")[0];
     }
 
+    /**
+     * 从URL实例中获取Web根目录名（例如："http://xxx.com/abc/a.php" => "abc"）
+     *
+     * @param url URL实例
+     * @return 失败返回null
+     */
+    private String getWebrootByURL(URL url) {
+        String path = url.getPath();
+        // 没有根目录名，直接返回null
+        if (StringUtils.isEmpty(path) || "/".equals(path)) {
+            return null;
+        }
+        // 找第二个'/'斜杠
+        int end = path.indexOf("/", 1);
+        if (end < 0) {
+            return null;
+        }
+        // 找到之后，取中间的值
+        return path.substring(1, end);
+    }
+
+    /**
+     * 根据 Payload Process 规则，处理数据包
+     *
+     * @param service      请求目标服务
+     * @param requestBytes 请求数据包
+     * @return 处理后的数据包
+     */
     private byte[] handlePayloadProcess(IHttpService service, byte[] requestBytes) {
         if (requestBytes == null || requestBytes.length == 0) {
-            return new byte[0];
+            return null;
         }
         ArrayList<PayloadItem> list = Config.getPayloadProcessList();
         IRequestInfo info = mHelpers.analyzeRequest(service, requestBytes);
         int bodyOffset = info.getBodyOffset();
         int bodySize = requestBytes.length - bodyOffset;
-        String url = info.getUrl().getPath();
+        String url = UrlUtils.toURI(info.getUrl());
         String header = new String(requestBytes, 0, bodyOffset);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
         String request = new String(requestBytes, 0, requestBytes.length);
@@ -637,10 +689,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     String temp = header.substring(0, header.indexOf("\r\n"));
                     int start = temp.indexOf("/");
                     int end = temp.lastIndexOf(" ");
-                    // 需要拿原数据包的URL检测是否存在'?'号，否则将导致多次拼接数据
-                    if (info.getUrl().toString().contains("?")) {
-                        end = temp.lastIndexOf("?");
-                    }
                     // 分隔要插入数据的位置
                     String left = header.substring(0, start);
                     String right = header.substring(end);
@@ -943,6 +991,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         Logger.debug("Event: change qps limit: %s", limit);
     }
 
+    /**
+     * 导入URL
+     *
+     * @param list URL列表
+     */
     private void importUrl(List<?> list) {
         if (list == null || list.isEmpty()) {
             return;
