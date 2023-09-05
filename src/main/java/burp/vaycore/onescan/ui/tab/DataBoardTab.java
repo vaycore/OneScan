@@ -7,6 +7,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
+import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.bean.FpData;
@@ -158,6 +159,14 @@ public class DataBoardTab extends BaseTab {
     private void importUrl() {
         JPanel panel = new JPanel(new VLayout());
         panel.setPreferredSize(new Dimension(440, 400));
+        // URL前缀
+        JPanel prefixPanel = new JPanel(new HLayout(0, true));
+        panel.add(prefixPanel);
+        prefixPanel.add(new JLabel("URL前缀（非必选）："));
+        HintTextField textField = new HintTextField();
+        textField.setHintText("URL前缀与列表的每一项进行拼接");
+        prefixPanel.add(textField, "1w");
+        // URL字典列表
         SimpleWordlist wordlist = new SimpleWordlist();
         panel.add(wordlist, "1w");
         int ret = UIHelper.showCustomDialog("Import Url", panel, this);
@@ -165,6 +174,13 @@ public class DataBoardTab extends BaseTab {
             List<String> data = wordlist.getListData();
             if (data.isEmpty()) {
                 return;
+            }
+            String prefix = textField.getText();
+            if (StringUtils.isNotEmpty(prefix)) {
+                for (int i = 0; i < data.size(); i++) {
+                    String newItem = prefix + data.get(i);
+                    data.set(i, newItem);
+                }
             }
             sendTabEvent(EVENT_IMPORT_URL, data);
         }
