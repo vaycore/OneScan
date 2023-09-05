@@ -28,6 +28,7 @@ public class Config {
     public static final String KEY_QPS_LIMIT = "qps-limit";
     public static final String KEY_SCAN_LEVEL_DIRECT = "scan-level-direct";
     public static final String KEY_SCAN_LEVEL = "scan-level";
+    public static final String KEY_RETRY_COUNT = "retry-count";
     public static final String KEY_WEB_NAME_COLLECT_PATH = "web-name-collect-path";
     public static final String KEY_JSON_FIELD_COLLECT_PATH = "json-field-collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
@@ -53,6 +54,7 @@ public class Config {
         initDefaultConfig(Config.KEY_QPS_LIMIT, "1024");
         initDefaultConfig(Config.KEY_SCAN_LEVEL_DIRECT, "left");
         initDefaultConfig(Config.KEY_SCAN_LEVEL, "99");
+        initDefaultConfig(Config.KEY_RETRY_COUNT, "3");
         initDefaultConfig(Config.KEY_WEB_NAME_COLLECT_PATH, getWorkDir() + "web_name.txt");
         initDefaultConfig(Config.KEY_JSON_FIELD_COLLECT_PATH, getWorkDir() + "json-fields");
         initDefaultConfig(KEY_EXCLUDE_SUFFIX, "3g2|3gp|7z|aac|abw|aif|aifc|aiff|arc|au|avi|azw|bin|bmp|bz|" +

@@ -30,6 +30,9 @@ public class RequestTab extends BaseConfigTab {
                 20, Config.KEY_QPS_LIMIT).addKeyListener(new NumberFilter(4));
         // 控制递归层数
         addScanLevelConfigPanel();
+        // 请求重试配置
+        addTextConfigPanel("Retry", "Set http retry count",
+                20, Config.KEY_RETRY_COUNT).addKeyListener(new NumberFilter(1));
         // 过滤请求方法
         addTextConfigPanel("Include method", "Set request method whitelist", 20, Config.KEY_INCLUDE_METHOD);
         // 根据后缀过滤请求包
@@ -96,6 +99,12 @@ public class RequestTab extends BaseConfigTab {
             int value = StringUtils.parseInt(text, -1);
             if (value < 1 || value > 99) {
                 UIHelper.showTipsDialog("Scan Level value invalid.(range: 1-99)");
+                return false;
+            }
+        } else if (Config.KEY_RETRY_COUNT.equals(configKey)) {
+            int value = StringUtils.parseInt(text, -1);
+            if (value < 0 || value > 9) {
+                UIHelper.showTipsDialog("Retry count value invalid.(range: 0-9)");
                 return false;
             }
         }

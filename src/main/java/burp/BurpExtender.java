@@ -459,8 +459,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 sWaitTasks.removeElement(url);
             }
             // 发起请求
-            IHttpRequestResponse newReqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
-            Logger.debug("Request result url: %s", url);
+            int retryCount = getReqRetryCount();
+            IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
             // HaE提取信息
             HaE.processHttpMessage(newReqResp);
             // 构建展示的数据包
@@ -471,6 +471,45 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 收集任务响应包中返回的Json字段信息
             collectJsonField(newReqResp);
         });
+    }
+
+    /**
+     * 调用 BurpSuite 请求方式
+     *
+     * @param service     请求目标服务实例
+     * @param reqUrl      请求URL
+     * @param reqRawBytes 请求数据包
+     * @param retryCount  重试次数（为0表示不重试）
+     * @return 请求响应数据
+     */
+    private IHttpRequestResponse doMakeHttpRequest(IHttpService service, String reqUrl, byte[] reqRawBytes, int retryCount) {
+        IHttpRequestResponse reqResp;
+        try {
+            reqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
+            byte[] respBytes = reqResp.getResponse();
+            if (respBytes != null && respBytes.length > 0) {
+                return reqResp;
+            }
+        } catch (Exception e) {
+            Logger.debug("Do Request error, url: %s", reqUrl);
+            reqResp = new HttpReqRespAdapter(reqUrl);
+            reqResp.setRequest(reqRawBytes);
+            reqResp.setResponse(new byte[0]);
+        }
+        Logger.debug("Check retry url: %s, count: %d", reqUrl, retryCount);
+        // 检测是否需要重试
+        if (retryCount <= 0) {
+            return reqResp;
+        }
+        try {
+            // 重试前先延迟
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            // 如果线程中断，返回目前的响应结果
+            return reqResp;
+        }
+        // 请求重试
+        return doMakeHttpRequest(service, reqUrl, reqRawBytes, retryCount - 1);
     }
 
     /**
@@ -574,6 +613,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return new ArrayList<>();
         }
         return WordlistManager.getExcludeHeader();
+    }
+
+    /**
+     * 从配置中获取请求重试次数
+     */
+    private int getReqRetryCount() {
+        String value = Config.get(Config.KEY_RETRY_COUNT);
+        return StringUtils.parseInt(value, 0);
     }
 
     /**
