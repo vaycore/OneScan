@@ -31,7 +31,7 @@ public class RequestTab extends BaseConfigTab {
         // 控制递归层数
         addScanLevelConfigPanel();
         // 请求重试配置
-        addTextConfigPanel("Retry", "Set http retry count",
+        addTextConfigPanel("Retry", "Set request retry count",
                 20, Config.KEY_RETRY_COUNT).addKeyListener(new NumberFilter(1));
         // 过滤请求方法
         addTextConfigPanel("Include method", "Set request method whitelist", 20, Config.KEY_INCLUDE_METHOD);
