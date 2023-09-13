@@ -42,7 +42,7 @@ public class DomainHelper {
      * @return 主域名（例如：baidu.com）, 获取失败返回传入的fqdn参数
      */
     public static String getDomain(String fqdn) {
-        return getDomainWithDefault(fqdn, fqdn);
+        return getDomain(fqdn, fqdn);
     }
 
     /**
@@ -52,7 +52,7 @@ public class DomainHelper {
      * @param defValue 获取失败的默认返回值
      * @return 主域名（例如：baidu.com）, 获取失败返回defValue参数
      */
-    public static String getDomainWithDefault(String fqdn, String defValue) {
+    public static String getDomain(String fqdn, String defValue) {
         if (IPUtils.hasIPv4(fqdn)) {
             return defValue;
         }
@@ -73,9 +73,19 @@ public class DomainHelper {
      * @return 主域名的名称（例如：baidu）, 获取失败返回传入的fqdn参数
      */
     public static String getDomainName(String fqdn) {
-        String domain = getDomainWithDefault(fqdn, null);
+        return getDomainName(fqdn, fqdn);
+    }
+
+    /**
+     * 获取主域名的名称
+     *
+     * @param fqdn 域名、子域名等（例如：www.baidu.com）
+     * @return 主域名的名称（例如：baidu）, 获取失败返回传入的fqdn参数
+     */
+    public static String getDomainName(String fqdn, String defValue) {
+        String domain = getDomain(fqdn, null);
         if (domain == null) {
-            return fqdn;
+            return defValue;
         }
         return domain.split("\\.")[0];
     }

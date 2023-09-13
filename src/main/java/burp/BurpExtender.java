@@ -642,42 +642,65 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String randomIP = IPUtils.randomIPv4();
         String randomLocalIP = IPUtils.randomIPv4ForLocal();
         String randomUA = Utils.getRandomItem(WordlistManager.getUserAgent());
-        String domainMain = DomainHelper.getDomain(domain);
-        String domainName = DomainHelper.getDomainName(domain);
+        String domainMain = DomainHelper.getDomain(domain, null);
+        String domainName = DomainHelper.getDomainName(domain, null);
         String subdomain = getSubdomain(domain);
         String webroot = getWebrootByURL(info.getUrl());
-        // 如果包含 webroot 变量，且 webroot 解析为 null 时，丢弃当前请求
-        if (request.contains("{{webroot}}") && webroot == null) {
-            return null;
-        } else if (webroot != null) {
-            request = request.replace("{{webroot}}", webroot);
-        }
         // 替换变量
-        request = request.replace("{{host}}", host);
-        request = request.replace("{{domain}}", domain);
-        request = request.replace("{{domain.main}}", domainMain);
-        request = request.replace("{{domain.name}}", domainName);
-        request = request.replace("{{subdomain}}", subdomain);
-        request = request.replace("{{protocol}}", protocol);
-        request = request.replace("{{timestamp}}", timestamp);
-        request = request.replace("{{random.ip}}", randomIP);
-        request = request.replace("{{random.local-ip}}", randomLocalIP);
-        request = request.replace("{{random.ua}}", randomUA);
-        return request;
+        try {
+            request = fillVariable(request, "host", host);
+            request = fillVariable(request, "domain", domain);
+            request = fillVariable(request, "domain.main", domainMain);
+            request = fillVariable(request, "domain.name", domainName);
+            request = fillVariable(request, "subdomain", subdomain);
+            request = fillVariable(request, "protocol", protocol);
+            request = fillVariable(request, "timestamp", timestamp);
+            request = fillVariable(request, "random.ip", randomIP);
+            request = fillVariable(request, "random.local-ip", randomLocalIP);
+            request = fillVariable(request, "random.ua", randomUA);
+            request = fillVariable(request, "webroot", webroot);
+            return request;
+        } catch (IllegalArgumentException e) {
+            Logger.error(e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 填充动态变量
+     *
+     * @param src   数据源
+     * @param name  变量名
+     * @param value 需要填充的变量值
+     * @throws IllegalArgumentException 当填充的变量值为空时，抛出该异常
+     */
+    private String fillVariable(String src, String name, String value) throws IllegalArgumentException {
+        if (StringUtils.isEmpty(src)) {
+            return src;
+        }
+        String key = String.format("{{%s}}", name);
+        if (!src.contains(key)) {
+            return src;
+        }
+        // 值为空时，返回null值丢弃当前请求
+        if (StringUtils.isEmpty(value)) {
+            throw new IllegalArgumentException(key + " fill failed, value is empty.");
+        }
+        return src.replace(name, value);
     }
 
     /**
      * 获取子域名（如果没有子域名，则返回主域名的名称）
      *
      * @param domain 域名（格式示例：www.xxx.com）
-     * @return 失败返回传入的domain参数
+     * @return 失败返回null值
      */
     private String getSubdomain(String domain) {
         if (IPUtils.hasIPv4(domain)) {
-            return domain;
+            return null;
         }
         if (!domain.contains(".")) {
-            return domain;
+            return null;
         }
         return domain.split("\\.")[0];
     }
