@@ -686,7 +686,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (StringUtils.isEmpty(value)) {
             throw new IllegalArgumentException(key + " fill failed, value is empty.");
         }
-        return src.replace(name, value);
+        return src.replace(key, value);
     }
 
     /**
