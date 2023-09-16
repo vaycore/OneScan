@@ -47,9 +47,7 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
                 .append("q=0.8,application/signed-exchange;v=b3;q=0.9").append("\r\n")
                 .append("Accept-Language: ").append("zh-CN,zh;q=0.9,en;q=0.8").append("\r\n")
                 .append("Accept-Encoding: ").append("gzip, deflate").append("\r\n")
-                .append("Origin: ").append("https://www.baidu.com").append("\r\n")
                 .append("Cache-Control: ").append("max-age=0").append("\r\n")
-                .append("Content-Length: ").append("0").append("\r\n")
                 .append("\r\n");
     }
 
