@@ -73,18 +73,20 @@ C:\Users\<用户名>\.config\OneScan\
 
 ### 动态变量
 
-目前支持的动态变量如下：
+目前支持的动态变量如下（以目标：`http://www.xxxxxx.com:81/path/to/index.html` 为例）：
 
 ```text
-{{host}} - 原请求头中的Host
-{{domain}} - 原请求头中的Host（不包含端口号）
-{{domain.main}} - 主域名（如：`www.google.com` => `google.com`；注意：如果domain是IP地址，那么该值也是IP地址）
-{{domain.name}} - 主域名的名称（如：`www.google.com` => `google`；注意：如果domain是IP地址，那么该值也是IP地址）
-{{protocol}} - 原请求头中的协议（http、https）
+{{host}} - 请求头中的Host（格式：www.xxxxxx.com:81）
+{{domain}} - 请求头中不包含端口号的Host（格式：www.xxxxxx.com）
+{{domain.main}} - 主域名（格式：xxxxxx.com；如果是IP地址或无效格式，会自动跳过这条Payload）
+{{domain.name}} - 主域名的名称（格式：xxxxxx；如果是IP地址或无效格式，会自动跳过这条Payload）
+{{protocol}} - 请求头中的协议（格式：http）
 {{timestamp}} - Unix时间戳（单位：秒）
 {{random.ip}} - 随机IPv4值
 {{random.local-ip}} - 随机内网IPv4值
 {{random.ua}} - 随机UserAgent值，随机源可配置
+{{subdomain}} - 子域名动态变量（格式：www；只有主域名时：`xxxxxx.com` => `xxxxxx`）
+{{webroot}} - 一级目录动态变量（格式：path；不存在一级目录时，会自动跳过这条Payload）
 ```
 
 ### Databoard数据看板
@@ -134,6 +136,7 @@ Request配置界面如下
 
 - `QPS` QPS限制，限制每秒请求的数量，范围（`1-9999`）
 - `Scan level` 限制目录扫描层级，范围（`1-99`）。限制方向：`Left to right`（从左往右），`Right to left`（从右往左）
+- `Retry` 请求失败时重试次数配置，范围（`0-9`）
 - `Include method` 配置请求方法白名单
 - `Exclude suffix` 排除指定后缀的数据包
 - `Header` 递归扫描过程的请求头配置，可配置变量
