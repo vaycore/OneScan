@@ -61,6 +61,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private IMessageEditor mRequestTextEditor;
     private IMessageEditor mResponseTextEditor;
     private ExecutorService mThreadPool;
+    private ExecutorService mLastThreadPool;
     private ExecutorService mFpThreadPool;
     private IHttpRequestResponse mCurrentReqResp;
     private static final Vector<String> sRepeatFilter = new Vector<>();
@@ -81,6 +82,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         this.mCallbacks = callbacks;
         this.mHelpers = callbacks.getHelpers();
         this.mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        this.mLastThreadPool = mThreadPool;
         this.mFpThreadPool = Executors.newFixedThreadPool(FP_THREAD_COUNT);
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
         // 初始化日志打印
@@ -187,6 +189,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return;
             }
         }
+        // 记录当前线程池的引用
+        mLastThreadPool = mThreadPool;
         // 生成任务
         URL url = info.getUrl();
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
@@ -431,7 +435,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         Logger.debug("doBurpRequest build ok! url: %s", url);
         // 线程池关闭后，不接收任何任务
-        if (mThreadPool.isShutdown()) {
+        if (mLastThreadPool.isShutdown()) {
             Logger.info("Thread pool is shutdown, intercept url: %s", url);
             return;
         }
@@ -1078,6 +1082,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     doScan(httpReqResp, "Import");
                 } catch (IllegalArgumentException e) {
                     Logger.error("Import error: " + e.getMessage());
+                }
+                // 线程池关闭后，不继续导入Url
+                if (mLastThreadPool.isShutdown()) {
+                    Logger.info("Thread pool is shutdown, stop import Url");
+                    return;
                 }
             }
         }).start();
