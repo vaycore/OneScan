@@ -18,9 +18,9 @@ public class TaskData {
     private int length;
     private String fingerprint;
     private String comment;
-    // 辅助的数据
-    private Object reqResp;
     private String highlight;
+    // 请求响应数据
+    private Object reqResp;
 
     public int getId() {
         return id;
@@ -110,19 +110,19 @@ public class TaskData {
         this.comment = comment;
     }
 
-    public Object getReqResp() {
-        return reqResp;
-    }
-
-    public void setReqResp(Object reqResp) {
-        this.reqResp = reqResp;
-    }
-
     public String getHighlight() {
         return highlight;
     }
 
     public void setHighlight(String highlight) {
         this.highlight = highlight;
+    }
+
+    public Object getReqResp() {
+        return reqResp;
+    }
+
+    public void setReqResp(Object reqResp) {
+        this.reqResp = reqResp;
     }
 }

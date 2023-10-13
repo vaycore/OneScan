@@ -33,13 +33,21 @@ public class ClassUtils {
         return getFieldStringValue(obj, field);
     }
 
+    public static String getNameByFieldId(Class<?> clz, int fieldId) {
+        Field[] fields = clz.getDeclaredFields();
+        if (fieldId >= fields.length) {
+            return null;
+        }
+        Field field = fields[fieldId];
+        return field.getName();
+    }
+
     public static Class<?> getTypeByFieldId(Class<?> clz, int fieldId) {
         Field[] fields = clz.getDeclaredFields();
         if (fieldId >= fields.length) {
             return String.class;
         }
         Field field = fields[fieldId];
-        // 返回 Integer 类型，否则无法正确排序
         if (field.getType() == int.class) {
             return Integer.class;
         } else if (field.getType() == boolean.class) {

@@ -207,8 +207,9 @@ public class TaskTable extends JTable {
         setColumnWidth(6, 125);
         setColumnWidth(7, 50);
         setColumnWidth(8, 100);
-        setColumnWidth(9, 300);
+        setColumnWidth(9, 200);
         setColumnWidth(10, 200);
+        setColumnWidth(11, 85);
     }
 
     private void setColumnWidth(int columnIndex, int width) {
@@ -283,6 +284,34 @@ public class TaskTable extends JTable {
                 break;
         }
         return null;
+    }
+
+    private static int findColorLevelByName(String colorName) {
+        if (StringUtils.isEmpty(colorName)) {
+            return 0;
+        }
+        switch (colorName) {
+            case "red":
+                return 9;
+            case "orange":
+                return 8;
+            case "yellow":
+                return 7;
+            case "green":
+                return 6;
+            case "cyan":
+                return 5;
+            case "blue":
+                return 4;
+            case "pink":
+                return 3;
+            case "magenta":
+                return 2;
+            case "gray":
+                return 1;
+            default:
+                return 0;
+        }
     }
 
     private Color darkerColor(Color color) {
@@ -368,7 +397,7 @@ public class TaskTable extends JTable {
     public static class TaskTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment"};
+                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment", "Color-level"};
         private final ArrayList<TaskData> mData;
 
         public TaskTableModel() {
@@ -408,6 +437,15 @@ public class TaskTable extends JTable {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             TaskData data = mData.get(rowIndex);
+            String fieldName = ClassUtils.getNameByFieldId(TaskData.class, columnIndex);
+            if ("highlight".equals(fieldName)) {
+                int level = findColorLevelByName(data.getHighlight());
+                String levelStr = String.valueOf(level == 0 ? "" : level);
+                if (StringUtils.isNotEmpty(levelStr)) {
+                    return String.format("%s（%s）", levelStr, data.getHighlight());
+                }
+                return levelStr;
+            }
             return ClassUtils.getValueByFieldId(data, columnIndex);
         }
 
