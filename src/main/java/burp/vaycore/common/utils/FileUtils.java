@@ -167,24 +167,23 @@ public class FileUtils {
         }
     }
 
-    public static void deleteFile(String filepath) {
-        deleteFile(new File(filepath));
+    public static boolean deleteFile(String filepath) {
+        return deleteFile(new File(filepath));
     }
 
-    public static void deleteFile(File file) {
+    public static boolean deleteFile(File file) {
         if (!file.exists()) {
-            return;
+            return false;
         }
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files == null || files.length == 0) {
-                return;
+                return file.delete();
             }
             for (File fileItem : files) {
                 deleteFile(fileItem);
             }
-        } else {
-            boolean delete = file.delete();
         }
+        return file.delete();
     }
 }

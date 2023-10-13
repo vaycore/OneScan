@@ -105,7 +105,6 @@ public class WordlistManager {
         if (list == null) {
             list = new ArrayList<>();
         }
-
         return list;
     }
 
@@ -118,6 +117,32 @@ public class WordlistManager {
         String path = sWordlistDir + File.separator + key + File.separator + item + ".txt";
         String content = StringUtils.join(list, "\n");
         FileUtils.writeFile(path, content);
+    }
+
+    public static void createList(String key, String name) {
+        checkInit();
+        String path = sWordlistDir + File.separator + key + File.separator + name + ".txt";
+        if (FileUtils.isFile(path)) {
+            throw new IllegalArgumentException("wordlist already exists");
+        }
+        // 创建空文件
+        boolean state = FileUtils.writeFile(path, "");
+        if (!state) {
+            throw new IllegalArgumentException("wordlist create failed.");
+        }
+    }
+
+    public static void deleteList(String key, String name) {
+        checkInit();
+        String path = sWordlistDir + File.separator + key + File.separator + name + ".txt";
+        if (!FileUtils.exists(path)) {
+            throw new IllegalArgumentException("wordlist not exists");
+        }
+        // 删除文件
+        boolean state = FileUtils.deleteFile(path);
+        if (!state) {
+            throw new IllegalArgumentException("wordlist delete failed.");
+        }
     }
 
     public static List<String> getItemList(String key) {

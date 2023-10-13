@@ -3,9 +3,10 @@ package burp.vaycore.onescan.ui.base;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
+import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.common.Config;
-import burp.vaycore.onescan.common.OnDataChangeListener;
 import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.config.OtherTab;
@@ -15,8 +16,10 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.PopupMenuEvent;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.regex.Pattern;
 
 /**
  * 通用配置页面基类
@@ -24,6 +27,8 @@ import java.util.Vector;
  * Created by vaycore on 2022-08-20.
  */
 public abstract class BaseConfigTab extends BaseTab {
+
+    private static final Pattern NAME_REGEX = Pattern.compile("[\\w]+");
 
     @Override
     protected void initData() {
@@ -167,7 +172,7 @@ public abstract class BaseConfigTab extends BaseTab {
             WordlistManager.putList(configKey, listData);
         });
         JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(0, true));
+        panel.setLayout(new HLayout(5, true));
         JComboBox<String> cb = new JComboBox<>(new Vector<>(WordlistManager.getItemList(configKey)));
         cb.setSelectedItem(WordlistManager.getItem(configKey));
         cb.addPopupMenuListener(new PopupMenuListenerAdapter() {
@@ -192,15 +197,73 @@ public abstract class BaseConfigTab extends BaseTab {
             }
             WordlistManager.putItem(configKey, item);
             List<String> list = WordlistManager.getList(configKey);
-            // 切换时数据量过大，可能造成卡顿，先临时取消监听器；设置完成数据后再添加回来
-            OnDataChangeListener old = wordlist.getOnDataChangeListener();
-            wordlist.setOnDataChangeListener(null);
             wordlist.setListData(list);
-            wordlist.setOnDataChangeListener(old);
-            old.onDataChange(wordlist.getActionCommand());
         });
-        panel.add(cb, "440px");
+        panel.add(cb, "290px");
+        JButton newBtn = new JButton("New");
+        newBtn.addActionListener((e) -> newWordlist(cb, configKey, null));
+        panel.add(newBtn, "65px");
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.addActionListener((e) -> deleteWordlist(cb, wordlist, configKey));
+        panel.add(deleteBtn, "75px");
         this.addConfigItem(title, subTitle, wordlist, panel);
+    }
+
+    /**
+     * 创建新字典
+     */
+    private void newWordlist(JComboBox<String> cb, String configKey, String name) {
+        JPanel panel = new JPanel(new VLayout(5));
+        panel.setPreferredSize(new Dimension(300, 50));
+        panel.add(new JLabel("Please enter a name："));
+        JTextField textField = new JTextField(name);
+        panel.add(textField);
+        int ret = UIHelper.showCustomDialog("New wordlist", panel);
+        if (ret != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            name = textField.getText();
+            boolean check = NAME_REGEX.matcher(name).matches();
+            if (!check) {
+                throw new IllegalArgumentException("invalid Value（Range：0-9,a-z,A-Z,_）");
+            }
+            WordlistManager.createList(configKey, name);
+            // 切换到新创建的字典
+            cb.addItem(name);
+            cb.setSelectedItem(name);
+        } catch (Exception e) {
+            UIHelper.showTipsDialog("Error：" + e.getMessage());
+            newWordlist(cb, configKey, name);
+        }
+    }
+
+    /**
+     * 删除字典
+     */
+    private void deleteWordlist(JComboBox<String> cb, SimpleWordlist wordlist, String configKey) {
+        String name = String.valueOf(cb.getSelectedItem());
+        int ret = UIHelper.showOkCancelDialog("Delete wordlist", "确认删除 '" + name + "' 字典？");
+        if (ret != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            // 清空字典列表UI里的数据
+            wordlist.setListData(new ArrayList<>());
+            WordlistManager.deleteList(configKey, name);
+            List<String> itemList = WordlistManager.getItemList(configKey);
+            // 随机选中一个
+            String nextName = Utils.getRandomItem(itemList);
+            if (StringUtils.isNotEmpty(nextName)) {
+                cb.setSelectedItem(nextName);
+            } else {
+                cb.removeAllItems();
+                // 整个目录清空完成，将 item 恢复为 default
+                WordlistManager.putItem(configKey, "default");
+            }
+        } catch (Exception e) {
+            UIHelper.showTipsDialog("Error：" + e.getMessage());
+        }
     }
 
     /**

@@ -15,7 +15,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 简单的字典列表展示
@@ -65,10 +67,15 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         if (list == null) {
             return;
         }
+        // 切换时数据量过大，可能造成卡顿，先临时取消监听器；设置完成数据后再添加回来
+        mListModel.removeListDataListener(this);
         mListModel.removeAllElements();
         for (String item : list) {
             mListModel.addElement(item);
         }
+        mListModel.addListDataListener(this);
+        // 手动调用数据更新
+        dataChanged();
     }
 
     /**
@@ -93,18 +100,9 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         this.mOnDataChangeListener = l;
     }
 
-    /**
-     * 获取数据修改监听器
-     *
-     * @return 监听器实例
-     */
-    public OnDataChangeListener getOnDataChangeListener() {
-        return this.mOnDataChangeListener;
-    }
-
     private void initView() {
         setLayout(new HLayout(5));
-        setPreferredSize(new Dimension(0, 200));
+        setPreferredSize(new Dimension(0, 240));
 
         add(newLeftPanel(), "85px");
         add(newRightPanel(), "350px");
@@ -118,6 +116,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         panel.add(newButton("Clear", "clear-item"));
         panel.add(newButton("Up", "up-item"));
         panel.add(newButton("Down", "down-item"));
+        panel.add(newButton("Unique", "unique-item"));
         panel.add(new Panel(), "1w");
         panel.add(newButton("Add", "add-input-item"));
         return panel;
@@ -152,28 +151,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         String action = e.getActionCommand();
         switch (action) {
             case "paste-item":
-                String text = Utils.getSysClipboardText();
-                if (StringUtils.isNotEmpty(text)) {
-                    // 先处理换行
-                    String[] lines = null;
-                    if (text.contains("\r\n")) {
-                        lines = text.split("\r\n");
-                    } else if (text.contains("\n")) {
-                        lines = text.split("\n");
-                    }
-                    // 无换行符号，添加到列表
-                    if (lines == null || lines.length == 0) {
-                        mListModel.addElement(text);
-                    } else {
-                        // 批量添加
-                        for (String line : lines) {
-                            // 不添加空行
-                            if (StringUtils.isNotEmpty(line)) {
-                                mListModel.addElement(line);
-                            }
-                        }
-                    }
-                }
+                pasteItem();
                 break;
             case "add-input-item":
                 String inputItem = mTfInputItem.getText();
@@ -188,6 +166,9 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.removeAllElements();
                 }
+                break;
+            case "unique-item":
+                uniqueItem();
                 break;
         }
         // 以下是需要用到选中下标才能进行操作
@@ -225,6 +206,55 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
             default:
                 break;
         }
+    }
+
+    /**
+     * 粘贴
+     */
+    private void pasteItem() {
+        String text = Utils.getSysClipboardText();
+        if (StringUtils.isEmpty(text)) {
+            return;
+        }
+        // 先处理换行
+        String[] lines = null;
+        if (text.contains("\r\n")) {
+            lines = text.split("\r\n");
+        } else if (text.contains("\n")) {
+            lines = text.split("\n");
+        }
+        // 无换行符号，添加到列表
+        if (lines == null || lines.length == 0) {
+            mListModel.addElement(text);
+        } else {
+            // 过滤空的字符串，转换为 List 实例
+            List<String> list = Arrays.stream(lines)
+                    .filter(StringUtils::isNotEmpty)
+                    .collect(Collectors.toList());
+            // 添加到列表展示
+            List<String> listData = getListData();
+            listData.addAll(list);
+            setListData(listData);
+        }
+    }
+
+    /**
+     * 去重
+     */
+    private void uniqueItem() {
+        int size = mListModel.size();
+        if (size <= 0) {
+            return;
+        }
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            String value = mListModel.get(i);
+            if (list.contains(value)) {
+                continue;
+            }
+            list.add(value);
+        }
+        setListData(list);
     }
 
     @Override
