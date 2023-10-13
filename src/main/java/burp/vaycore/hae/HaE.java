@@ -42,7 +42,7 @@ public class HaE {
             return false;
         }
         // 检测HaE插件的路径是否正常
-        if (StringUtils.isEmpty(pluginPath) || !FileUtils.exists(pluginPath) || !FileUtils.isFile(pluginPath)) {
+        if (StringUtils.isEmpty(pluginPath) || !FileUtils.isFile(pluginPath)) {
             return false;
         }
         try {
@@ -51,6 +51,13 @@ public class HaE {
             Class<?> c = loader.loadClass("burp.BurpExtender");
             IBurpExtender extender = (IBurpExtender) c.newInstance();
             sAdapter = new BurpCallbacksAdapter(sCallbacks);
+            // 监听 UI 组件设置
+            sAdapter.setBurpUiComponentListener((component) -> {
+                sMainUI = component;
+                OneScan oneScan = (OneScan) sExtender.getUiComponent();
+                oneScan.addTab("HaE", sMainUI);
+                UIHelper.refreshUI(oneScan);
+            });
             extender.registerExtenderCallbacks(sAdapter);
             // 检测插件名，是否为HaE
             String name = sAdapter.getExtensionName();
@@ -58,14 +65,7 @@ public class HaE {
                 throw new IllegalStateException("Load plugin failed: plugin error.");
             }
             // 参数赋值
-            sMainUI = ((ITab) extender).getUiComponent();
             sHttpListener = sAdapter.getHttpListener();
-            OneScan oneScan = (OneScan) sExtender.getUiComponent();
-            if (oneScan == null) {
-                return false;
-            }
-            oneScan.addTab("HaE", sMainUI);
-            UIHelper.refreshUI(oneScan);
             Logger.info("HaE load success! info: %s", name);
             return true;
         } catch (Exception e) {

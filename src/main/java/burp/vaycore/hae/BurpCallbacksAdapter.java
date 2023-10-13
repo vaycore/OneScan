@@ -19,6 +19,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
     private final IExtensionHelpers helpers;
     private String extensionName;
     private IHttpListener httpListener;
+    private BurpUiComponentListener mBurpUiComponentListener;
 
     public BurpCallbacksAdapter(IBurpExtenderCallbacks callbacks) {
         this.callbacks = callbacks;
@@ -260,12 +261,23 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public void customizeUiComponent(Component component) {
+        if (this.mBurpUiComponentListener != null) {
+            this.mBurpUiComponentListener.onSetupUiComponent(component);
+        }
+    }
 
+    /**
+     * 设置 UI 组件设置监听器
+     *
+     * @param callback 监听器接口实例
+     */
+    public void setBurpUiComponentListener(BurpUiComponentListener callback) {
+        this.mBurpUiComponentListener = callback;
     }
 
     @Override
     public IMessageEditor createMessageEditor(IMessageEditorController iMessageEditorController, boolean b) {
-        return null;
+        return callbacks.createMessageEditor(iMessageEditorController, b);
     }
 
     @Override
@@ -480,7 +492,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public IHttpRequestResponsePersisted saveBuffersToTempFiles(IHttpRequestResponse iHttpRequestResponse) {
-        return null;
+        return callbacks.saveBuffersToTempFiles(iHttpRequestResponse);
     }
 
     @Override

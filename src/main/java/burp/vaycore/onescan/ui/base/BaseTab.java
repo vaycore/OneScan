@@ -35,8 +35,6 @@ public abstract class BaseTab extends JPanel {
      */
     public abstract String getTitleName();
 
-
-
     /**
      * 发送事件
      *

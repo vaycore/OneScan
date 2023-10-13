@@ -37,7 +37,7 @@ public class OneScan extends JTabbedPane {
         addTab(mConfigPanel.getTitleName(), mConfigPanel);
         // 指纹面板
         FingerprintTab fingerprintTab = new FingerprintTab();
-        this.add(fingerprintTab.getTitleName(), fingerprintTab);
+        addTab(fingerprintTab.getTitleName(), fingerprintTab);
     }
 
     public DataBoardTab getDataBoardTab() {
