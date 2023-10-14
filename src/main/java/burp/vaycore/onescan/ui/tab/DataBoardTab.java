@@ -44,6 +44,8 @@ public class DataBoardTab extends BaseTab {
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
     private JCheckBox mMergePayloadProcessing;
+    private String mLastUrlPrefix;
+    private List<String> mLastImportData;
 
     @Override
     protected void initData() {
@@ -163,11 +165,11 @@ public class DataBoardTab extends BaseTab {
         JPanel prefixPanel = new JPanel(new HLayout(0, true));
         panel.add(prefixPanel);
         prefixPanel.add(new JLabel("URL前缀（非必选）："));
-        HintTextField textField = new HintTextField();
+        HintTextField textField = new HintTextField(mLastUrlPrefix);
         textField.setHintText("URL前缀与列表的每一项进行拼接");
         prefixPanel.add(textField, "1w");
         // URL字典列表
-        SimpleWordlist wordlist = new SimpleWordlist();
+        SimpleWordlist wordlist = new SimpleWordlist(mLastImportData);
         panel.add(wordlist, "1w");
         int ret = UIHelper.showCustomDialog("Import Url", panel, this);
         if (ret == JOptionPane.OK_OPTION) {
@@ -176,6 +178,10 @@ public class DataBoardTab extends BaseTab {
                 return;
             }
             String prefix = textField.getText();
+            // 保留最后一次导入的数据
+            mLastUrlPrefix = prefix;
+            mLastImportData = new ArrayList<>(data);
+            // 如果存在前缀，对每一项进行拼接
             if (StringUtils.isNotEmpty(prefix)) {
                 for (int i = 0; i < data.size(); i++) {
                     String newItem = prefix + data.get(i);
