@@ -43,7 +43,7 @@ BurpSuite 安装流程如下：
 Extender -> Extensions -> Add -> Select File -> Next
 ```
 
-流程结束后，打印如下信息表示插件安装完成（需要配置 [HaE](https://github.com/gh0stkey/HaE) 插件之后才会显示 **HaE** 插件的日志信息）：
+流程结束后，打印如下信息表示插件安装完成（需要在 Config -> Other -> HaE 中配置 [HaE](https://github.com/gh0stkey/HaE) 插件之后才会显示 **HaE** 插件的日志信息和联动高亮功能）：
 
 ![](imgs/install_success.png)
 
