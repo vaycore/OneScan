@@ -68,7 +68,7 @@ public class OneScan extends JTabbedPane {
 
     private static void initTestModule() {
         Logger.init(true, System.out, System.err);
-        Config.init();
+        Config.init(null);
     }
 
     private static void initUIStyle() {

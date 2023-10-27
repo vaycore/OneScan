@@ -41,13 +41,16 @@ public class Config {
     public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
     public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
     public static final String KEY_ENABLE_MERGE_PAYLOAD_PROCESSING = "merge-payload-processing";
-    private static ConfigManager sConfigManager;
-    private static String sConfigPath;
     // 配置常量值
     public static final String DIRECT_LEFT = "left";
     public static final String DIRECT_RIGHT = "right";
 
-    public static void init() {
+    private static String sWorkDir;
+    private static String sConfigPath;
+    private static ConfigManager sConfigManager;
+
+    public static void init(String wordDir) {
+        sWorkDir = wordDir;
         sConfigPath = getWorkDir() + "config.json";
         sConfigManager = new ConfigManager(sConfigPath);
         initDefaultConfig(Config.KEY_VERSION, Constants.PLUGIN_VERSION);
@@ -122,7 +125,7 @@ public class Config {
             boolean state = FileUtils.writeFile(sConfigPath, configJson);
             if (state) {
                 Logger.info("Replace all {{mdomain}} to {{domain.name}} ok!");
-                init();
+                init(sWorkDir);
             }
         }
     }
@@ -192,6 +195,9 @@ public class Config {
     }
 
     public static String getWorkDir() {
+        if (StringUtils.isNotEmpty(sWorkDir) && FileUtils.isDir(sWorkDir)) {
+            return sWorkDir;
+        }
         return PathUtils.getUserHome() + ".config" + File.separator + "OneScan" + File.separator;
     }
 

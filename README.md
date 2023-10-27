@@ -47,7 +47,7 @@ Extender -> Extensions -> Add -> Select File -> Next
 
 ![](imgs/install_success.png)
 
-插件配置文件存放路径如下：
+插件配置文件默认存放路径如下（优先检测当前插件 jar 包所在目录下是否存在 `OneScan` 目录，如果存在，将使用该目录作为工作目录；否则，使用如下路径作为工作目录）：
 
 ```text
 linux、macOS：

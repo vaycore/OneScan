@@ -28,6 +28,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -88,7 +89,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 初始化日志打印
         Logger.init(Constants.DEBUG, mCallbacks.getStdout(), mCallbacks.getStderr());
         // 初始化默认配置
-        Config.init();
+        Config.init(getWorkDir());
         // 初始化域名辅助类
         DomainHelper.init("public_suffix_list.json");
         // 初始化HaE插件
@@ -97,6 +98,18 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         initQpsLimiter();
         // 注册 OneScan 信息辅助面板
         this.mCallbacks.registerMessageEditorTabFactory(this);
+    }
+
+    /**
+     * 获取工作目录路径（优先获取当前插件 jar 包所在目录配置文件，如果配置不存在，则使用默认工作目录）
+     */
+    private String getWorkDir() {
+        String workDir = Paths.get(mCallbacks.getExtensionFilename())
+                .getParent().toString() + File.separator + "OneScan" + File.separator;
+        if (FileUtils.isDir(workDir)) {
+            return workDir;
+        }
+        return null;
     }
 
     private void initQpsLimiter() {
