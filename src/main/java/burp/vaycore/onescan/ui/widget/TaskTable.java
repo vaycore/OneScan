@@ -20,6 +20,8 @@ import java.awt.event.MouseListener;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 任务列表
@@ -43,23 +45,6 @@ public class TaskTable extends JTable {
             String action = item.getActionCommand();
             int[] selectedRows = getSelectedRows();
             switch (action) {
-                case "clean-all":
-                    mTaskTableModel.clearAll();
-                    if (mOnTaskTableEventListener != null) {
-                        mOnTaskTableEventListener.onChangeSelection(null);
-                    }
-                    mLastSelectedRow = -1;
-                    break;
-                case "send-to-repeater":
-                    ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
-                    for (int index : selectedRows) {
-                        TaskData data = getTaskData(index);
-                        newData.add(data);
-                    }
-                    if (mOnTaskTableEventListener != null) {
-                        mOnTaskTableEventListener.onSendToRepeater(newData);
-                    }
-                    break;
                 case "fetch-body-md5":
                 case "fetch-body-hash":
                     if (mOnTaskTableEventListener == null) {
@@ -82,6 +67,16 @@ public class TaskTable extends JTable {
                     }
                     showTextAreaDialog(item.getText(), result.toString());
                     break;
+                case "send-to-repeater":
+                    ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
+                    for (int index : selectedRows) {
+                        TaskData data = getTaskData(index);
+                        newData.add(data);
+                    }
+                    if (mOnTaskTableEventListener != null) {
+                        mOnTaskTableEventListener.onSendToRepeater(newData);
+                    }
+                    break;
                 case "add-to-black-host":
                     if (mOnTaskTableEventListener == null) {
                         break;
@@ -99,6 +94,21 @@ public class TaskTable extends JTable {
                         }
                     }
                     mOnTaskTableEventListener.addToBlackHost(hosts);
+                    break;
+                case "remove-items":
+                    ArrayList<TaskData> removeList = new ArrayList<>();
+                    for (int index : selectedRows) {
+                        TaskData data = getTaskData(index);
+                        removeList.add(data);
+                    }
+                    mTaskTableModel.removeItems(removeList);
+                    break;
+                case "clean-all":
+                    mTaskTableModel.clearAll();
+                    if (mOnTaskTableEventListener != null) {
+                        mOnTaskTableEventListener.onChangeSelection(null);
+                    }
+                    mLastSelectedRow = -1;
                     break;
             }
         }
@@ -243,11 +253,12 @@ public class TaskTable extends JTable {
 
     private void showPopupMenu(int x, int y) {
         JPopupMenu menu = new JPopupMenu();
-        addPopupMenuItem(menu, "清空所有记录", "clean-all");
-        addPopupMenuItem(menu, "发送选中项到Repeater", "send-to-repeater");
         addPopupMenuItem(menu, "获取bodyMd5值", "fetch-body-md5");
         addPopupMenuItem(menu, "获取bodyHash值", "fetch-body-hash");
+        addPopupMenuItem(menu, "发送选中项到Repeater", "send-to-repeater");
         addPopupMenuItem(menu, "添加Host到黑名单", "add-to-black-host");
+        addPopupMenuItem(menu, "删除选中项", "remove-items");
+        addPopupMenuItem(menu, "清空所有记录", "clean-all");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
         menu.show(this, x, y);
@@ -399,9 +410,11 @@ public class TaskTable extends JTable {
         public static final String[] COLUMN_NAMES = new String[]{
                 "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment", "Color-level"};
         private final ArrayList<TaskData> mData;
+        private final AtomicInteger mCounter;
 
         public TaskTableModel() {
             mData = new ArrayList<>();
+            mCounter = new AtomicInteger();
         }
 
         public void add(TaskData data) {
@@ -409,18 +422,29 @@ public class TaskTable extends JTable {
                 return;
             }
             synchronized (this.mData) {
-                int id = this.mData.size();
+                int index = mData.size();
+                int id = mCounter.getAndIncrement();
                 data.setId(id);
                 this.mData.add(data);
-                fireTableRowsInserted(id, id);
+                fireTableRowsInserted(index, index);
+            }
+        }
+
+        public void removeItems(List<TaskData> list) {
+            if (list == null || list.isEmpty()) {
+                return;
+            }
+            synchronized (this.mData) {
+                this.mData.removeAll(list);
+                fireTableDataChanged();
             }
         }
 
         public void clearAll() {
             synchronized (this.mData) {
-                int size = this.mData.size();
                 mData.clear();
-                fireTableRowsDeleted(0, size - 1);
+                mCounter.set(0);
+                fireTableDataChanged();
             }
         }
 
