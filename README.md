@@ -237,9 +237,17 @@ Connection: close
 
 ![](imgs/main_panel_test.png)
 
-## OneScan交流群
+## QQ交流群
 
-![](imgs/chat_group.jpg)
+欢迎各位师傅加入 OneScan 交流群
+
+![772823734](imgs/chat_group.jpg)
+
+## 项目热度
+
+非常感谢各位师傅关注此项目
+
+[![](https://starchart.cc/vaycore/OneScan.svg)](https://starchart.cc/vaycore/OneScan)
 
 ## END
 
