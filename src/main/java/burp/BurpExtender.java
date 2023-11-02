@@ -426,6 +426,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 检测是否需要分离PayloadProcessing请求
         if (!mergePayloadProcessing) {
             doBurpRequest(service, request, from);
+            from = "Process";
         }
         // 进行 Payload Processing 处理后，再次请求数据包
         byte[] requestBytes = handlePayloadProcess(service, request);

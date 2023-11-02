@@ -209,10 +209,10 @@ public class TaskTable extends JTable {
 
     private void initColumnWidth() {
         setColumnWidth(0, 70);
-        setColumnWidth(1, 45);
+        setColumnWidth(1, 50);
         setColumnWidth(2, 70);
         setColumnWidth(3, 200);
-        setColumnWidth(4, 240);
+        setColumnWidth(4, 200);
         setColumnWidth(5, 200);
         setColumnWidth(6, 125);
         setColumnWidth(7, 50);
