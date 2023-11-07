@@ -1,8 +1,10 @@
 package burp.vaycore.onescan.common;
 
 import burp.vaycore.common.config.ConfigManager;
+import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.FileUtils;
+import burp.vaycore.common.utils.GsonUtils;
 import burp.vaycore.common.utils.PathUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.manager.FpManager;
@@ -36,6 +38,7 @@ public class Config {
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
     public static final String KEY_INCLUDE_METHOD = "include-method";
     public static final String KEY_WORDLIST_PATH = "dict-path";
+    public static final String KEY_DATABOARD_FILTER_RULES = "databoard-filter-rules";
     // 首页开关配置项
     public static final String KEY_ENABLE_LISTEN_PROXY = "enable-listen-proxy";
     public static final String KEY_ENABLE_EXCLUDE_HEADER = "enable-exclude-header";
@@ -212,6 +215,7 @@ public class Config {
 
     private static void onPreloadConfig() {
         preparePayloadProcessList();
+        prepareDataboardFilterRules();
     }
 
     private static void initDefaultConfig(String key, String defValue) {
@@ -339,8 +343,23 @@ public class Config {
         return result;
     }
 
+    private static void prepareDataboardFilterRules() {
+        Object obj = sConfigManager.get(Config.KEY_DATABOARD_FILTER_RULES);
+        if (obj == null) {
+            obj = new ArrayList<>();
+        }
+        String json = GsonUtils.toJson(obj);
+        ArrayList<FilterRule> rules = GsonUtils.toList(json, FilterRule.class);
+        put(Config.KEY_DATABOARD_FILTER_RULES, rules);
+    }
+
     public static ArrayList<ProcessingItem> getPayloadProcessList() {
         checkInit();
         return sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
+    }
+
+    public static ArrayList<FilterRule> getDataboardFilterRules() {
+        checkInit();
+        return sConfigManager.get(Config.KEY_DATABOARD_FILTER_RULES);
     }
 }

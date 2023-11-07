@@ -139,6 +139,25 @@ public class DataBoardTab extends BaseTab {
         mainSplitPanel.add(dataSplitPanel, JSplitPane.RIGHT);
         // 将布局进行展示
         add(mainSplitPanel, "100%");
+        // 加载过滤规则
+        loadFilterRules();
+    }
+
+    /**
+     * 从配置文件中加载过滤规则
+     */
+    private void loadFilterRules() {
+        ArrayList<FilterRule> rules = Config.getDataboardFilterRules();
+        if (rules == null || rules.isEmpty()) {
+            return;
+        }
+        // 借助 TableFilterPanel 组件转换配置
+        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, rules);
+        ArrayList<TableFilter<AbstractTableModel>> filters = panel.exportTableFilters();
+        String rulesText = panel.exportRulesText();
+        mTaskTable.setRowFilter(RowFilter.andFilter(filters));
+        mFilterRuleText.setText(rulesText);
+        mLastFilters = rules;
     }
 
     private JCheckBox newJCheckBox(JPanel panel, String text, String configKey) {
@@ -238,6 +257,7 @@ public class DataBoardTab extends BaseTab {
                 mTaskTable.setRowFilter(RowFilter.andFilter(filters));
                 mFilterRuleText.setText(rulesText);
                 mLastFilters = filterRules;
+                Config.put(Config.KEY_DATABOARD_FILTER_RULES, filterRules);
             }
 
             @Override
@@ -245,6 +265,7 @@ public class DataBoardTab extends BaseTab {
                 mTaskTable.setRowFilter(null);
                 mFilterRuleText.setText("");
                 mLastFilters = null;
+                Config.put(Config.KEY_DATABOARD_FILTER_RULES, new ArrayList<>());
             }
         });
     }
