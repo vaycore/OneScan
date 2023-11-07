@@ -99,7 +99,7 @@ C:\Users\<用户名>\.config\OneScan\
 - `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
-- `Merge Payload Processing` 开关合并目录扫描与Payload Processing扫描（默认启用），关闭后发送请求数量将多一倍
+- `Payload Processing` 开关 Payload Processing 功能（默认启用）
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 Url 目标进行扫描
 - `Stop` 停止正在扫描的任务
