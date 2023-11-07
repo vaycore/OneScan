@@ -21,6 +21,7 @@ import burp.vaycore.onescan.ui.tab.config.RequestTab;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
+import burp.vaycore.onescan.ui.widget.payloadlist.ProcessingItem;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -186,6 +188,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private void doScan(IHttpRequestResponse httpReqResp, String from) {
+        if (httpReqResp == null || httpReqResp.getHttpService() == null) {
+            return;
+        }
         IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         String host = httpReqResp.getHttpService().getHost();
         // 对来自代理的包进行检测，检测请求方法是否需要拦截
@@ -416,46 +421,76 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void runScanTask(IHttpRequestResponse httpReqResp, IRequestInfo info, String pathWithQuery, String from) {
         IHttpService service = httpReqResp.getHttpService();
-        boolean mergePayloadProcessing = mDataBoardTab.hasMergePayloadProcessing();
         // 处理请求头
         byte[] request = handleHeader(httpReqResp, info, pathWithQuery, from);
         // 处理请求头失败时，丢弃该任务
         if (request == null) {
             return;
         }
-        // 检测是否需要分离PayloadProcessing请求
-        if (!mergePayloadProcessing) {
-            doBurpRequest(service, request, from);
-            from = "Process";
+        IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
+        String url = getHostByIHttpService(service) + newInfo.getUrl().getPath();
+        if (sRepeatFilter.contains(url)) {
+            Logger.debug("doBurpRequest intercept url: %s", url);
+            return;
+        }
+        // 对扫描的任务发起请求
+        doBurpRequest(service, url, request, from);
+        // 运行 Payload Processing 任务
+        runPayloadProcessingTask(service, url, request);
+    }
+
+    /**
+     * 运行 Payload Processing 任务
+     *
+     * @param service     请求目标服务实例
+     * @param url         请求URL
+     * @param reqRawBytes 请求数据包
+     */
+    private void runPayloadProcessingTask(IHttpService service, String url, byte[] reqRawBytes) {
+        // 检测是否启用 Payload Processing 请求
+        if (!mDataBoardTab.hasPayloadProcessing()) {
+            return;
         }
         // 进行 Payload Processing 处理后，再次请求数据包
-        byte[] requestBytes = handlePayloadProcess(service, request);
-        doBurpRequest(service, requestBytes, from);
+        ArrayList<ProcessingItem> processList = Config.getPayloadProcessList();
+        String from = "Process";
+        // 遍历规则列表
+        processList.parallelStream().filter(ProcessingItem::isEnabled).forEach((item) -> {
+            ArrayList<PayloadItem> items = item.getItems();
+            byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
+            if (requestBytes == null) {
+                return;
+            }
+            // 检测是否未进行任何处理
+            boolean equals = Arrays.equals(reqRawBytes, requestBytes);
+            if (equals) {
+                return;
+            }
+            doBurpRequest(service, url, requestBytes, from);
+        });
     }
 
     /**
      * 使用Burp自带的方式请求
      *
      * @param service     请求目标服务实例
+     * @param url         请求URL
      * @param reqRawBytes 请求数据包
      * @param from        请求来源
      */
-    private void doBurpRequest(IHttpService service, byte[] reqRawBytes, String from) {
-        IRequestInfo info = mHelpers.analyzeRequest(service, reqRawBytes);
-        String url = getHostByIHttpService(service) + info.getUrl().getPath();
-        if (sRepeatFilter.contains(url)) {
-            Logger.debug("doBurpRequest intercept url: %s", url);
-            return;
-        }
-        Logger.debug("doBurpRequest build ok! url: %s", url);
+    private void doBurpRequest(IHttpService service, String url, byte[] reqRawBytes, String from) {
         // 线程池关闭后，不接收任何任务
         if (mLastThreadPool.isShutdown()) {
             Logger.info("Thread pool is shutdown, intercept url: %s", url);
             return;
         }
-        // 将 URL 添加到去重列表
-        sRepeatFilter.addElement(url);
-        sWaitTasks.addElement(url);
+        // 将 URL 添加到去重列表（如果列表不存在当前的 URL 值）
+        if (!sRepeatFilter.contains(url)) {
+            sRepeatFilter.addElement(url);
+        }
+        if (!sWaitTasks.contains(url)) {
+            sWaitTasks.addElement(url);
+        }
         // 给每个任务创建线程
         mThreadPool.execute(() -> {
             // 限制QPS
@@ -500,7 +535,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param retryCount  重试次数（为0表示不重试）
      * @return 请求响应数据
      */
-    private IHttpRequestResponse doMakeHttpRequest(IHttpService service, String reqUrl, byte[] reqRawBytes, int retryCount) {
+    private IHttpRequestResponse doMakeHttpRequest(IHttpService service, String reqUrl,
+                                                   byte[] reqRawBytes, int retryCount) {
         IHttpRequestResponse reqResp;
         try {
             reqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
@@ -751,25 +787,23 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param requestBytes 请求数据包
      * @return 处理后的数据包
      */
-    private byte[] handlePayloadProcess(IHttpService service, byte[] requestBytes) {
+    private byte[] handlePayloadProcess(IHttpService service, byte[] requestBytes, List<PayloadItem> list) {
         if (requestBytes == null || requestBytes.length == 0) {
             return null;
         }
-        ArrayList<PayloadItem> list = Config.getPayloadProcessList();
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
         IRequestInfo info = mHelpers.analyzeRequest(service, requestBytes);
         int bodyOffset = info.getBodyOffset();
         int bodySize = requestBytes.length - bodyOffset;
         String url = UrlUtils.toURI(info.getUrl());
-        String header = new String(requestBytes, 0, bodyOffset);
+        String header = new String(requestBytes, 0, bodyOffset - 4);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
         String request = new String(requestBytes, 0, requestBytes.length);
-
         for (PayloadItem item : list) {
             // 只调用启用的规则
             PayloadRule rule = item.getRule();
-            if (!item.isEnabled() || rule == null) {
-                continue;
-            }
             switch (item.getScope()) {
                 case PayloadRule.SCOPE_URL:
                     String newUrl = rule.handleProcess(url);
@@ -787,12 +821,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     break;
                 case PayloadRule.SCOPE_HEADER:
                     String newHeader = rule.handleProcess(header);
-                    request = newHeader + body;
                     header = newHeader;
+                    request = newHeader + "\r\n\r\n" + body;
                     break;
                 case PayloadRule.SCOPE_BODY:
                     String newBody = rule.handleProcess(body);
-                    request = header + newBody;
+                    request = header + "\r\n\r\n" + newBody;
                     body = newBody;
                     break;
                 case PayloadRule.SCOPE_REQUEST:
@@ -800,7 +834,41 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     break;
             }
         }
-        return request.getBytes();
+        // 更新 Content-Length
+        return updateContentLength(request.getBytes());
+    }
+
+    /**
+     * 更新 Content-Length 参数值
+     *
+     * @param rawBytes 请求数据包
+     * @return 更新后的数据包
+     */
+    private byte[] updateContentLength(byte[] rawBytes) {
+        String request = new String(rawBytes, StandardCharsets.US_ASCII);
+        int bodyOffset = request.indexOf("\r\n\r\n");
+        if (bodyOffset == -1) {
+            Logger.error("Handle payload process error: bodyOffset is -1");
+            return null;
+        } else {
+            bodyOffset += 4;
+        }
+        int bodySize = rawBytes.length - bodyOffset;
+        if (bodySize < 0) {
+            Logger.error("Handle payload process error: bodySize < 0");
+            return null;
+        } else if (bodySize == 0) {
+            return rawBytes;
+        }
+        String header = new String(rawBytes, 0, bodyOffset - 4);
+        if (!header.contains("Content-Length")) {
+            header += "\r\nContent-Length: " + bodySize;
+        } else {
+            header = header.replaceAll("Content-Length:.*", "Content-Length: " + bodySize);
+        }
+        String body = new String(rawBytes, bodyOffset, bodySize);
+        request = header + "\r\n\r\n" + body;
+        return request.getBytes(StandardCharsets.UTF_8);
     }
 
     /**

@@ -7,27 +7,9 @@ package burp.vaycore.onescan.ui.widget.payloadlist;
  */
 public class PayloadItem {
 
-    private int id;
-    private boolean enabled;
     private PayloadRule rule;
     private int scope;
     private String ruleType;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 
     public PayloadRule getRule() {
         return rule;

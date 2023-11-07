@@ -9,6 +9,7 @@ import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
+import burp.vaycore.onescan.ui.widget.payloadlist.ProcessingItem;
 import burp.vaycore.onescan.ui.widget.payloadlist.SimplePayloadList;
 import com.google.gson.internal.LinkedTreeMap;
 
@@ -40,7 +41,7 @@ public class Config {
     public static final String KEY_ENABLE_EXCLUDE_HEADER = "enable-exclude-header";
     public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
     public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
-    public static final String KEY_ENABLE_MERGE_PAYLOAD_PROCESSING = "merge-payload-processing";
+    public static final String KEY_ENABLE_PAYLOAD_PROCESSING = "payload-processing";
     // 配置常量值
     public static final String DIRECT_LEFT = "left";
     public static final String DIRECT_RIGHT = "right";
@@ -72,7 +73,7 @@ public class Config {
         initDefaultConfig(Config.KEY_ENABLE_EXCLUDE_HEADER, "false");
         initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
         initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
-        initDefaultConfig(Config.KEY_ENABLE_MERGE_PAYLOAD_PROCESSING, "true");
+        initDefaultConfig(Config.KEY_ENABLE_PAYLOAD_PROCESSING, "true");
         // 初始化字典管理
         WordlistManager.init(get(Config.KEY_WORDLIST_PATH));
         // 初始化指纹管理
@@ -101,6 +102,7 @@ public class Config {
             upgradeDomain();
             upgradeRemoveHeaderList();
             upgradeWordlist();
+            upgradePayloadProcessing(version);
         }
     }
 
@@ -175,6 +177,36 @@ public class Config {
             list = getList("exclude-header");
             WordlistManager.putList(WordlistManager.KEY_EXCLUDE_HEADERS, list);
             sConfigManager.remove("exclude-header");
+        }
+    }
+
+    private static void upgradePayloadProcessing(String version) {
+        // 版本检测（从 OneScan <= 1.3.7 版本升级时需要变更配置）
+        version = version.replace(".", "");
+        int versionInt = StringUtils.parseInt(version);
+        if (versionInt == 0 || versionInt > 137) {
+            return;
+        }
+        // Merge Payload Processing 开关配置更新
+        if (hasKey("merge-payload-processing")) {
+            boolean configValue = getBoolean("merge-payload-processing");
+            put(Config.KEY_ENABLE_PAYLOAD_PROCESSING, String.valueOf(configValue));
+            sConfigManager.remove("merge-payload-processing");
+        }
+        // Payload Processing 配置结构更新
+        if (hasKey(Config.KEY_PAYLOAD_PROCESS_LIST)) {
+            ArrayList<LinkedTreeMap<String, Object>> items = sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
+            if (items.isEmpty()) {
+                return;
+            }
+            ArrayList<PayloadItem> result = mapItemsConvert(items);
+            ArrayList<ProcessingItem> newItems = new ArrayList<>();
+            ProcessingItem item = new ProcessingItem();
+            item.setEnabled(true);
+            item.setItems(result);
+            item.setName("Low version rules");
+            newItems.add(item);
+            sConfigManager.put(Config.KEY_PAYLOAD_PROCESS_LIST, newItems);
         }
     }
 
@@ -259,35 +291,55 @@ public class Config {
     }
 
     private static void preparePayloadProcessList() {
-        ArrayList<LinkedTreeMap<String, Object>> mapItems = sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
-        ArrayList<PayloadItem> result = new ArrayList<>();
-        if (mapItems != null && !mapItems.isEmpty()) {
-            // 转换 LinkedTreeMap 数据为 PayloadItem 对象
-            for (LinkedTreeMap<String, Object> mapItem : mapItems) {
-                PayloadItem item = new PayloadItem();
-                Double id = (Double) mapItem.get("id");
-                item.setId(id.intValue());
+        ArrayList<LinkedTreeMap<String, Object>> items;
+        try {
+            items = sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
+            ArrayList<ProcessingItem> result = new ArrayList<>();
+            for (LinkedTreeMap<String, Object> mapItem : items) {
+                ProcessingItem item = new ProcessingItem();
                 item.setEnabled((Boolean) mapItem.get("enabled"));
-                Double scope = (Double) mapItem.get("scope");
-                item.setScope(scope.intValue());
-                PayloadRule rule = SimplePayloadList.getPayloadRuleByType((String) mapItem.get("ruleType"));
-                if (rule == null) {
-                    continue;
-                }
-                LinkedTreeMap<String, Object> ruleMap = (LinkedTreeMap<String, Object>) mapItem.get("rule");
-                ArrayList<String> ruleParamValues = (ArrayList<String>) ruleMap.get("paramValues");
-                for (int j = 0; j < rule.paramCount(); j++) {
-                    String paramValue = ruleParamValues.get(j);
-                    rule.setParamValue(j, paramValue);
-                }
-                item.setRule(rule);
+                String name = String.valueOf(mapItem.get("name"));
+                item.setName(name);
+                ArrayList<LinkedTreeMap<String, Object>> payloadMapItems =
+                        (ArrayList<LinkedTreeMap<String, Object>>) mapItem.get("items");
+                ArrayList<PayloadItem> payloadItems = mapItemsConvert(payloadMapItems);
+                item.setItems(payloadItems);
                 result.add(item);
             }
+            put(Config.KEY_PAYLOAD_PROCESS_LIST, result);
+        } catch (Exception e) {
+            // 版本更新时，前面会有一次配置转换过程
+            // 已经转换成 ArrayList<ProcessingItem> 类型的实例，类型会转换失败。忽略此错误即可
         }
-        put(Config.KEY_PAYLOAD_PROCESS_LIST, result);
     }
 
-    public static ArrayList<PayloadItem> getPayloadProcessList() {
+    private static ArrayList<PayloadItem> mapItemsConvert(ArrayList<LinkedTreeMap<String, Object>> items) {
+        ArrayList<PayloadItem> result = new ArrayList<>();
+        if (items == null || items.isEmpty()) {
+            return result;
+        }
+        // 转换 LinkedTreeMap 数据为 PayloadItem 对象
+        for (LinkedTreeMap<String, Object> mapItem : items) {
+            PayloadItem item = new PayloadItem();
+            Double scope = (Double) mapItem.get("scope");
+            item.setScope(scope.intValue());
+            PayloadRule rule = SimplePayloadList.getPayloadRuleByType((String) mapItem.get("ruleType"));
+            if (rule == null) {
+                continue;
+            }
+            LinkedTreeMap<String, Object> ruleMap = (LinkedTreeMap<String, Object>) mapItem.get("rule");
+            ArrayList<String> ruleParamValues = (ArrayList<String>) ruleMap.get("paramValues");
+            for (int j = 0; j < rule.paramCount(); j++) {
+                String paramValue = ruleParamValues.get(j);
+                rule.setParamValue(j, paramValue);
+            }
+            item.setRule(rule);
+            result.add(item);
+        }
+        return result;
+    }
+
+    public static ArrayList<ProcessingItem> getPayloadProcessList() {
         checkInit();
         return sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
     }

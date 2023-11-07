@@ -52,7 +52,7 @@ public class HaE {
             IBurpExtender extender = (IBurpExtender) c.newInstance();
             sAdapter = new BurpCallbacksAdapter(sCallbacks);
             // 监听 UI 组件设置
-            sAdapter.setBurpUiComponentListener((component) -> {
+            sAdapter.setBurpUiComponentCallback((component) -> {
                 sMainUI = component;
                 OneScan oneScan = (OneScan) sExtender.getUiComponent();
                 oneScan.addTab("HaE", sMainUI);

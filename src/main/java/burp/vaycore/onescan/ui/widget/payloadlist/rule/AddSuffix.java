@@ -27,7 +27,15 @@ public class AddSuffix extends PayloadRule {
     @Override
     public String toDescribe() {
         String[] values = getParamValues();
-        return "Add Suffix: " + values[0];
+        String paramValue = values[0];
+        // 特殊处理 '\r'、'\n' 字符
+        if (paramValue.contains("\r")) {
+            paramValue = paramValue.replaceAll("\r", "\\\\r");
+        }
+        if (paramValue.contains("\n")) {
+            paramValue = paramValue.replaceAll("\n", "\\\\n");
+        }
+        return "Add Suffix: " + paramValue;
     }
 
     @Override

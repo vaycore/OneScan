@@ -6,7 +6,6 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
-import burp.vaycore.onescan.common.OnDataChangeListener;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddPrefix;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddSuffix;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.MatchReplace;
@@ -34,8 +33,6 @@ public class SimplePayloadList extends JPanel implements ActionListener {
 
     private final PayloadListModel mListModel;
     private JTable mListView;
-    private String mAction;
-    private OnDataChangeListener mOnDataChangeListener;
     private final List<HintTextField> mParamInputViews = new ArrayList<>();
 
     public SimplePayloadList() {
@@ -44,20 +41,8 @@ public class SimplePayloadList extends JPanel implements ActionListener {
 
     public SimplePayloadList(ArrayList<PayloadItem> list) {
         mListModel = new PayloadListModel();
-        mListModel.addTableModelListener(e -> dataChanged());
         initData(list);
         initView();
-    }
-
-    public void setActionCommand(String action) {
-        this.mAction = action;
-    }
-
-    public String getActionCommand() {
-        if (StringUtils.isEmpty(this.mAction)) {
-            return toString();
-        }
-        return this.mAction;
     }
 
     private void initData(ArrayList<PayloadItem> list) {
@@ -80,30 +65,12 @@ public class SimplePayloadList extends JPanel implements ActionListener {
     }
 
     /**
-     * 获取已启用的列表数据
-     *
-     * @return 列表数据
-     */
-    public ArrayList<PayloadItem> getEnableList() {
-        return mListModel.getDataList(true);
-    }
-
-    /**
      * 获取列表数据
      *
      * @return 列表数据
      */
     public ArrayList<PayloadItem> getDataList() {
-        return mListModel.getDataList(false);
-    }
-
-    /**
-     * 添加数据监听器
-     *
-     * @param l 监听器
-     */
-    public void setOnDataChangeListener(OnDataChangeListener l) {
-        this.mOnDataChangeListener = l;
+        return mListModel.getDataList();
     }
 
     private void initView() {
@@ -139,8 +106,6 @@ public class SimplePayloadList extends JPanel implements ActionListener {
 
         mListView = new JTable(mListModel);
         UIHelper.setTableHeaderAlign(mListView, SwingConstants.CENTER);
-        mListView.getColumnModel().getColumn(0).setMinWidth(32);
-        mListView.getColumnModel().getColumn(0).setMaxWidth(32);
         mListView.getTableHeader().setReorderingAllowed(false);
         JScrollPane scrollPane = new JScrollPane(mListView);
         panel.add(scrollPane, "1w");
@@ -156,7 +121,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
                 mListModel.add(newItem);
                 break;
             case "clear-item":
-                int state = UIHelper.showOkCancelDialog("确认清空列表？");
+                int state = UIHelper.showOkCancelDialog("确认清空列表？", this);
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.clearAll();
                 }
@@ -204,21 +169,23 @@ public class SimplePayloadList extends JPanel implements ActionListener {
     }
 
     private PayloadItem showItemOptionPane(PayloadItem item) {
-        String title = "Add payload processing rule";
-        String message = "Enter the details of the payload processing rule.";
-        if (item != null) {
-            title = "Edit payload processing rule";
-        }
+        boolean hasCreate = item == null;
+        return showItemOptionPane(hasCreate, item);
+    }
 
+    private PayloadItem showItemOptionPane(boolean hasCreate, PayloadItem item) {
+        String title = "Add payload rule";
+        String message = "Enter the details of the payload rule.";
+        if (!hasCreate) {
+            title = "Edit payload rule";
+        }
         // 布局
         JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(500, 200));
+        panel.setPreferredSize(new Dimension(400, 200));
         panel.setLayout(new VLayout(10));
-
         // 描述信息
         JLabel label = new JLabel(message);
         panel.add(label);
-
         // 类型
         JComboBox<String> ruleTypeBox = new JComboBox<>();
         ruleTypeBox.addItem("Select rule type");
@@ -249,7 +216,6 @@ public class SimplePayloadList extends JPanel implements ActionListener {
             UIHelper.refreshUI(panel);
         });
         panel.add(ruleTypeBox);
-
         // 范围
         JComboBox<String> ruleScopeBox = new JComboBox<>();
         ruleScopeBox.addItem("Select rule scope");
@@ -258,7 +224,6 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         ruleScopeBox.addItem("Body");
         ruleScopeBox.addItem("Request");
         panel.add(ruleScopeBox);
-
         // 数据填充
         if (item != null) {
             PayloadRule rule = item.getRule();
@@ -269,56 +234,67 @@ public class SimplePayloadList extends JPanel implements ActionListener {
             if (ruleTypeIndex >= 0) {
                 for (int i = 0; i < mParamInputViews.size(); i++) {
                     HintTextField field = mParamInputViews.get(i);
-                    field.setText(rule.getParamValues()[i]);
+                    String paramValue = rule.getParamValues()[i];
+                    // 特殊处理 '\r'、'\n' 字符
+                    if (paramValue.contains("\r")) {
+                        paramValue = paramValue.replaceAll("\r", "\\\\r");
+                    }
+                    if (paramValue.contains("\n")) {
+                        paramValue = paramValue.replaceAll("\n", "\\\\n");
+                    }
+                    field.setText(paramValue);
                 }
             }
         }
-
         // 弹窗
-        int showState = JOptionPane.showConfirmDialog(JOptionPane.getRootFrame(),
-                panel, title, JOptionPane.OK_CANCEL_OPTION);
+        int showState = UIHelper.showCustomDialog(title, panel, this);
         // 用户确认，组合参数
-        if (showState == JOptionPane.YES_OPTION) {
-            if (item == null) {
-                item = new PayloadItem();
-                item.setEnabled(true);
-                item.setId(mListModel.size());
-                item.setScope(-1);
-            }
-            // 类型
-            int ruleType = ruleTypeBox.getSelectedIndex() - 1;
-            PayloadRule rule = getPayloadRuleByIndex(ruleType);
-            if (rule == null) {
-                UIHelper.showTipsDialog("Please select rule type.");
-                return showItemOptionPane(item);
-            }
-            item.setRule(rule);
-
-            // 参数提醒
-            StringBuilder errorTips = new StringBuilder();
-            // 范围
-            int ruleScope = ruleScopeBox.getSelectedIndex() - 1;
-            if (ruleScope < 0) {
-                errorTips.append("Please select rule scope.\n");
-            }
-            item.setScope(ruleScope);
-            // 参数填充
-            for (int i = 0; i < rule.paramCount(); i++) {
-                String paramName = rule.paramName(i).toLowerCase();
-                String paramsValue = mParamInputViews.get(i).getText();
-                if (StringUtils.isEmpty(paramsValue)) {
-                    errorTips.append("Please input ").append(paramName).append(" param value.\n");
-                    continue;
-                }
-                rule.setParamValue(i, paramsValue);
-            }
-            if (StringUtils.isNotEmpty(errorTips.toString())) {
-                UIHelper.showTipsDialog(errorTips.toString());
-                return showItemOptionPane(item);
-            }
-            return item;
+        if (showState != JOptionPane.YES_OPTION) {
+            return null;
         }
-        return null;
+        if (item == null) {
+            item = new PayloadItem();
+            item.setScope(-1);
+        }
+        // 类型
+        int ruleType = ruleTypeBox.getSelectedIndex() - 1;
+        PayloadRule rule = getPayloadRuleByIndex(ruleType);
+        if (rule == null) {
+            UIHelper.showTipsDialog("Please select rule type.", this);
+            return showItemOptionPane(hasCreate, item);
+        }
+        item.setRule(rule);
+        // 参数提醒
+        StringBuilder errorTips = new StringBuilder();
+        // 范围
+        int ruleScope = ruleScopeBox.getSelectedIndex() - 1;
+        if (ruleScope < 0) {
+            errorTips.append("Please select rule scope.\n");
+        } else {
+            item.setScope(ruleScope);
+        }
+        // 参数填充
+        for (int i = 0; i < rule.paramCount(); i++) {
+            String paramName = rule.paramName(i).toLowerCase();
+            String paramsValue = mParamInputViews.get(i).getText();
+            if (StringUtils.isEmpty(paramsValue)) {
+                errorTips.append("Please input ").append(paramName).append(" param value.\n");
+                continue;
+            }
+            // 特殊处理 '\r'、'\n' 字符
+            if (paramsValue.contains("\\r")) {
+                paramsValue = paramsValue.replace("\\r", "\r");
+            }
+            if (paramsValue.contains("\\n")) {
+                paramsValue = paramsValue.replace("\\n", "\n");
+            }
+            rule.setParamValue(i, paramsValue);
+        }
+        if (StringUtils.isNotEmpty(errorTips)) {
+            UIHelper.showTipsDialog(errorTips.toString(), this);
+            return showItemOptionPane(hasCreate, item);
+        }
+        return item;
     }
 
     private JPanel newParamItemView(String paramName) {
@@ -370,21 +346,11 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         if (StringUtils.isEmpty(ruleType)) {
             return null;
         }
-        for (int i = 0; i < sRuleModules.length; i++) {
-            Class<?> clz = sRuleModules[i];
+        for (Class<?> clz : sRuleModules) {
             if (clz.getSimpleName().equals(ruleType)) {
                 return (PayloadRule) ClassUtils.newObjectByClass(clz);
             }
         }
         return null;
-    }
-
-    /**
-     * 列表数据有修改
-     */
-    private void dataChanged() {
-        if (mOnDataChangeListener != null) {
-            mOnDataChangeListener.onDataChange(getActionCommand());
-        }
     }
 }

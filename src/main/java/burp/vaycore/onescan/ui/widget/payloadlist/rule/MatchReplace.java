@@ -33,7 +33,21 @@ public class MatchReplace extends PayloadRule {
     @Override
     public String toDescribe() {
         String[] values = getParamValues();
-        return String.format("Match [%s] replace with [%s]", values[0], values[1]);
+        return String.format("Match [%s] replace with [%s]",
+                handleParamValue(values[0]), handleParamValue(values[1]));
+    }
+
+    /**
+     * 特殊处理 '\r'、'\n' 字符
+     */
+    private String handleParamValue(String paramValue) {
+        if (paramValue.contains("\r")) {
+            paramValue = paramValue.replaceAll("\r", "\\\\r");
+        }
+        if (paramValue.contains("\n")) {
+            paramValue = paramValue.replaceAll("\n", "\\\\n");
+        }
+        return paramValue;
     }
 
     @Override

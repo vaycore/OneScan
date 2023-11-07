@@ -19,7 +19,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
     private final IExtensionHelpers helpers;
     private String extensionName;
     private IHttpListener httpListener;
-    private BurpUiComponentListener mBurpUiComponentListener;
+    private BurpUiComponentCallback mBurpUiComponentCallback;
 
     public BurpCallbacksAdapter(IBurpExtenderCallbacks callbacks) {
         this.callbacks = callbacks;
@@ -261,8 +261,8 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public void customizeUiComponent(Component component) {
-        if (this.mBurpUiComponentListener != null) {
-            this.mBurpUiComponentListener.onSetupUiComponent(component);
+        if (this.mBurpUiComponentCallback != null) {
+            this.mBurpUiComponentCallback.onUiComponentSetupEvent(component);
         }
     }
 
@@ -271,8 +271,8 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
      *
      * @param callback 监听器接口实例
      */
-    public void setBurpUiComponentListener(BurpUiComponentListener callback) {
-        this.mBurpUiComponentListener = callback;
+    public void setBurpUiComponentCallback(BurpUiComponentCallback callback) {
+        this.mBurpUiComponentCallback = callback;
     }
 
     @Override
@@ -528,5 +528,18 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
     @Override
     public void registerMenuItem(String s, IMenuItemHandler iMenuItemHandler) {
 
+    }
+
+    /**
+     * UI 组件设置回调
+     */
+    public interface BurpUiComponentCallback {
+
+        /**
+         * 组件设置事件
+         *
+         * @param component 组件实例
+         */
+        void onUiComponentSetupEvent(Component component);
     }
 }

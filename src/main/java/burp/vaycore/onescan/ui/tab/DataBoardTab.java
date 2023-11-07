@@ -43,7 +43,7 @@ public class DataBoardTab extends BaseTab {
     private JCheckBox mDirScan;
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
-    private JCheckBox mMergePayloadProcessing;
+    private JCheckBox mPayloadProcessing;
     private String mLastUrlPrefix;
     private List<String> mLastImportData;
 
@@ -101,8 +101,8 @@ public class DataBoardTab extends BaseTab {
         mReplaceHeader = newJCheckBox(controlPanel, "Replace Header", Config.KEY_ENABLE_REPLACE_HEADER);
         // 递归扫描开关
         mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
-        // 合并Payload Processing请求
-        mMergePayloadProcessing = newJCheckBox(controlPanel, "Merge Payload Processing", Config.KEY_ENABLE_MERGE_PAYLOAD_PROCESSING);
+        // 启用Payload Processing
+        mPayloadProcessing = newJCheckBox(controlPanel, "Payload Processing", Config.KEY_ENABLE_PAYLOAD_PROCESSING);
         // 导入Url
         JButton importUrlBtn = new JButton("Import url");
         importUrlBtn.addActionListener((e) -> importUrl());
@@ -223,8 +223,8 @@ public class DataBoardTab extends BaseTab {
         return mDirScan != null && mDirScan.isSelected();
     }
 
-    public boolean hasMergePayloadProcessing() {
-        return mMergePayloadProcessing != null && mMergePayloadProcessing.isSelected();
+    public boolean hasPayloadProcessing() {
+        return mPayloadProcessing != null && mPayloadProcessing.isSelected();
     }
 
     /**

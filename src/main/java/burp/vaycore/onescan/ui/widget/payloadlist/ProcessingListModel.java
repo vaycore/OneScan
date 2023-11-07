@@ -6,28 +6,27 @@ import java.util.List;
 import java.util.Vector;
 
 /**
- * 列表适配器
  * <p>
- * Created by vaycore on 2022-09-04.
+ * Created by vaycore on 2023-11-07.
  */
-public class PayloadListModel extends AbstractTableModel {
+public class ProcessingListModel extends AbstractTableModel {
 
-    private final String[] COLUMN_NAMES = new String[]{"Rule"};
-    private final Vector<PayloadItem> mData;
+    private final String[] COLUMN_NAMES = new String[]{"", "RuleName", "RuleCount"};
+    private final Vector<ProcessingItem> mData;
 
-    public PayloadListModel() {
+    public ProcessingListModel() {
         this(null);
     }
 
-    public PayloadListModel(List<PayloadItem> data) {
+    public ProcessingListModel(List<ProcessingItem> data) {
         if (data == null) {
             data = new ArrayList<>();
         }
         mData = new Vector<>(data);
     }
 
-    public void add(PayloadItem item) {
-        if (item == null || item.getRule() == null) {
+    public void add(ProcessingItem item) {
+        if (item == null || item.getItems() == null) {
             return;
         }
         int id = size();
@@ -44,12 +43,12 @@ public class PayloadListModel extends AbstractTableModel {
         return mData.size();
     }
 
-    public PayloadItem get(int index) {
+    public ProcessingItem get(int index) {
         return mData.get(index);
     }
 
-    public void set(int index, PayloadItem item) {
-        if (item == null || item.getRule() == null) {
+    public void set(int index, ProcessingItem item) {
+        if (item == null || item.getItems() == null) {
             return;
         }
         mData.set(index, item);
@@ -61,8 +60,12 @@ public class PayloadListModel extends AbstractTableModel {
         fireTableRowsDeleted(index, index);
     }
 
-    public ArrayList<PayloadItem> getDataList() {
-        return new ArrayList<>(mData);
+    public synchronized ArrayList<ProcessingItem> getDataList(boolean onlyEnabled) {
+        ArrayList<ProcessingItem> result = new ArrayList<>();
+        mData.stream()
+                .filter(ProcessingItem -> !onlyEnabled || ProcessingItem.isEnabled())
+                .forEach(result::add);
+        return result;
     }
 
     @Override
@@ -77,15 +80,29 @@ public class PayloadListModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        PayloadItem data = mData.get(rowIndex);
-        if (columnIndex == 0) {
-            return data.getRule().toDescribe();
+        ProcessingItem data = mData.get(rowIndex);
+        switch (columnIndex) {
+            case 0:
+                return data.isEnabled();
+            case 1:
+                return data.getName();
+            case 2:
+                ArrayList<PayloadItem> items = data.getItems();
+                int count = items == null ? 0 : items.size();
+                return String.valueOf(count);
         }
         return "";
     }
 
     @Override
     public Class<?> getColumnClass(int columnIndex) {
+        switch (columnIndex) {
+            case 0:
+                return Boolean.class;
+            case 1:
+            case 2:
+                return String.class;
+        }
         return String.class;
     }
 
@@ -104,7 +121,8 @@ public class PayloadListModel extends AbstractTableModel {
         if (columnIndex != 0) {
             return;
         }
-        PayloadItem item = get(rowIndex);
+        ProcessingItem item = get(rowIndex);
+        item.setEnabled((Boolean) aValue);
         set(rowIndex, item);
     }
 }
