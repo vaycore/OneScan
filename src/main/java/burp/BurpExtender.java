@@ -816,7 +816,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     String right = header.substring(end);
                     // 拼接处理好的数据
                     header = left + newUrl + right;
-                    request = header + body;
+                    request = header + "\r\n\r\n" + body;
                     url = newUrl;
                     break;
                 case PayloadRule.SCOPE_HEADER:
