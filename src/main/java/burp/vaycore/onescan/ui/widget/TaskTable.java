@@ -14,9 +14,10 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * Created by vaycore on 2022-08-10.
  */
-public class TaskTable extends JTable {
+public class TaskTable extends JTable implements ActionListener {
 
     private final TaskTableModel mTaskTableModel;
     private final Color mItemBgColor;
@@ -37,93 +38,6 @@ public class TaskTable extends JTable {
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
     private OnTaskTableEventListener mOnTaskTableEventListener;
     private int mLastSelectedRow;
-
-    private final MouseListener mMenuItemClick = new MouseAdapter() {
-        @Override
-        public void mousePressed(MouseEvent e) {
-            JMenuItem item = (JMenuItem) e.getComponent();
-            String action = item.getActionCommand();
-            int[] selectedRows = getSelectedRows();
-            switch (action) {
-                case "fetch-body-md5":
-                case "fetch-body-hash":
-                    if (mOnTaskTableEventListener == null) {
-                        break;
-                    }
-                    StringBuilder result = new StringBuilder();
-                    for (int index : selectedRows) {
-                        TaskData data = getTaskData(index);
-                        byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
-                        String value;
-                        if ("fetch-body-md5".equals(action)) {
-                            value = Utils.md5(bodyBytes);
-                        } else {
-                            value = IconHash.hash(bodyBytes);
-                        }
-                        if (!StringUtils.isEmpty(result)) {
-                            result.append("\n\n");
-                        }
-                        result.append(String.format("#%d：\n%s", data.getId(), value));
-                    }
-                    showTextAreaDialog(item.getText(), result.toString());
-                    break;
-                case "send-to-repeater":
-                    ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
-                    for (int index : selectedRows) {
-                        TaskData data = getTaskData(index);
-                        newData.add(data);
-                    }
-                    if (mOnTaskTableEventListener != null) {
-                        mOnTaskTableEventListener.onSendToRepeater(newData);
-                    }
-                    break;
-                case "add-to-black-host":
-                    if (mOnTaskTableEventListener == null) {
-                        break;
-                    }
-                    ArrayList<String> hosts = new ArrayList<>();
-                    for (int index : selectedRows) {
-                        TaskData data = getTaskData(index);
-                        try {
-                            String host = new URL(data.getHost()).getHost();
-                            if (!hosts.contains(host)) {
-                                hosts.add(host);
-                            }
-                        } catch (MalformedURLException ex) {
-                            Logger.error(ex.getMessage());
-                        }
-                    }
-                    mOnTaskTableEventListener.addToBlackHost(hosts);
-                    break;
-                case "remove-items":
-                    ArrayList<TaskData> removeList = new ArrayList<>();
-                    for (int index : selectedRows) {
-                        TaskData data = getTaskData(index);
-                        removeList.add(data);
-                    }
-                    mTaskTableModel.removeItems(removeList);
-                    break;
-                case "clean-all":
-                    mTaskTableModel.clearAll();
-                    if (mOnTaskTableEventListener != null) {
-                        mOnTaskTableEventListener.onChangeSelection(null);
-                    }
-                    mLastSelectedRow = -1;
-                    break;
-            }
-        }
-    };
-
-    private static void showTextAreaDialog(String title, String text) {
-        JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(400, 150));
-        panel.setLayout(new VLayout());
-        JTextArea area = new JTextArea(text);
-        area.setEditable(false);
-        JScrollPane pane = new JScrollPane(area);
-        panel.add(pane, "1w");
-        UIHelper.showCustomDialog(title, new String[]{"Close"}, panel);
-    }
 
     @Override
     public TableCellRenderer getCellRenderer(int row, int column) {
@@ -267,7 +181,7 @@ public class TaskTable extends JTable {
     private void addPopupMenuItem(JPopupMenu menu, String name, String actionCommand) {
         JMenuItem item = new JMenuItem(name);
         item.setActionCommand(actionCommand);
-        item.addMouseListener(mMenuItemClick);
+        item.addActionListener(this);
         menu.add(item);
     }
 
@@ -366,6 +280,93 @@ public class TaskTable extends JTable {
     private TaskData getTaskData(int rowIndex) {
         int index = convertRowIndexToModel(rowIndex);
         return mTaskTableModel.mData.get(index);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Logger.info("click ===>>>");
+        JMenuItem item = (JMenuItem) e.getSource();
+        String action = item.getActionCommand();
+        Logger.info(action + " === >>> ");
+        int[] selectedRows = getSelectedRows();
+        switch (action) {
+            case "fetch-body-md5":
+            case "fetch-body-hash":
+                if (mOnTaskTableEventListener == null) {
+                    break;
+                }
+                StringBuilder result = new StringBuilder();
+                for (int index : selectedRows) {
+                    TaskData data = getTaskData(index);
+                    byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
+                    String value;
+                    if ("fetch-body-md5".equals(action)) {
+                        value = Utils.md5(bodyBytes);
+                    } else {
+                        value = IconHash.hash(bodyBytes);
+                    }
+                    if (!StringUtils.isEmpty(result)) {
+                        result.append("\n\n");
+                    }
+                    result.append(String.format("#%d：\n%s", data.getId(), value));
+                }
+                showTextAreaDialog(item.getText(), result.toString());
+                break;
+            case "send-to-repeater":
+                ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
+                for (int index : selectedRows) {
+                    TaskData data = getTaskData(index);
+                    newData.add(data);
+                }
+                if (mOnTaskTableEventListener != null) {
+                    mOnTaskTableEventListener.onSendToRepeater(newData);
+                }
+                break;
+            case "add-to-black-host":
+                if (mOnTaskTableEventListener == null) {
+                    break;
+                }
+                ArrayList<String> hosts = new ArrayList<>();
+                for (int index : selectedRows) {
+                    TaskData data = getTaskData(index);
+                    try {
+                        String host = new URL(data.getHost()).getHost();
+                        if (!hosts.contains(host)) {
+                            hosts.add(host);
+                        }
+                    } catch (MalformedURLException ex) {
+                        Logger.error(ex.getMessage());
+                    }
+                }
+                mOnTaskTableEventListener.addToBlackHost(hosts);
+                break;
+            case "remove-items":
+                ArrayList<TaskData> removeList = new ArrayList<>();
+                for (int index : selectedRows) {
+                    TaskData data = getTaskData(index);
+                    removeList.add(data);
+                }
+                mTaskTableModel.removeItems(removeList);
+                break;
+            case "clean-all":
+                mTaskTableModel.clearAll();
+                if (mOnTaskTableEventListener != null) {
+                    mOnTaskTableEventListener.onChangeSelection(null);
+                }
+                mLastSelectedRow = -1;
+                break;
+        }
+    }
+
+    private static void showTextAreaDialog(String title, String text) {
+        JPanel panel = new JPanel();
+        panel.setPreferredSize(new Dimension(400, 150));
+        panel.setLayout(new VLayout());
+        JTextArea area = new JTextArea(text);
+        area.setEditable(false);
+        JScrollPane pane = new JScrollPane(area);
+        panel.add(pane, "1w");
+        UIHelper.showCustomDialog(title, new String[]{"Close"}, panel);
     }
 
     /**
