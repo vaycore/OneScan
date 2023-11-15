@@ -453,6 +453,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 进行 Payload Processing 处理后，再次请求数据包
         ArrayList<ProcessingItem> processList = Config.getPayloadProcessList();
+        if (processList == null || processList.isEmpty()) {
+            return;
+        }
         String from = "Process";
         // 遍历规则列表
         processList.parallelStream().filter(ProcessingItem::isEnabled).forEach((item) -> {

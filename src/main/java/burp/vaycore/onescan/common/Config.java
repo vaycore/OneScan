@@ -199,16 +199,15 @@ public class Config {
         // Payload Processing 配置结构更新
         if (hasKey(Config.KEY_PAYLOAD_PROCESS_LIST)) {
             ArrayList<LinkedTreeMap<String, Object>> items = sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
-            if (items.isEmpty()) {
-                return;
-            }
-            ArrayList<PayloadItem> result = mapItemsConvert(items);
             ArrayList<ProcessingItem> newItems = new ArrayList<>();
-            ProcessingItem item = new ProcessingItem();
-            item.setEnabled(true);
-            item.setItems(result);
-            item.setName("Low version rules");
-            newItems.add(item);
+            if (items != null && !items.isEmpty()) {
+                ArrayList<PayloadItem> result = mapItemsConvert(items);
+                ProcessingItem item = new ProcessingItem();
+                item.setEnabled(true);
+                item.setItems(result);
+                item.setName("Low version rules");
+                newItems.add(item);
+            }
             sConfigManager.put(Config.KEY_PAYLOAD_PROCESS_LIST, newItems);
         }
     }
@@ -299,16 +298,18 @@ public class Config {
         try {
             items = sConfigManager.get(Config.KEY_PAYLOAD_PROCESS_LIST);
             ArrayList<ProcessingItem> result = new ArrayList<>();
-            for (LinkedTreeMap<String, Object> mapItem : items) {
-                ProcessingItem item = new ProcessingItem();
-                item.setEnabled((Boolean) mapItem.get("enabled"));
-                String name = String.valueOf(mapItem.get("name"));
-                item.setName(name);
-                ArrayList<LinkedTreeMap<String, Object>> payloadMapItems =
-                        (ArrayList<LinkedTreeMap<String, Object>>) mapItem.get("items");
-                ArrayList<PayloadItem> payloadItems = mapItemsConvert(payloadMapItems);
-                item.setItems(payloadItems);
-                result.add(item);
+            if (items != null && !items.isEmpty()) {
+                for (LinkedTreeMap<String, Object> mapItem : items) {
+                    ProcessingItem item = new ProcessingItem();
+                    item.setEnabled((Boolean) mapItem.get("enabled"));
+                    String name = String.valueOf(mapItem.get("name"));
+                    item.setName(name);
+                    ArrayList<LinkedTreeMap<String, Object>> payloadMapItems =
+                            (ArrayList<LinkedTreeMap<String, Object>>) mapItem.get("items");
+                    ArrayList<PayloadItem> payloadItems = mapItemsConvert(payloadMapItems);
+                    item.setItems(payloadItems);
+                    result.add(item);
+                }
             }
             put(Config.KEY_PAYLOAD_PROCESS_LIST, result);
         } catch (Exception e) {
