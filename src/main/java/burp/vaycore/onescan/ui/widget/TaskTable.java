@@ -284,10 +284,8 @@ public class TaskTable extends JTable implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        Logger.info("click ===>>>");
         JMenuItem item = (JMenuItem) e.getSource();
         String action = item.getActionCommand();
-        Logger.info(action + " === >>> ");
         int[] selectedRows = getSelectedRows();
         switch (action) {
             case "fetch-body-md5":

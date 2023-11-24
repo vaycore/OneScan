@@ -718,7 +718,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             request = fillVariable(request, "webroot", webroot);
             return request;
         } catch (IllegalArgumentException e) {
-            Logger.error(e.getMessage());
+            Logger.debug(e.getMessage());
             return null;
         }
     }
