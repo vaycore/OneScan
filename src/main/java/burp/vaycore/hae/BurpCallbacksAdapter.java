@@ -20,6 +20,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
     private String extensionName;
     private IHttpListener httpListener;
     private BurpUiComponentCallback mBurpUiComponentCallback;
+    private String mExtensionFilename;
 
     public BurpCallbacksAdapter(IBurpExtenderCallbacks callbacks) {
         this.callbacks = callbacks;
@@ -470,9 +471,13 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
         return new String[0];
     }
 
+    public void setExtensionFilename(String filename) {
+        this.mExtensionFilename = filename;
+    }
+
     @Override
     public String getExtensionFilename() {
-        return null;
+        return mExtensionFilename;
     }
 
     @Override

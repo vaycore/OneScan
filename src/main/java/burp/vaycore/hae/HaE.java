@@ -51,6 +51,7 @@ public class HaE {
             Class<?> c = loader.loadClass("burp.BurpExtender");
             IBurpExtender extender = (IBurpExtender) c.newInstance();
             sAdapter = new BurpCallbacksAdapter(sCallbacks);
+            sAdapter.setExtensionFilename(pluginPath);
             // 监听 UI 组件设置
             sAdapter.setBurpUiComponentCallback((component) -> {
                 sMainUI = component;
