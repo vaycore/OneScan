@@ -22,17 +22,17 @@ OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码�
 /{{domain.name}}.zip
 ```
 
-目标站点访问：`http://www.xxxxxx.com/a/b/c/xxx.min.js` ，插件会自动扫描如下的路径：
+目标站点访问：`https://www.xxxxxx.com/a/b/c/xxx.min.js` ，插件会自动扫描如下的路径：
 
 ```text
-http://www.xxxxxx.com/api-docs
-http://www.xxxxxx.com/xxxxxx.zip
-http://www.xxxxxx.com/a/api-docs
-http://www.xxxxxx.com/a/xxxxxx.zip
-http://www.xxxxxx.com/a/b/api-docs
-http://www.xxxxxx.com/a/b/xxxxxx.zip
-http://www.xxxxxx.com/a/b/c/api-docs
-http://www.xxxxxx.com/a/b/c/xxxxxx.zip
+https://www.xxxxxx.com/api-docs
+https://www.xxxxxx.com/xxxxxx.zip
+https://www.xxxxxx.com/a/api-docs
+https://www.xxxxxx.com/a/xxxxxx.zip
+https://www.xxxxxx.com/a/b/api-docs
+https://www.xxxxxx.com/a/b/xxxxxx.zip
+https://www.xxxxxx.com/a/b/c/api-docs
+https://www.xxxxxx.com/a/b/c/xxxxxx.zip
 ```
 
 ## 插件安装
@@ -43,7 +43,7 @@ BurpSuite 安装流程如下：
 Extender -> Extensions -> Add -> Select File -> Next
 ```
 
-流程结束后，打印如下信息表示插件安装完成（需要在 Config -> Other -> HaE 中配置 [HaE](https://github.com/gh0stkey/HaE) 插件之后才会显示 **HaE** 插件的日志信息和联动高亮功能）：
+流程结束后，打印如下信息表示插件安装完成（需要在 Config -> Other -> HaE 中配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径后，才会显示 **HaE** 插件的日志信息、数据高亮功能）：
 
 ![](imgs/install_success.png)
 
@@ -158,10 +158,10 @@ Other配置界面如下
 
 ![](imgs/config_other.png)
 
-- `Web name collect` Web目录名收集（例如：`http://xxx.com/wapi/xxx.html` 会将该 url 中的 `wapi` 写入到指定的文件中）
-- `Json field collect` Json字段收集（收集json格式响应包中的所有key值，保存到指定目录）
+- `Web name collect` Web 目录名收集（例如：`http://xxx.com/wapi/xxx.html` 会将该 url 中的 `wapi` 写入到指定的文件中）
+- `Json field collect` JSON 字段收集（收集 JSON 格式响应包中的所有 `key` 值，保存到指定目录）
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
-- `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮
+- `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮（配置路径示例如图）
 - `Clear Temp` 清除指纹识别缓存（用于加快指纹识别的速度）
 
 ### Fingerprint指纹
@@ -172,7 +172,10 @@ Other配置界面如下
 
 - `Reload` 重新加载配置文件中的指纹信息
 - `Search` 搜索指纹库中的指纹信息
-- `Test` 用于测试指纹规则
+- `Add` 添加指纹信息
+- `Edit` 编辑选中的指纹信息
+- `Delete` 删除选中的指纹信息
+- `Test` 测试指纹规则
 
 指纹信息全程使用UI添加，不需要编写正则匹配规则（也可以使用正则匹配），UI界面如下：
 
