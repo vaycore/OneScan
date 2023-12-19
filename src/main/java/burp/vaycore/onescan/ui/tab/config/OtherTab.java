@@ -67,7 +67,6 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
         String action = e.getActionCommand();
         String oldPath;
         String filepath;
-        boolean state;
         switch (action) {
             case "hae-plugin-select-file":
                 oldPath = getHaEPluginPath();
@@ -76,18 +75,28 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                     return;
                 }
                 mHaEPluginPath.setText(filepath);
-                Config.put(Config.KEY_HAE_PLUGIN_PATH, filepath);
-                state = HaE.loadPlugin(filepath);
-                if (state) {
-                    UIHelper.showTipsDialog("HaE load success!");
-                }
+                HaE.loadPlugin(filepath, new HaE.LoadPluginCallback() {
+                    @Override
+                    public void onLoadSuccess() {
+                        UIHelper.showTipsDialog("HaE load success!");
+                        Config.put(Config.KEY_HAE_PLUGIN_PATH, filepath);
+                    }
+                    @Override
+                    public void onLoadError(String msg) {
+                        UIHelper.showTipsDialog(msg);
+                        mHaEPluginPath.setText("");
+                        Config.put(Config.KEY_HAE_PLUGIN_PATH, "");
+                    }
+                });
                 break;
             case "hae-plugin-unload":
-                state = HaE.unloadPlugin();
+                boolean state = HaE.unloadPlugin();
                 if (state) {
                     mHaEPluginPath.setText("");
                     Config.put(Config.KEY_HAE_PLUGIN_PATH, "");
                     UIHelper.showTipsDialog("HaE unload success!");
+                } else {
+                    UIHelper.showTipsDialog("HaE unload failed!");
                 }
                 break;
             case "clear-fingerprint-check-temp":
