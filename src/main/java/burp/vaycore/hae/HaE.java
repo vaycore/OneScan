@@ -34,16 +34,46 @@ public class HaE {
      * 加载插件
      *
      * @param pluginPath 插件jar包路径
-     * @return true=加载成功；false=加载失败
      */
-    public static boolean loadPlugin(String pluginPath) {
-        // 是否初始化
-        if (sExtender == null || sCallbacks == null) {
-            return false;
+    public static void loadPlugin(String pluginPath) {
+        HaE.loadPlugin(pluginPath, new LoadPluginCallback() {
+            @Override
+            public void onLoadSuccess() {
+
+            }
+
+            @Override
+            public void onLoadError(String msg) {
+                Logger.error(msg);
+            }
+        });
+    }
+
+    /**
+     * 加载插件
+     *
+     * @param pluginPath 插件jar包路径
+     * @param callback   加载插件回调接口实例
+     */
+    public static void loadPlugin(String pluginPath, LoadPluginCallback callback) {
+        // 检测插件路径是否未配置
+        if (StringUtils.isEmpty(pluginPath)) {
+            return;
         }
-        // 检测HaE插件的路径是否正常
-        if (StringUtils.isEmpty(pluginPath) || !FileUtils.isFile(pluginPath)) {
-            return false;
+        // 检测回调接口实例是否为空
+        if (callback == null) {
+            Logger.error("callback is null!");
+            return;
+        }
+        // 是否初始化所需变量
+        if (sExtender == null || sCallbacks == null) {
+            callback.onLoadError("no init!");
+            return;
+        }
+        // 检测 HaE 插件的路径是否正常
+        if (!pluginPath.endsWith(".jar") || !FileUtils.isFile(pluginPath)) {
+            callback.onLoadError("HaE plugin path invalid!");
+            return;
         }
         try {
             URL u = new File(pluginPath).toURI().toURL();
@@ -52,26 +82,27 @@ public class HaE {
             IBurpExtender extender = (IBurpExtender) c.newInstance();
             sAdapter = new BurpCallbacksAdapter(sCallbacks);
             sAdapter.setExtensionFilename(pluginPath);
-            // 监听 UI 组件设置
+            // 监听 UI 组件设置（等 UI 设置之后，再对各项参数进行检测和初始化）
             sAdapter.setBurpUiComponentCallback((component) -> {
+                // 检测插件名，是否为HaE
+                String name = sAdapter.getExtensionName();
+                if (StringUtils.isEmpty(name) || !name.contains("Highlighter and Extractor")) {
+                    callback.onLoadError("Load plugin failed: plugin error, invalid plugin: " + name);
+                    sAdapter.setBurpUiComponentCallback(null);
+                    return;
+                }
                 sMainUI = component;
                 OneScan oneScan = (OneScan) sExtender.getUiComponent();
                 oneScan.addTab("HaE", sMainUI);
                 UIHelper.refreshUI(oneScan);
+                // 参数赋值
+                sHttpListener = sAdapter.getHttpListener();
+                Logger.info("HaE load success! info: %s", name);
+                callback.onLoadSuccess();
             });
             extender.registerExtenderCallbacks(sAdapter);
-            // 检测插件名，是否为HaE
-            String name = sAdapter.getExtensionName();
-            if (StringUtils.isEmpty(name) || !name.contains("Highlighter and Extractor")) {
-                throw new IllegalStateException("Load plugin failed: plugin error.");
-            }
-            // 参数赋值
-            sHttpListener = sAdapter.getHttpListener();
-            Logger.info("HaE load success! info: %s", name);
-            return true;
         } catch (Exception e) {
-            Logger.info("HaE load exception: %s", e.toString());
-            return false;
+            callback.onLoadError("HaE load exception: " + e);
         }
     }
 
@@ -99,7 +130,7 @@ public class HaE {
             Logger.info("HaE unload success!");
             return true;
         } catch (Exception e) {
-            Logger.info("HaE unload exception: %s", e.toString());
+            Logger.error("HaE unload exception: %s", e.toString());
             return false;
         }
     }
@@ -116,5 +147,23 @@ public class HaE {
                 Logger.error("HaE plugin error: " + e);
             }
         }
+    }
+
+    /**
+     * 加载插件回调
+     */
+    public interface LoadPluginCallback {
+
+        /**
+         * 加载成功
+         */
+        void onLoadSuccess();
+
+        /**
+         * 加载错误
+         *
+         * @param msg 错误信息
+         */
+        void onLoadError(String msg);
     }
 }
