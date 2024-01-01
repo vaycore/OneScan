@@ -163,7 +163,6 @@ public class CollectManager {
         if (diff.isEmpty()) {
             return;
         }
-        Logger.info("diff => " + diff);
         // 拼接成保存路径
         String saveDir = sDirPath + File.separator + parentName + File.separator + host + File.separator;
         if (!FileUtils.exists(saveDir)) {
