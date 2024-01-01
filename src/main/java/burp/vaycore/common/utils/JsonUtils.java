@@ -18,6 +18,11 @@ public class JsonUtils {
      */
     private static final Pattern sJsonKeyRegex;
 
+    /**
+     * json数据key允许的字符
+     */
+    private static final String JSON_KEY_RULE = "[0-9a-zA-z-_.]+";
+
     static {
         sJsonKeyRegex = Pattern.compile("\"([^\"]+)\"\\s*:\\s*,?");
     }
@@ -51,11 +56,17 @@ public class JsonUtils {
         Matcher matcher = sJsonKeyRegex.matcher(json);
         while (matcher.find()) {
             String findKey = matcher.group(1);
-            if (StringUtils.isNotEmpty(findKey)) {
-                // 是否需要去重
-                if (hasRepeat || !result.contains(findKey)) {
-                    result.add(findKey);
-                }
+            if (StringUtils.isEmpty(findKey)) {
+                continue;
+            }
+            if (!findKey.matches(JSON_KEY_RULE)) {
+                continue;
+            }
+            // 存在嵌套的情况，将'\'移除
+            findKey = findKey.replace("\\", "");
+            // 是否需要去重
+            if (hasRepeat || !result.contains(findKey)) {
+                result.add(findKey);
             }
         }
         return result;
