@@ -118,8 +118,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private void initQpsLimiter() {
         // 检测范围，如果不符合条件，不创建限制器
         int limit = StringUtils.parseInt(Config.get(Config.KEY_QPS_LIMIT));
+        int delay = StringUtils.parseInt(Config.get(Config.KEY_REQUEST_DELAY));
         if (limit > 0 && limit <= 9999) {
-            this.mQpsLimit = new QpsLimiter(limit);
+            this.mQpsLimit = new QpsLimiter(limit, delay);
         }
     }
 
@@ -1074,6 +1075,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             case RequestTab.EVENT_QPS_LIMIT:
                 changeQpsLimit(String.valueOf(params[0]));
                 break;
+            case RequestTab.EVENT_REQUEST_DELAY:
+                changeRequestDelay(String.valueOf(params[0]));
+                break;
             case OtherTab.EVENT_UNLOAD_PLUGIN:
                 mCallbacks.unloadExtension();
                 break;
@@ -1087,8 +1091,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private void changeQpsLimit(String limit) {
-        mQpsLimit = new QpsLimiter(StringUtils.parseInt(limit));
+        initQpsLimiter();
         Logger.debug("Event: change qps limit: %s", limit);
+    }
+
+    private void changeRequestDelay(String delay) {
+        initQpsLimiter();
+        Logger.debug("Event: change request delay: %s", delay);
     }
 
     /**

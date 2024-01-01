@@ -30,6 +30,7 @@ public class Config {
     public static final String KEY_VERSION = "version";
     public static final String KEY_PAYLOAD_PROCESS_LIST = "payload-process-list";
     public static final String KEY_QPS_LIMIT = "qps-limit";
+    public static final String KEY_REQUEST_DELAY = "request-delay";
     public static final String KEY_SCAN_LEVEL_DIRECT = "scan-level-direct";
     public static final String KEY_SCAN_LEVEL = "scan-level";
     public static final String KEY_RETRY_COUNT = "retry-count";
@@ -59,6 +60,7 @@ public class Config {
         sConfigManager = new ConfigManager(sConfigPath);
         initDefaultConfig(Config.KEY_VERSION, Constants.PLUGIN_VERSION);
         initDefaultConfig(Config.KEY_QPS_LIMIT, "1024");
+        initDefaultConfig(Config.KEY_REQUEST_DELAY, "0");
         initDefaultConfig(Config.KEY_SCAN_LEVEL_DIRECT, "left");
         initDefaultConfig(Config.KEY_SCAN_LEVEL, "99");
         initDefaultConfig(Config.KEY_RETRY_COUNT, "3");

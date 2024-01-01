@@ -23,11 +23,19 @@ public class RequestTab extends BaseConfigTab {
      */
     public static final String EVENT_QPS_LIMIT = "event-qps-limit";
 
+    /**
+     * request delay 变量值变更事件
+     */
+    public static final String EVENT_REQUEST_DELAY = "event-request-delay";
+
     @Override
     protected void initView() {
         // QPS限制器配置
         addTextConfigPanel("QPS", "Set http request QPS limit",
                 20, Config.KEY_QPS_LIMIT).addKeyListener(new NumberFilter(4));
+        // 请求延时配置
+        addTextConfigPanel("Request delay", "Set http request delay time（Unit: millis）",
+                20, Config.KEY_REQUEST_DELAY).addKeyListener(new NumberFilter(5));
         // 控制递归层数
         addScanLevelConfigPanel();
         // 请求重试配置
@@ -86,27 +94,37 @@ public class RequestTab extends BaseConfigTab {
 
     @Override
     protected boolean onTextConfigSave(String configKey, String text) {
+        int value = StringUtils.parseInt(text, -1);
         if (Config.KEY_QPS_LIMIT.equals(configKey)) {
-            int value = StringUtils.parseInt(text, -1);
             if (value < 1 || value > 9999) {
                 UIHelper.showTipsDialog("QPS limit value invalid.(range: 1-9999)");
                 return false;
             }
+            text = String.valueOf(value);
             Config.put(configKey, text);
             sendTabEvent(EVENT_QPS_LIMIT, text);
             return true;
+        } else if (Config.KEY_REQUEST_DELAY.equals(configKey)) {
+            if (value < 0 || value > 99999) {
+                UIHelper.showTipsDialog("Request delay value invalid.(range: 1-99999)");
+                return false;
+            }
+            text = String.valueOf(value);
+            Config.put(configKey, text);
+            sendTabEvent(EVENT_REQUEST_DELAY, text);
+            return true;
         } else if (Config.KEY_SCAN_LEVEL.equals(configKey)) {
-            int value = StringUtils.parseInt(text, -1);
             if (value < 1 || value > 99) {
                 UIHelper.showTipsDialog("Scan Level value invalid.(range: 1-99)");
                 return false;
             }
+            text = String.valueOf(value);
         } else if (Config.KEY_RETRY_COUNT.equals(configKey)) {
-            int value = StringUtils.parseInt(text, -1);
             if (value < 0 || value > 9) {
                 UIHelper.showTipsDialog("Retry count value invalid.(range: 0-9)");
                 return false;
             }
+            text = String.valueOf(value);
         }
         return super.onTextConfigSave(configKey, text);
     }
