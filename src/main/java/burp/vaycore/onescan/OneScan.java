@@ -3,6 +3,7 @@ package burp.vaycore.onescan;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.Constants;
+import burp.vaycore.onescan.ui.tab.CollectPanel;
 import burp.vaycore.onescan.ui.tab.ConfigPanel;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
 import burp.vaycore.onescan.ui.tab.FingerprintTab;
@@ -38,6 +39,9 @@ public class OneScan extends JTabbedPane {
         // 指纹面板
         FingerprintTab fingerprintTab = new FingerprintTab();
         addTab(fingerprintTab.getTitleName(), fingerprintTab);
+        // 数据收集面板
+        CollectPanel collectTab = new CollectPanel();
+        addTab(collectTab.getTitleName(), collectTab);
     }
 
     public DataBoardTab getDataBoardTab() {
