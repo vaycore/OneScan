@@ -8,6 +8,7 @@ import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
+import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.config.OtherTab;
 import burp.vaycore.onescan.ui.widget.SimpleWordlist;
@@ -144,13 +145,19 @@ public abstract class BaseConfigTab extends BaseTab {
             if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
                 textField.setText(newPath);
                 Config.put(configKey, newPath);
-                // 对这个配置额外处理
-                if (configKey.equals(Config.KEY_WORDLIST_PATH)) {
-                    WordlistManager.init(newPath, true);
-                    UIHelper.showTipsDialog("保存成功，需要重新加载插件");
-                    sendTabEvent(OtherTab.EVENT_UNLOAD_PLUGIN);
-                } else {
+                // 配置额外处理
+                try {
+                    if (configKey.equals(Config.KEY_WORDLIST_PATH)) {
+                        WordlistManager.init(newPath, true);
+                        UIHelper.showTipsDialog("保存成功，需要重新加载插件");
+                        sendTabEvent(OtherTab.EVENT_UNLOAD_PLUGIN);
+                        return;
+                    } else if (configKey.equals(Config.KEY_COLLECT_PATH)) {
+                        CollectManager.init(newPath);
+                    }
                     UIHelper.showTipsDialog("Save success!");
+                } catch (Exception ex) {
+                    UIHelper.showTipsDialog(ex.getMessage());
                 }
             }
         });

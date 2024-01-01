@@ -7,6 +7,7 @@ import burp.vaycore.common.utils.FileUtils;
 import burp.vaycore.common.utils.GsonUtils;
 import burp.vaycore.common.utils.PathUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
@@ -32,8 +33,7 @@ public class Config {
     public static final String KEY_SCAN_LEVEL_DIRECT = "scan-level-direct";
     public static final String KEY_SCAN_LEVEL = "scan-level";
     public static final String KEY_RETRY_COUNT = "retry-count";
-    public static final String KEY_WEB_NAME_COLLECT_PATH = "web-name-collect-path";
-    public static final String KEY_JSON_FIELD_COLLECT_PATH = "json-field-collect-path";
+    public static final String KEY_COLLECT_PATH = "collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
     public static final String KEY_INCLUDE_METHOD = "include-method";
@@ -62,8 +62,7 @@ public class Config {
         initDefaultConfig(Config.KEY_SCAN_LEVEL_DIRECT, "left");
         initDefaultConfig(Config.KEY_SCAN_LEVEL, "99");
         initDefaultConfig(Config.KEY_RETRY_COUNT, "3");
-        initDefaultConfig(Config.KEY_WEB_NAME_COLLECT_PATH, getWorkDir() + "web_name.txt");
-        initDefaultConfig(Config.KEY_JSON_FIELD_COLLECT_PATH, getWorkDir() + "json-fields");
+        initDefaultConfig(Config.KEY_COLLECT_PATH, getWorkDir() + "collect");
         initDefaultConfig(KEY_EXCLUDE_SUFFIX, "3g2|3gp|7z|aac|abw|aif|aifc|aiff|arc|au|avi|azw|bin|bmp|bz|" +
                 "bz2|cmx|cod|csh|css|csv|doc|docx|eot|epub|gif|gz|ico|ics|ief|jar|jfif|jpe|jpeg|jpg|m3u|mid|midi|" +
                 "mjs|mp2|mp3|mpa|mpe|mpeg|mpg|mpkg|mpp|mpv2|odp|ods|odt|oga|ogv|ogx|otf|pbm|pdf|pgm|png|pnm|ppm|" +
@@ -77,6 +76,8 @@ public class Config {
         initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
         initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
         initDefaultConfig(Config.KEY_ENABLE_PAYLOAD_PROCESSING, "true");
+        // 初始化数据收集管理
+        CollectManager.init(get(Config.KEY_COLLECT_PATH));
         // 初始化字典管理
         WordlistManager.init(get(Config.KEY_WORDLIST_PATH));
         // 初始化指纹管理
@@ -180,6 +181,14 @@ public class Config {
             list = getList("exclude-header");
             WordlistManager.putList(WordlistManager.KEY_EXCLUDE_HEADERS, list);
             sConfigManager.remove("exclude-header");
+        }
+
+        if (hasKey("web-name-collect-path")) {
+            sConfigManager.remove("web-name-collect-path");
+        }
+
+        if (hasKey("json-field-collect-path")) {
+            sConfigManager.remove("json-field-collect-path");
         }
     }
 

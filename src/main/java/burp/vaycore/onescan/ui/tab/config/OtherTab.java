@@ -23,9 +23,8 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
     public static final String EVENT_UNLOAD_PLUGIN = "event-unload-plugin";
 
     protected void initView() {
-        addFileConfigPanel("Web name collect", "Select a file path", Config.KEY_WEB_NAME_COLLECT_PATH);
-        addDirectoryConfigPanel("Json field collect", "Select a directory path", Config.KEY_JSON_FIELD_COLLECT_PATH);
-        addDirectoryConfigPanel("Wordlist Directory", "Set Wordlist directory path", Config.KEY_WORDLIST_PATH);
+        addDirectoryConfigPanel("Collect directory", "Set Collect directory path", Config.KEY_COLLECT_PATH);
+        addDirectoryConfigPanel("Wordlist directory", "Set Wordlist directory path", Config.KEY_WORDLIST_PATH);
         addConfigItem("HaE", "Set HaE plugin file path", newHaEPluginPathPanel());
         addConfigItem("Clear Temp", "Clear fingerprint check temp", newFpClearTempPanel());
     }
@@ -85,6 +84,7 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                         UIHelper.showTipsDialog("HaE load success!");
                         Config.put(Config.KEY_HAE_PLUGIN_PATH, filepath);
                     }
+
                     @Override
                     public void onLoadError(String msg) {
                         UIHelper.showTipsDialog(msg);
