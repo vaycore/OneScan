@@ -13,6 +13,7 @@ import burp.vaycore.onescan.common.Constants;
 import burp.vaycore.onescan.common.HttpReqRespAdapter;
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.info.OneScanInfoTab;
+import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
@@ -206,6 +207,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 Logger.debug("doScan whitelist and blacklist filter host: %s", host);
                 return;
             }
+            // 收集数据（只收集代理流量的数据）
+            CollectManager.collect(true, host, httpReqResp.getRequest());
+            CollectManager.collect(false, host, httpReqResp.getResponse());
         }
         // 记录当前线程池的引用
         mLastThreadPool = mThreadPool;
@@ -223,10 +227,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         Logger.debug("doScan receive: %s%s", getHostByUrl(url), url.getPath());
         ArrayList<String> pathDict = getUrlPathDict(url.getPath());
-        // 收集一下Web应用名的信息
-        collectWebName(pathDict);
-        // 收集响应包中的Json字段信息
-        collectJsonField(httpReqResp);
         // 一级目录一级目录递减访问
         for (int i = pathDict.size() - 1; i >= 0; i--) {
             String path = pathDict.get(i);
@@ -524,8 +524,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 用于过滤代理数据包
             data.setFrom(from);
             mDataBoardTab.getTaskTable().addTaskData(data);
-            // 收集任务响应包中返回的Json字段信息
-            collectJsonField(newReqResp);
+            // 收集数据
+            CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
         });
     }
 
@@ -956,65 +956,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return ip.getHostAddress();
         } catch (UnknownHostException e) {
             return "";
-        }
-    }
-
-    /**
-     * 收集Web应用名
-     */
-    private void collectWebName(ArrayList<String> pathDict) {
-        if (pathDict != null && pathDict.size() >= 2) {
-            // 路径字典的格式是：/xxx/ ，所以需要处理一下
-            String webName = pathDict.get(1).replace("/", "");
-            // 去重
-            String path = Config.getFilePath(Config.KEY_WEB_NAME_COLLECT_PATH);
-            ArrayList<String> list = FileUtils.readFileToList(path);
-            if (list == null || !list.contains(webName)) {
-                FileUtils.writeFile(path, webName + "\n", true);
-                Logger.debug("collectWebName webName: %s", webName);
-            }
-        }
-    }
-
-    /**
-     * 收集json字段
-     */
-    private void collectJsonField(IHttpRequestResponse httpReqResp) {
-        String host = httpReqResp.getHttpService().getHost();
-        String domain = DomainHelper.getDomain(host);
-        byte[] respBytes = httpReqResp.getResponse();
-        if (respBytes == null || respBytes.length == 0) {
-            return;
-        }
-        // 保存路径
-        String saveDir = Config.getFilePath(Config.KEY_JSON_FIELD_COLLECT_PATH, true);
-        saveDir = saveDir + File.separator + domain;
-        FileUtils.mkdirs(saveDir);
-        String savePath = saveDir + File.separator + host + ".txt";
-        // 解析响应
-        IResponseInfo respInfo = mHelpers.analyzeResponse(respBytes);
-        int bodyOffset = respInfo.getBodyOffset();
-        int bodySize = respBytes.length - bodyOffset;
-        // 检测响应包是否没有body内容
-        if (bodySize <= 0) {
-            return;
-        }
-        String respJson = new String(respBytes, bodyOffset, bodySize);
-        // 尝试解析，解析成功再查询所有key的值
-        if (JsonUtils.hasJson(respJson)) {
-            ArrayList<String> list = FileUtils.readFileToList(savePath);
-            ArrayList<String> keys = JsonUtils.findAllKeysByJson(respJson);
-            if (list == null) {
-                list = new ArrayList<>();
-            }
-            StringBuilder sb = new StringBuilder();
-            for (String key : keys) {
-                if (!list.contains(key)) {
-                    sb.append(key).append("\n");
-                }
-            }
-            FileUtils.writeFile(savePath, sb.toString(), true);
-            Logger.debug("collectJsonField host: %s keys: %s", domain, keys.toString());
         }
     }
 
