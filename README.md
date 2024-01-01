@@ -135,6 +135,7 @@ Request配置界面如下
 ![](imgs/config_request.png)
 
 - `QPS` QPS限制，限制每秒请求的数量，范围（`1-9999`）
+- `Request delay` 请求延时限制，限制每次请求的间隔时间，范围（`0-99999`）。（单位：毫秒）
 - `Scan level` 限制目录扫描层级，范围（`1-99`）。限制方向：`Left to right`（从左往右），`Right to left`（从右往左）
 - `Retry` 请求失败时重试次数配置，范围（`0-9`）
 - `Include method` 配置请求方法白名单
@@ -158,8 +159,7 @@ Other配置界面如下
 
 ![](imgs/config_other.png)
 
-- `Web name collect` Web 目录名收集（例如：`http://xxx.com/wapi/xxx.html` 会将该 url 中的 `wapi` 写入到指定的文件中）
-- `Json field collect` JSON 字段收集（收集 JSON 格式响应包中的所有 `key` 值，保存到指定目录）
+- `Collect directory` 数据收集存放目录
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
 - `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮（配置路径示例如图）
 - `Clear Temp` 清除指纹识别缓存（用于加快指纹识别的速度）
@@ -216,6 +216,19 @@ Other配置界面如下
 - `iNotContains` 不包含（忽略大小写）
 - `regex` 正则匹配
 - `notRegex` 正则不匹配
+
+### Collect数据收集
+
+插件 `1.5.0` 版本新增 `Collect` 数据收集面板，面板截图如下：
+
+![](imgs/collect_panel.png)
+
+- `All` 列出所有收集的数据
+- `JsonField` 收集的 JSON 字段信息
+- `WebName` 收集的 WebName 信息（例如访问：`/api/v1/users`，会自动收集 `api`）
+- `Search` 在列表中搜索对应数据（正则表达式）
+- `Reverse` 反向搜索（勾选后，例如搜索：`a`，列表中不会出现包含 `a` 的数据）
+- `Ignore Case` 忽略大小写
 
 ## 插件演示
 
