@@ -3,6 +3,7 @@ package burp.vaycore.common.utils;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -39,6 +40,17 @@ public class Utils {
             e.printStackTrace();
         }
         return result;
+    }
+
+    /**
+     * 复制内容到剪切板
+     *
+     * @param text 复制的内容
+     */
+    public static void setSysClipboardText(String text) {
+        Clipboard sysClip = Toolkit.getDefaultToolkit().getSystemClipboard();
+        StringSelection ss = new StringSelection(text);
+        sysClip.setContents(ss, null);
     }
 
     /**
