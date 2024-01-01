@@ -56,14 +56,19 @@ public class JsonUtils {
         Matcher matcher = sJsonKeyRegex.matcher(json);
         while (matcher.find()) {
             String findKey = matcher.group(1);
-            if (StringUtils.isEmpty(findKey)) {
-                continue;
-            }
-            if (!findKey.matches(JSON_KEY_RULE)) {
+            if (findKey == null) {
                 continue;
             }
             // 存在嵌套的情况，将'\'移除
             findKey = findKey.replace("\\", "");
+            // 检测是否匹配规则
+            if (!findKey.matches(JSON_KEY_RULE)) {
+                continue;
+            }
+            // 添加数据前检测空值
+            if (StringUtils.isEmpty(findKey)) {
+                continue;
+            }
             // 是否需要去重
             if (hasRepeat || !result.contains(findKey)) {
                 result.add(findKey);
