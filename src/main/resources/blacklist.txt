@@ -1,8 +1,8 @@
-*.google.*
-*.github.*
-*.shodan.io
-*.fofa.info
-*.adblockplus.org
-*.bing.com
-*.gov.cn
-*.edu.cn
+*google.*
+*github.*
+*shodan.io
+*fofa.info
+*adblockplus.org
+*bing.com
+*gov.cn
+*edu.cn
