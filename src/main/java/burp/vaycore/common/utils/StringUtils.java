@@ -1,6 +1,7 @@
 package burp.vaycore.common.utils;
 
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -21,9 +22,7 @@ public class StringUtils {
      * @return true=空；false=不为空
      */
     public static boolean isEmpty(CharSequence text) {
-        return text == null ||
-                text.length() == 0 ||
-                String.valueOf(text).length() == 0;
+        return text == null || text.length() == 0;
     }
 
     /**
@@ -90,6 +89,27 @@ public class StringUtils {
      * @return 拼接完成的字符串
      */
     public static String join(List<String> data, String delimiter) {
+        if (data == null || data.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String item : data) {
+            if (isNotEmpty(sb)) {
+                sb.append(delimiter);
+            }
+            sb.append(item);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 将字符串 Set 集合的数据进行拼接
+     *
+     * @param data      数据
+     * @param delimiter 数据间的分隔符
+     * @return 拼接完成的字符串
+     */
+    public static String join(Set<String> data, String delimiter) {
         if (data == null || data.isEmpty()) {
             return "";
         }
