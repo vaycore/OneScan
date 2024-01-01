@@ -25,11 +25,18 @@ public class WordlistManager {
     public static final String KEY_EXCLUDE_HEADERS = "exclude-headers";
     private static String sWordlistDir;
 
+    private WordlistManager() {
+        throw new IllegalAccessError("manager class not support create instance.");
+    }
+
     public static void init(String path) {
         init(path, false);
     }
 
     public static void init(String path, boolean reInitFile) {
+        if (StringUtils.isEmpty(path)) {
+            throw new IllegalArgumentException("Wordlist path is empty.");
+        }
         if (!FileUtils.exists(path)) {
             FileUtils.mkdirs(path);
         }

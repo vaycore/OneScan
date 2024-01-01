@@ -26,6 +26,10 @@ public class FpManager {
     private static final ArrayList<FpData> sFpList = new ArrayList<>();
     private static final HashMap<String, List<FpData>> sFpTemp = new HashMap<>();
 
+    private FpManager() {
+        throw new IllegalAccessError("manager class not support create instance.");
+    }
+
     public static void init(String path) {
         if (StringUtils.isEmpty(path) || !FileUtils.isFile(path)) {
             throw new IllegalArgumentException("fingerprint config file not found.");
