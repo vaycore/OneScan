@@ -118,7 +118,7 @@ public class HaE {
         }
         try {
             OneScan oneScan = (OneScan) sExtender.getUiComponent();
-            if (oneScan == null || sMainUI == null) {
+            if (oneScan == null) {
                 return false;
             }
             oneScan.remove(sMainUI);
@@ -141,7 +141,10 @@ public class HaE {
      * @return true=已安装；false=未安装
      */
     public static boolean hasInstall() {
-        return sExtender != null && sCallbacks != null && sAdapter != null;
+        return sExtender != null &&
+                sCallbacks != null &&
+                sAdapter != null &&
+                sMainUI != null;
     }
 
     public static void processHttpMessage(IHttpRequestResponse messageInfo) {
