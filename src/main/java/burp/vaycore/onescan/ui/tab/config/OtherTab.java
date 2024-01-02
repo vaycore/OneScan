@@ -69,7 +69,7 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
         switch (action) {
             case "hae-plugin-select-file":
                 oldPath = getHaEPluginPath();
-                if (StringUtils.isNotEmpty(oldPath)) {
+                if (HaE.hasInstall()) {
                     UIHelper.showTipsDialog("HaE plugin already loaded.");
                     return;
                 }

@@ -112,8 +112,8 @@ public class HaE {
      * @return true=卸载成功；false=卸载失败
      */
     public static boolean unloadPlugin() {
-        // 是否初始化
-        if (sExtender == null || sCallbacks == null || sAdapter == null) {
+        // 是否已安装插件
+        if (!hasInstall()) {
             return false;
         }
         try {
@@ -133,6 +133,15 @@ public class HaE {
             Logger.error("HaE unload exception: %s", e.toString());
             return false;
         }
+    }
+
+    /**
+     * 是否安装插件
+     *
+     * @return true=已安装；false=未安装
+     */
+    public static boolean hasInstall() {
+        return sExtender != null && sCallbacks != null && sAdapter != null;
     }
 
     public static void processHttpMessage(IHttpRequestResponse messageInfo) {
