@@ -14,17 +14,12 @@ import java.util.regex.Pattern;
 public class JsonUtils {
 
     /**
-     * json数据key提取规则
+     * Json字段提取规则
      */
     private static final Pattern sJsonKeyRegex;
 
-    /**
-     * json数据key允许的字符
-     */
-    private static final String JSON_KEY_RULE = "[0-9a-zA-z-_.]+";
-
     static {
-        sJsonKeyRegex = Pattern.compile("\"([^\"]+)\"\\s*:\\s*,?");
+        sJsonKeyRegex = Pattern.compile("\"([\\w-\\\\_.]+)\"\\s*:");
     }
 
     private JsonUtils() {
@@ -61,10 +56,6 @@ public class JsonUtils {
             }
             // 存在嵌套的情况，将'\'移除
             findKey = findKey.replace("\\", "");
-            // 检测是否匹配规则
-            if (!findKey.matches(JSON_KEY_RULE)) {
-                continue;
-            }
             // 添加数据前检测空值
             if (StringUtils.isEmpty(findKey)) {
                 continue;
