@@ -35,11 +35,16 @@ public class WebNameCollect implements CollectManager.ICollectModule {
             return null;
         }
         int endIndex = path.indexOf("/", 1);
-        if (endIndex < 1) {
+        // 可能存在双斜杠情况：'//'，所以 endIndex 需要大于 1 才行
+        if (endIndex <= 1) {
+            return null;
+        }
+        String webName = path.substring(1, endIndex);
+        // 检测空值
+        if (webName.trim().length() == 0) {
             return null;
         }
         // 包装数据，返回
-        String webName = path.substring(1, endIndex);
         List<String> list = new ArrayList<>();
         list.add(webName);
         return list;
