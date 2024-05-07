@@ -21,6 +21,7 @@ import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -90,6 +91,12 @@ public class TaskTable extends JTable implements ActionListener {
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
+        // 颜色字段等级排序
+        mTableRowSorter.setComparator(11, (Comparator<String>) (left, right) -> {
+            int leftLevel = findColorLevelByName(left);
+            int rightLevel = findColorLevelByName(right);
+            return Integer.compare(leftLevel, rightLevel);
+        });
         setRowSorter(mTableRowSorter);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
@@ -407,7 +414,7 @@ public class TaskTable extends JTable implements ActionListener {
     public static class TaskTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment", "Color-level"};
+                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment", "Color"};
         private final ArrayList<TaskData> mData;
         private final AtomicInteger mCounter;
 
@@ -460,15 +467,6 @@ public class TaskTable extends JTable implements ActionListener {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             TaskData data = mData.get(rowIndex);
-            String fieldName = ClassUtils.getNameByFieldId(TaskData.class, columnIndex);
-            if ("highlight".equals(fieldName)) {
-                int level = findColorLevelByName(data.getHighlight());
-                String levelStr = String.valueOf(level == 0 ? "" : level);
-                if (StringUtils.isNotEmpty(levelStr)) {
-                    return String.format("%s（%s）", levelStr, data.getHighlight());
-                }
-                return levelStr;
-            }
             return ClassUtils.getValueByFieldId(data, columnIndex);
         }
 
