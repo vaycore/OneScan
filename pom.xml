@@ -6,11 +6,11 @@
 
     <groupId>burp.vaycore</groupId>
     <artifactId>onescan</artifactId>
-    <version>1.5.2</version>
+    <version>1.6.0</version>
 
     <properties>
         <plugin.name>OneScan</plugin.name>
-        <jdk.version>8</jdk.version>
+        <jdk.version>17</jdk.version>
         <maven.compiler.source>${jdk.version}</maven.compiler.source>
         <maven.compiler.target>${jdk.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,6 +21,11 @@
             <groupId>net.portswigger.burp.extender</groupId>
             <artifactId>burp-extender-api</artifactId>
             <version>2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>net.portswigger.burp.extensions</groupId>
+            <artifactId>montoya-api</artifactId>
+            <version>2023.12.1</version>
         </dependency>
 
         <dependency>
@@ -43,7 +48,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>${plugin.name}-v${version}-jdk${jdk.version}</finalName>
+                    <finalName>${plugin.name}-v${version}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>

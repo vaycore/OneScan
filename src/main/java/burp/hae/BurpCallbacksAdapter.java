@@ -1,4 +1,4 @@
-package burp.vaycore.hae;
+package burp.hae;
 
 import burp.*;
 
@@ -57,12 +57,12 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public void printOutput(String s) {
-
+        callbacks.printOutput(s);
     }
 
     @Override
     public void printError(String s) {
-
+        callbacks.printError(s);
     }
 
     @Override
@@ -343,12 +343,12 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public IHttpRequestResponse makeHttpRequest(IHttpService iHttpService, byte[] bytes) {
-        return null;
+        return this.callbacks.makeHttpRequest(iHttpService, bytes);
     }
 
     @Override
     public IHttpRequestResponse makeHttpRequest(IHttpService iHttpService, byte[] bytes, boolean b) {
-        return null;
+        return this.callbacks.makeHttpRequest(iHttpService, bytes, b);
     }
 
     @Override
@@ -378,7 +378,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public boolean isInScope(URL url) {
-        return false;
+        return this.callbacks.isInScope(url);
     }
 
     @Override
@@ -468,7 +468,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public String[] getBurpVersion() {
-        return new String[0];
+        return this.callbacks.getBurpVersion();
     }
 
     public void setExtensionFilename(String filename) {

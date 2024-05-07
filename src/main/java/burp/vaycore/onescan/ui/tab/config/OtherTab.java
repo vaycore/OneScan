@@ -1,9 +1,9 @@
 package burp.vaycore.onescan.ui.tab.config;
 
+import burp.hae.HaE;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
-import burp.vaycore.hae.HaE;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;

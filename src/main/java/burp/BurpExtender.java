@@ -1,10 +1,10 @@
 package burp;
 
+import burp.hae.HaE;
 import burp.vaycore.common.helper.DomainHelper;
 import burp.vaycore.common.helper.QpsLimiter;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.*;
-import burp.vaycore.hae.HaE;
 import burp.vaycore.onescan.OneScan;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
