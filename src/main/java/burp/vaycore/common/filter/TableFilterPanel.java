@@ -56,18 +56,20 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         mColumnList = new JComboBox<>(mColumns);
         mColumnList.setSelectedIndex(mLastColumnIndex);
         mColumnList.addItemListener(this);
-        columnPanel.add(mColumnList);
+        columnPanel.add(mColumnList,"20%");
         columnPanel.add(new JPanel(), "1w");
         // 添加过滤
         JButton addItemBtn = new JButton("Add filter");
+        addItemBtn.setToolTipText("Add filter");
         addItemBtn.setActionCommand("add-filter-item");
         addItemBtn.addActionListener(this);
-        columnPanel.add(addItemBtn);
+        columnPanel.add(addItemBtn, "20%");
         // 清除过滤
         JButton clearBtn = new JButton("Clear");
+        clearBtn.setToolTipText("Clear");
         clearBtn.setActionCommand("clear-filter-item");
         clearBtn.addActionListener(this);
-        columnPanel.add(clearBtn);
+        columnPanel.add(clearBtn, "15%");
         // 规则设置
         mRulesScrollPanel = new JScrollPane();
         mRulesScrollPanel.getVerticalScrollBar().setUnitIncrement(30);
