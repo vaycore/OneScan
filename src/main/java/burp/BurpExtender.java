@@ -72,6 +72,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private static final Vector<String> sRepeatFilter = new Vector<>();
     private static final Vector<String> sWaitTasks = new Vector<>();
     private QpsLimiter mQpsLimit;
+    private SwingWorker<Void, Void> mRefreshMsgTask;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
@@ -1020,13 +1021,23 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         mRequestTextEditor.setMessage("Loading...".getBytes(), true);
         mResponseTextEditor.setMessage("Loading...".getBytes(), false);
-        new Thread(this::refreshReqRespMessage).start();
+        if (mRefreshMsgTask != null && !mRefreshMsgTask.isDone()) {
+            mRefreshMsgTask.cancel(true);
+        }
+        mRefreshMsgTask = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                BurpExtender.this.refreshReqRespMessage();
+                return null;
+            }
+        };
+        mRefreshMsgTask.execute();
     }
 
     /**
      * 刷新请求响应信息
      */
-    private synchronized void refreshReqRespMessage() {
+    private void refreshReqRespMessage() {
         byte[] request = getRequest();
         byte[] response = getResponse();
         if (request == null || request.length == 0) {
