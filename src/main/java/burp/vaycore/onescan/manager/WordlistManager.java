@@ -105,8 +105,12 @@ public class WordlistManager {
     }
 
     public static List<String> getList(String key) {
-        checkInit();
         String item = getItem(key);
+        return getList(key, item);
+    }
+
+    public static List<String> getList(String key, String item) {
+        checkInit();
         String path = sWordlistDir + File.separator + key + File.separator + item + ".txt";
         ArrayList<String> list = FileUtils.readFileToList(path);
         if (list == null) {
@@ -182,6 +186,10 @@ public class WordlistManager {
 
     public static List<String> getPayload() {
         return getList(WordlistManager.KEY_PAYLOAD);
+    }
+
+    public static List<String> getPayload(String item) {
+        return getList(WordlistManager.KEY_PAYLOAD, item);
     }
 
     public static List<String> getHeader() {

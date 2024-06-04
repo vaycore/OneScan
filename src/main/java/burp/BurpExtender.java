@@ -26,6 +26,7 @@ import burp.vaycore.onescan.ui.widget.payloadlist.ProcessingItem;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URL;
@@ -147,13 +148,32 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             ArrayList<JMenuItem> items = new ArrayList<>();
             // 扫描选定目标
             JMenuItem sendToOneScanItem = new JMenuItem("Send to OneScan");
+            items.add(sendToOneScanItem);
             sendToOneScanItem.addActionListener((event) -> {
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
                     doScan(httpReqResp, "Send");
                 }
             });
-            items.add(sendToOneScanItem);
+            // 选择 Payload 扫描
+            List<String> payloadList = WordlistManager.getItemList(WordlistManager.KEY_PAYLOAD);
+            if (!payloadList.isEmpty() && payloadList.size() > 1) {
+                JMenu menu = new JMenu("Use payload scan");
+                items.add(menu);
+                ActionListener listener = (event) -> {
+                    String action = event.getActionCommand();
+                    IHttpRequestResponse[] messages = invocation.getSelectedMessages();
+                    for (IHttpRequestResponse httpReqResp : messages) {
+                        doScan(httpReqResp, "Send", action);
+                    }
+                };
+                for (String itemName : payloadList) {
+                    JMenuItem item = new JMenuItem(itemName);
+                    item.setActionCommand(itemName);
+                    item.addActionListener(listener);
+                    menu.add(item);
+                }
+            }
             return items;
         });
     }
@@ -190,6 +210,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     private void doScan(IHttpRequestResponse httpReqResp, String from) {
+        String item = WordlistManager.getItem(WordlistManager.KEY_PAYLOAD);
+        doScan(httpReqResp, from, item);
+    }
+
+    private void doScan(IHttpRequestResponse httpReqResp, String from, String payloadItem) {
         if (httpReqResp == null || httpReqResp.getHttpService() == null) {
             return;
         }
@@ -232,7 +257,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         for (int i = pathDict.size() - 1; i >= 0; i--) {
             String path = pathDict.get(i);
             // 拼接字典，发起请求
-            List<String> list = WordlistManager.getPayload();
+            List<String> list = WordlistManager.getPayload(payloadItem);
             for (String dict : list) {
                 if (path.endsWith("/")) {
                     path = path.substring(0, path.length() - 1);
