@@ -33,9 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskTable extends JTable implements ActionListener {
 
     private final TaskTableModel mTaskTableModel;
-    private final Color mItemBgColor;
-    private final Color mItemSelectColor;
-    private final Color mItemBgColor2;
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
     private OnTaskTableEventListener mOnTaskTableEventListener;
     private int mLastSelectedRow;
@@ -46,12 +43,12 @@ public class TaskTable extends JTable implements ActionListener {
         return new TableCellRenderer() {
 
             private Color defaultItemColor(int index, boolean isSelected) {
-                Color result = mItemBgColor;
+                Color result = UIManager.getColor("Table.background");
                 if (index % 2 == 0) {
-                    result = mItemBgColor2;
+                    result = UIManager.getColor("Table.alternateRowColor");;
                 }
                 if (isSelected) {
-                    result = mItemSelectColor;
+                    result = UIManager.getColor("Table.selectionBackground");
                 }
                 return result;
             }
@@ -61,25 +58,23 @@ public class TaskTable extends JTable implements ActionListener {
                 Component c = renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, rowIndex, columnIndex);
                 TaskData data = getTaskData(rowIndex);
                 String highlight = data.getHighlight();
-                Color bgColor;
+                Color bgColor = findColorByName(highlight);
+                Color fontColor = UIManager.getColor("Table.foreground");
                 // 检测是否需要显示高亮颜色
-                if (StringUtils.isEmpty(highlight)) {
-                    bgColor = defaultItemColor(rowIndex, isSelected);
-                    c.setBackground(bgColor);
-                    return c;
-                }
-                // 处理高亮颜色
-                bgColor = findColorByName(highlight);
                 if (bgColor == null) {
                     bgColor = defaultItemColor(rowIndex, isSelected);
                     c.setBackground(bgColor);
+                    c.setForeground(fontColor);
                     return c;
+                } else {
+                    fontColor = Color.BLACK;
                 }
                 // 高亮颜色选中处理
                 if (isSelected) {
                     bgColor = darkerColor(bgColor);
                 }
                 c.setBackground(bgColor);
+                c.setForeground(fontColor);
                 return c;
             }
         };
@@ -104,16 +99,6 @@ public class TaskTable extends JTable implements ActionListener {
         initColumnWidth();
         // 初始化监听器
         initEvent();
-        // 保存原表格的几种颜色
-        mItemBgColor = getTableBgColor(false);
-        mItemBgColor2 = UIManager.getColor("Table.alternateRowColor");
-        mItemSelectColor = getTableBgColor(true);
-    }
-
-    private Color getTableBgColor(boolean isSelected) {
-        TableCellRenderer renderer = getDefaultRenderer(String.class);
-        return renderer.getTableCellRendererComponent(this, "",
-                isSelected, false, 0, 0).getBackground();
     }
 
     private void initEvent() {
@@ -193,6 +178,9 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     private Color findColorByName(String colorName) {
+        if (StringUtils.isEmpty(colorName)) {
+            return null;
+        }
         switch (colorName) {
             case "red":
                 return Color.decode("#FF555D");
