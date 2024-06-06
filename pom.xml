@@ -6,7 +6,7 @@
 
     <groupId>burp.vaycore</groupId>
     <artifactId>onescan</artifactId>
-    <version>1.6.0</version>
+    <version>1.6.5</version>
 
     <properties>
         <plugin.name>OneScan</plugin.name>
