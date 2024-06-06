@@ -65,6 +65,10 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/send_to_onescan.png)
 
+可以使用已配置的字典发送到OneScan主动扫描（存在1个以上的字典配置才会出现该菜单）：
+
+![](imgs/use_payload_scan.png)
+
 ### 辅助面板
 
 提取请求和响应包中**JSON**格式的字段，插件`1.0.0`版本新增`Fingerprint`指纹信息展示
