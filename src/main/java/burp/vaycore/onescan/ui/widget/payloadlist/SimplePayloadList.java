@@ -8,6 +8,7 @@ import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddPrefix;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddSuffix;
+import burp.vaycore.onescan.ui.widget.payloadlist.rule.ConditionCheck;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.MatchReplace;
 
 import javax.swing.*;
@@ -29,6 +30,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
             AddPrefix.class,
             AddSuffix.class,
             MatchReplace.class,
+            ConditionCheck.class,
     };
 
     private final PayloadListModel mListModel;

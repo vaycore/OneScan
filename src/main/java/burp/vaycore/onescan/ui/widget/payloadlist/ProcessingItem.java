@@ -10,6 +10,7 @@ import java.util.ArrayList;
 public class ProcessingItem {
 
     private boolean enabled;
+    private boolean merge;
     private String name;
     private ArrayList<PayloadItem> items;
 
@@ -19,6 +20,22 @@ public class ProcessingItem {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public boolean isMerge() {
+        return merge;
+    }
+
+    public void setMerge(boolean merge) {
+        this.merge = merge;
+    }
+
+    public boolean isEnabledAndMerge() {
+        return this.isEnabled() && this.isMerge();
+    }
+
+    public boolean isEnabledWithoutMerge() {
+        return this.isEnabled() && !this.isMerge();
     }
 
     public String getName() {

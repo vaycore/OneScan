@@ -92,5 +92,5 @@ public abstract class PayloadRule {
      * @param content 原始数据（作用域不同，原始数据也不同）
      * @return 处理后的数据
      */
-    public abstract String handleProcess(String content);
+    public abstract String handleProcess(String content) throws IllegalStateException;
 }

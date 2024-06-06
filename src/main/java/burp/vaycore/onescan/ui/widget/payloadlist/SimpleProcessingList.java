@@ -84,7 +84,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(0, 200));
 
         add(newLeftPanel(), "85px");
-        add(newRightPanel(), "400px");
+        add(newRightPanel(), "460px");
     }
 
     private JPanel newLeftPanel() {
@@ -112,10 +112,12 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
 
         mListView = new JTable(mListModel);
         UIHelper.setTableHeaderAlign(mListView, SwingConstants.CENTER);
-        mListView.getColumnModel().getColumn(0).setMinWidth(32);
-        mListView.getColumnModel().getColumn(0).setMaxWidth(32);
-        mListView.getColumnModel().getColumn(2).setMinWidth(75);
-        mListView.getColumnModel().getColumn(2).setMaxWidth(75);
+        mListView.getColumnModel().getColumn(0).setMinWidth(65);
+        mListView.getColumnModel().getColumn(0).setMaxWidth(65);
+        mListView.getColumnModel().getColumn(1).setMinWidth(65);
+        mListView.getColumnModel().getColumn(1).setMaxWidth(65);
+        mListView.getColumnModel().getColumn(3).setMinWidth(75);
+        mListView.getColumnModel().getColumn(3).setMaxWidth(75);
         mListView.getTableHeader().setReorderingAllowed(false);
         JScrollPane scrollPane = new JScrollPane(mListView);
         panel.add(scrollPane, "1w");
@@ -189,21 +191,25 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
             title = "Edit payload processing";
         }
         // 布局
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new VLayout(5));
         panel.setPreferredSize(new Dimension(490, 260));
-        panel.setLayout(new VLayout(10));
         // 规则名
         JPanel namePanel = new JPanel(new HLayout(5, true));
         namePanel.add(new JLabel("Rule Name："));
         JTextField nameUI = new JTextField();
         namePanel.add(nameUI, "1w");
         panel.add(namePanel);
+        // 合并到请求
+        JCheckBox mergeUI = new JCheckBox("Merge to request");
+        panel.add(mergeUI);
+        panel.add(new JPanel(), "5px");
         // 规则表UI
         SimplePayloadList listUI = new SimplePayloadList();
         panel.add(listUI);
         // 数据填充
         if (item != null) {
             nameUI.setText(item.getName());
+            mergeUI.setSelected(item.isMerge());
             listUI.setListData(item.getItems());
         }
         // 显示对话框
@@ -218,13 +224,17 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         }
         // 参数提醒
         StringBuilder errorTips = new StringBuilder();
-        // 检测参数
+        // 检测 name 参数
         String name = nameUI.getText();
         if (StringUtils.isEmpty(name)) {
             errorTips.append("Rule Name is empty.\n");
         } else {
             item.setName(name);
         }
+        // 参数 merge 直接赋值
+        boolean merge = mergeUI.isSelected();
+        item.setMerge(merge);
+        // 检测 Rule list 参数
         ArrayList<PayloadItem> payloadItems = listUI.getDataList();
         if (payloadItems.isEmpty()) {
             errorTips.append("Payload rule list is empty.");

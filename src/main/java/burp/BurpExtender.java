@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 /**
  * 插件入口
@@ -461,7 +460,29 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         // 对扫描的任务发起请求
-        doBurpRequest(service, url, request, from);
+        if (!mDataBoardTab.hasPayloadProcessing()) {
+            doBurpRequest(service, url, request, from);
+            return;
+        }
+        // 先检测规则是否为空
+        List<ProcessingItem> processList = getPayloadProcess()
+                .stream().filter(ProcessingItem::isEnabledAndMerge).toList();
+        if (processList.isEmpty()) {
+            doBurpRequest(service, url, request, from);
+        } else {
+            byte[] requestBytes = request;
+            for (ProcessingItem item : processList) {
+                ArrayList<PayloadItem> items = item.getItems();
+                requestBytes = handlePayloadProcess(service, requestBytes, items);
+            }
+            if (requestBytes != null) {
+                // 检测是否未进行任何处理
+                boolean equals = Arrays.equals(request, requestBytes);
+                // 未进行任何处理时，不变更 from 值
+                String newFrom = equals ? from : from + "（Process）";
+                doBurpRequest(service, url, requestBytes, newFrom);
+            }
+        }
         // 运行 Payload Processing 任务
         runPayloadProcessingTask(service, url, request);
     }
@@ -478,26 +499,21 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (!mDataBoardTab.hasPayloadProcessing()) {
             return;
         }
-        // 进行 Payload Processing 处理后，再次请求数据包
-        ArrayList<ProcessingItem> processList = Config.getPayloadProcessList();
-        if (processList == null || processList.isEmpty()) {
-            return;
-        }
-        String from = "Process";
-        // 遍历规则列表
-        processList.parallelStream().filter(ProcessingItem::isEnabled).forEach((item) -> {
-            ArrayList<PayloadItem> items = item.getItems();
-            byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
-            if (requestBytes == null) {
-                return;
-            }
-            // 检测是否未进行任何处理
-            boolean equals = Arrays.equals(reqRawBytes, requestBytes);
-            if (equals) {
-                return;
-            }
-            doBurpRequest(service, url, requestBytes, from);
-        });
+        // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
+        getPayloadProcess().parallelStream()
+                .filter(ProcessingItem::isEnabledWithoutMerge).forEach((item) -> {
+                    ArrayList<PayloadItem> items = item.getItems();
+                    byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
+                    if (requestBytes == null) {
+                        return;
+                    }
+                    // 检测是否未进行任何处理
+                    boolean equals = Arrays.equals(reqRawBytes, requestBytes);
+                    if (equals) {
+                        return;
+                    }
+                    doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
+                });
     }
 
     /**
@@ -646,7 +662,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     return configHeaderKey.equals(key);
                 }
                 return false;
-            }).collect(Collectors.toList());
+            }).toList();
             // 配置中存在匹配项，替换为配置中的数据
             if (matchList.size() > 0) {
                 for (String matchItem : matchList) {
@@ -697,6 +713,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return new ArrayList<>();
         }
         return WordlistManager.getExcludeHeader();
+    }
+
+    private List<ProcessingItem> getPayloadProcess() {
+        ArrayList<ProcessingItem> list = Config.getPayloadProcessList();
+        if (list == null) {
+            return new ArrayList<>();
+        }
+        return list.stream().filter(ProcessingItem::isEnabled).toList();
     }
 
     /**
@@ -834,34 +858,39 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         for (PayloadItem item : list) {
             // 只调用启用的规则
             PayloadRule rule = item.getRule();
-            switch (item.getScope()) {
-                case PayloadRule.SCOPE_URL:
-                    String newUrl = rule.handleProcess(url);
-                    // 截取请求头第一行，用于定位要处理的位置
-                    String temp = header.substring(0, header.indexOf("\r\n"));
-                    int start = temp.indexOf("/");
-                    int end = temp.lastIndexOf(" ");
-                    // 分隔要插入数据的位置
-                    String left = header.substring(0, start);
-                    String right = header.substring(end);
-                    // 拼接处理好的数据
-                    header = left + newUrl + right;
-                    request = header + "\r\n\r\n" + body;
-                    url = newUrl;
-                    break;
-                case PayloadRule.SCOPE_HEADER:
-                    String newHeader = rule.handleProcess(header);
-                    header = newHeader;
-                    request = newHeader + "\r\n\r\n" + body;
-                    break;
-                case PayloadRule.SCOPE_BODY:
-                    String newBody = rule.handleProcess(body);
-                    request = header + "\r\n\r\n" + newBody;
-                    body = newBody;
-                    break;
-                case PayloadRule.SCOPE_REQUEST:
-                    request = rule.handleProcess(request);
-                    break;
+            try {
+                switch (item.getScope()) {
+                    case PayloadRule.SCOPE_URL:
+                        String newUrl = rule.handleProcess(url);
+                        // 截取请求头第一行，用于定位要处理的位置
+                        String temp = header.substring(0, header.indexOf("\r\n"));
+                        int start = temp.indexOf("/");
+                        int end = temp.lastIndexOf(" ");
+                        // 分隔要插入数据的位置
+                        String left = header.substring(0, start);
+                        String right = header.substring(end);
+                        // 拼接处理好的数据
+                        header = left + newUrl + right;
+                        request = header + "\r\n\r\n" + body;
+                        url = newUrl;
+                        break;
+                    case PayloadRule.SCOPE_HEADER:
+                        String newHeader = rule.handleProcess(header);
+                        header = newHeader;
+                        request = newHeader + "\r\n\r\n" + body;
+                        break;
+                    case PayloadRule.SCOPE_BODY:
+                        String newBody = rule.handleProcess(body);
+                        request = header + "\r\n\r\n" + newBody;
+                        body = newBody;
+                        break;
+                    case PayloadRule.SCOPE_REQUEST:
+                        request = rule.handleProcess(request);
+                        break;
+                }
+            } catch (Exception e) {
+                Logger.debug("handlePayloadProcess exception: " + e.getMessage());
+                return null;
             }
         }
         // 更新 Content-Length

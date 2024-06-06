@@ -11,7 +11,7 @@ import java.util.Vector;
  */
 public class ProcessingListModel extends AbstractTableModel {
 
-    private final String[] COLUMN_NAMES = new String[]{"", "RuleName", "RuleCount"};
+    private final String[] COLUMN_NAMES = new String[]{"Enabled", "Merge", "RuleName", "RuleCount"};
     private final Vector<ProcessingItem> mData;
 
     public ProcessingListModel() {
@@ -85,8 +85,10 @@ public class ProcessingListModel extends AbstractTableModel {
             case 0:
                 return data.isEnabled();
             case 1:
-                return data.getName();
+                return data.isMerge();
             case 2:
+                return data.getName();
+            case 3:
                 ArrayList<PayloadItem> items = data.getItems();
                 int count = items == null ? 0 : items.size();
                 return String.valueOf(count);
@@ -98,9 +100,10 @@ public class ProcessingListModel extends AbstractTableModel {
     public Class<?> getColumnClass(int columnIndex) {
         switch (columnIndex) {
             case 0:
-                return Boolean.class;
             case 1:
+                return Boolean.class;
             case 2:
+            case 3:
                 return String.class;
         }
         return String.class;
@@ -113,16 +116,17 @@ public class ProcessingListModel extends AbstractTableModel {
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return columnIndex == 0;
+        return columnIndex == 0 || columnIndex == 1;
     }
 
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-        if (columnIndex != 0) {
-            return;
-        }
         ProcessingItem item = get(rowIndex);
-        item.setEnabled((Boolean) aValue);
+        if (columnIndex == 0) {
+            item.setEnabled((Boolean) aValue);
+        } else if (columnIndex == 1) {
+            item.setMerge((Boolean) aValue);
+        }
         set(rowIndex, item);
     }
 }
