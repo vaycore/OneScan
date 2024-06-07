@@ -313,7 +313,8 @@ public class Config {
                 for (LinkedTreeMap<String, Object> mapItem : items) {
                     ProcessingItem item = new ProcessingItem();
                     item.setEnabled((Boolean) mapItem.get("enabled"));
-                    item.setMerge((Boolean) mapItem.get("merge"));
+                    String mergeValue = String.valueOf(mapItem.get("merge"));
+                    item.setMerge(Boolean.parseBoolean(mergeValue));
                     String name = String.valueOf(mapItem.get("name"));
                     item.setName(name);
                     ArrayList<LinkedTreeMap<String, Object>> payloadMapItems =
