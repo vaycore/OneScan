@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
 
 /**
  * 插件入口
@@ -863,15 +864,19 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     case PayloadRule.SCOPE_URL:
                         String newUrl = rule.handleProcess(url);
                         // 截取请求头第一行，用于定位要处理的位置
-                        String temp = header.substring(0, header.indexOf("\r\n"));
-                        int start = temp.indexOf("/");
-                        int end = temp.lastIndexOf(" ");
-                        // 分隔要插入数据的位置
-                        String left = header.substring(0, start);
-                        String right = header.substring(end);
-                        // 拼接处理好的数据
-                        header = left + newUrl + right;
-                        request = header + "\r\n\r\n" + body;
+                        String reqLine = header.substring(0, header.indexOf("\r\n"));
+                        Matcher matcher = Constants.REGEX_REQ_LINE_URL.matcher(reqLine);
+                        if (matcher.find()) {
+                            int start = matcher.start(1);
+                            int end = matcher.end(1);
+                            // 分隔要插入数据的位置
+                            String left = header.substring(0, start);
+                            String right = header.substring(end);
+                            System.out.println(left + newUrl + right);
+                            // 拼接处理好的数据
+                            header = left + newUrl + right;
+                            request = header + "\r\n\r\n" + body;
+                        }
                         url = newUrl;
                         break;
                     case PayloadRule.SCOPE_HEADER:

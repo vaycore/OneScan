@@ -1,5 +1,7 @@
 package burp.vaycore.onescan.common;
 
+import java.util.regex.Pattern;
+
 /**
  * 常量
  * <p>
@@ -21,4 +23,7 @@ public interface Constants {
             "  Developer: Rural.Dog\n" +
             "  Github: https://github.com/vaycore/OneScan\n" +
             "#################################\n";
+
+    // 匹配请求行的 URL 位置
+    Pattern REGEX_REQ_LINE_URL = Pattern.compile("[a-zA-Z]+\s(.*?)\sHTTP/", Pattern.CASE_INSENSITIVE);
 }

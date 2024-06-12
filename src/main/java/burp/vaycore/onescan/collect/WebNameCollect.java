@@ -2,10 +2,12 @@ package burp.vaycore.onescan.collect;
 
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.bean.CollectReqResp;
+import burp.vaycore.onescan.common.Constants;
 import burp.vaycore.onescan.manager.CollectManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Web 目录名收集
@@ -26,7 +28,7 @@ public class WebNameCollect implements CollectManager.ICollectModule {
             return null;
         }
         String path = parsePath(reqResp);
-        if (path == null) {
+        if (path == null || !path.startsWith("/")) {
             return null;
         }
         // 根据斜杠数量，判断要不要处理
@@ -58,13 +60,13 @@ public class WebNameCollect implements CollectManager.ICollectModule {
             return null;
         }
         String reqLine = header.substring(0, offset);
-        // 获取路径+参数部分
-        int start = reqLine.indexOf(" /");
-        int end = reqLine.lastIndexOf(" HTTP/");
-        if (start < 0 || end < 0) {
+        Matcher matcher = Constants.REGEX_REQ_LINE_URL.matcher(reqLine);
+        if (!matcher.find()) {
             return null;
         }
-        String path = reqLine.substring(start + 1, end);
+        int start = matcher.start(1);
+        int end = matcher.end(1);
+        String path = reqLine.substring(start, end);
         // 移除参数部分
         if (path.contains("?")) {
             path = path.substring(0, path.indexOf("?"));

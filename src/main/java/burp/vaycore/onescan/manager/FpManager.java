@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * 指纹管理
@@ -183,10 +182,10 @@ public class FpManager {
                     }
                 }
                 return true;
-            }).collect(Collectors.toList());
+            }).toList();
             // 外层为 or 运算，只要结果不为空，表示规则匹配
             return !fpRulesResult.isEmpty();
-        }).collect(Collectors.toList());
+        }).toList();
         // 如果启用缓存，将指纹识别结果存放在缓存
         if (useCache) {
             sFpTemp.put(tempKey, result);
