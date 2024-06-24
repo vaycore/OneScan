@@ -636,8 +636,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             request.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
         } else {
             String reqLine = headers.get(0);
-            int start = reqLine.lastIndexOf("HTTP/");
-            reqLine = reqLine.substring(0, start) + "HTTP/1.1";
+            // 先检测一下是否包含 ' HTTP/' 字符串，再继续处理（可能有些畸形数据包不存在该内容）
+            if (reqLine.contains(" HTTP/")) {
+                int start = reqLine.lastIndexOf(" HTTP/");
+                reqLine = reqLine.substring(0, start) + " HTTP/1.1";
+            }
             request.append(reqLine).append("\r\n");
         }
         // 请求头的参数处理（顺带处理排除的请求头）
@@ -649,7 +652,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 continue;
             }
             // 如果是扫描的请求（只有 GET 请求），将 Content-Length 排除
-            if (from.equals("Scan") && "Content-Length".equals(key)) {
+            if (from.equals("Scan") && "Content-Length".equalsIgnoreCase(key)) {
                 continue;
             }
             // 检测配置中是否存在当前请求头KEY
