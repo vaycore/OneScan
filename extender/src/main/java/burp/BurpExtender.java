@@ -40,6 +40,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 /**
  * 插件入口
@@ -467,7 +468,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 先检测规则是否为空
         List<ProcessingItem> processList = getPayloadProcess()
-                .stream().filter(ProcessingItem::isEnabledAndMerge).toList();
+                .stream().filter(ProcessingItem::isEnabledAndMerge).collect(Collectors.toList());
         if (processList.isEmpty()) {
             doBurpRequest(service, url, request, from);
         } else {
@@ -666,7 +667,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     return configHeaderKey.equals(key);
                 }
                 return false;
-            }).toList();
+            }).collect(Collectors.toList());
             // 配置中存在匹配项，替换为配置中的数据
             if (matchList.size() > 0) {
                 for (String matchItem : matchList) {
@@ -724,7 +725,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (list == null) {
             return new ArrayList<>();
         }
-        return list.stream().filter(ProcessingItem::isEnabled).toList();
+        return list.stream().filter(ProcessingItem::isEnabled).collect(Collectors.toList());
     }
 
     /**
@@ -1061,7 +1062,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (mRefreshMsgTask != null && !mRefreshMsgTask.isDone()) {
             mRefreshMsgTask.cancel(true);
         }
-        mRefreshMsgTask = new SwingWorker<>() {
+        mRefreshMsgTask = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
                 BurpExtender.this.refreshReqRespMessage();

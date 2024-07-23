@@ -6,71 +6,45 @@
 
     <groupId>burp.vaycore</groupId>
     <artifactId>onescan</artifactId>
-    <version>1.6.5</version>
+    <packaging>pom</packaging>
+    <version>parent</version>
+
+    <modules>
+        <module>montoya-api</module>
+        <module>burp-extender-api</module>
+        <module>extender</module>
+    </modules>
 
     <properties>
-        <plugin.name>OneScan</plugin.name>
-        <jdk.version>17</jdk.version>
+        <jdk.version>1.8</jdk.version>
+        <java.version>${jdk.version}</java.version>
         <maven.compiler.source>${jdk.version}</maven.compiler.source>
         <maven.compiler.target>${jdk.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <burp-extender-api.version>2.3</burp-extender-api.version>
+        <montoya-api.version>2023.12.1</montoya-api.version>
+        <gson.version>2.10.1</gson.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>net.portswigger.burp.extender</groupId>
-            <artifactId>burp-extender-api</artifactId>
-            <version>2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>net.portswigger.burp.extensions</groupId>
-            <artifactId>montoya-api</artifactId>
-            <version>2023.12.1</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>net.portswigger.burp.extender</groupId>
+                <artifactId>burp-extender-api</artifactId>
+                <version>${burp-extender-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.portswigger.burp.extensions</groupId>
+                <artifactId>montoya-api</artifactId>
+                <version>${montoya-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <source>${jdk.version}</source>
-                    <target>${jdk.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <finalName>${plugin.name}-v${project.version}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <!--to get Version from pom.xml -->
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

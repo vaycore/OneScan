@@ -2,7 +2,10 @@ package burp.vaycore.onescan.ui.tab;
 
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
-import burp.vaycore.onescan.ui.tab.config.*;
+import burp.vaycore.onescan.ui.tab.config.HostTab;
+import burp.vaycore.onescan.ui.tab.config.OtherTab;
+import burp.vaycore.onescan.ui.tab.config.PayloadTab;
+import burp.vaycore.onescan.ui.tab.config.RequestTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

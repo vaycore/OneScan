@@ -25,5 +25,5 @@ public interface Constants {
             "#################################\n";
 
     // 匹配请求行的 URL 位置
-    Pattern REGEX_REQ_LINE_URL = Pattern.compile("[a-zA-Z]+\s(.*?)\sHTTP/", Pattern.CASE_INSENSITIVE);
+    Pattern REGEX_REQ_LINE_URL = Pattern.compile("[a-zA-Z]+\\s(.*?)\\sHTTP/", Pattern.CASE_INSENSITIVE);
 }
