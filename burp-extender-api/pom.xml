@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>burp.vaycore</groupId>
+        <artifactId>onescan</artifactId>
+        <version>parent</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.portswigger.burp.extender</groupId>
+    <artifactId>burp-extender-api</artifactId>
+    <version>2.3</version>
+    <name>burp-extender-api</name>
+    <url>https://portswigger.net/burp/extender/</url>
+    <description>API to reference when building extensions for Burp Suite Pro.</description>
+    <licenses>
+        <license>
+            <name>Burp Suite Professional Licence Agreement</name>
+            <url>https://raw.githubusercontent.com/PortSwigger/burp-extender-api/master/LICENSE</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Adam Piper</name>
+            <email>adam.piper@portswigger.net</email>
+            <organization>PortSwigger Ltd.</organization>
+            <organizationUrl>http://portswigger.net</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:https://github.com/PortSwigger/burp-extender-api.git</connection>
+        <developerConnection>scm:git:git@github.com/PortSwigger/burp-extender-api.git</developerConnection>
+        <url>scm:git:git@github.com/PortSwigger/burp-extender-api.git</url>
+    </scm>
+</project>
