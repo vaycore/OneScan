@@ -105,12 +105,19 @@ public class DataBoardTab extends BaseTab {
         mPayloadProcessing = newJCheckBox(controlPanel, "Payload Processing", Config.KEY_ENABLE_PAYLOAD_PROCESSING);
         // 导入Url
         JButton importUrlBtn = new JButton("Import url");
+        importUrlBtn.setToolTipText("Import url");
         importUrlBtn.addActionListener((e) -> importUrl());
         controlPanel.add(importUrlBtn);
         // 停止按钮
         JButton stopBtn = new JButton("Stop");
+        stopBtn.setToolTipText("Stop all task");
         stopBtn.addActionListener((e) -> stopTask());
         controlPanel.add(stopBtn);
+        // 清除记录按钮
+        JButton clearBtn = new JButton("Clear");
+        clearBtn.setToolTipText("Clear history");
+        clearBtn.addActionListener((e) -> clearHistory());
+        controlPanel.add(clearBtn);
         // 过滤设置
         controlPanel.add(new JPanel(), "1w");
         mFilterRuleText = new HintTextField();
@@ -118,6 +125,7 @@ public class DataBoardTab extends BaseTab {
         mFilterRuleText.setHintText("No filter rules.");
         controlPanel.add(mFilterRuleText, "2w");
         JButton filterBtn = new JButton("Filter");
+        filterBtn.setToolTipText("Filter data");
         filterBtn.addActionListener(e -> showSetupFilterDialog());
         controlPanel.add(filterBtn, "65px");
         // 主面板
@@ -155,7 +163,7 @@ public class DataBoardTab extends BaseTab {
         TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, rules);
         ArrayList<TableFilter<AbstractTableModel>> filters = panel.exportTableFilters();
         String rulesText = panel.exportRulesText();
-        mTaskTable.setRowFilter(RowFilter.andFilter(filters));
+        mTaskTable.setRowFilter(filters);
         mFilterRuleText.setText(rulesText);
         mLastFilters = rules;
     }
@@ -222,6 +230,12 @@ public class DataBoardTab extends BaseTab {
         UIHelper.showTipsDialog(message);
     }
 
+    private void clearHistory() {
+        if (mTaskTable != null) {
+            mTaskTable.clearAll();
+        }
+    }
+
     public TaskTable getTaskTable() {
         return mTaskTable;
     }
@@ -254,7 +268,7 @@ public class DataBoardTab extends BaseTab {
         panel.showDialog(new DialogCallbackAdapter() {
             @Override
             public void onConfirm(ArrayList<FilterRule> filterRules, ArrayList<TableFilter<AbstractTableModel>> filters, String rulesText) {
-                mTaskTable.setRowFilter(RowFilter.andFilter(filters));
+                mTaskTable.setRowFilter(filters);
                 mFilterRuleText.setText(rulesText);
                 mLastFilters = filterRules;
                 Config.put(Config.KEY_DATABOARD_FILTER_RULES, filterRules);

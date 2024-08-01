@@ -1,5 +1,7 @@
 package burp.vaycore.onescan.ui.widget;
 
+import burp.vaycore.common.filter.FilterRule;
+import burp.vaycore.common.filter.TableFilter;
 import burp.vaycore.common.helper.IconHash;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
@@ -34,6 +36,8 @@ public class TaskTable extends JTable implements ActionListener {
 
     private final TaskTableModel mTaskTableModel;
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
+    private ArrayList<TableFilter<AbstractTableModel>> mLastFilters;
+    private final ArrayList<TableFilter<AbstractTableModel>> mTempFilters;
     private OnTaskTableEventListener mOnTaskTableEventListener;
     private int mLastSelectedRow;
 
@@ -45,10 +49,13 @@ public class TaskTable extends JTable implements ActionListener {
             private Color defaultItemColor(int index, boolean isSelected) {
                 Color result = UIManager.getColor("Table.background");
                 if (index % 2 == 0) {
-                    result = UIManager.getColor("Table.alternateRowColor");;
+                    result = UIManager.getColor("Table.alternateRowColor");
                 }
                 if (isSelected) {
                     result = UIManager.getColor("Table.selectionBackground");
+                    if (result == null) {
+                        result = darkerColor(UIManager.getColor("Table.background"));
+                    }
                 }
                 return result;
             }
@@ -85,6 +92,7 @@ public class TaskTable extends JTable implements ActionListener {
         mLastSelectedRow = -1;
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        mTempFilters = new ArrayList<>();
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
         // 颜色字段等级排序
         mTableRowSorter.setComparator(11, (Comparator<String>) (left, right) -> {
@@ -165,6 +173,8 @@ public class TaskTable extends JTable implements ActionListener {
         addPopupMenuItem(menu, "添加Host到黑名单", "add-to-black-host");
         addPopupMenuItem(menu, "删除选中项", "remove-items");
         addPopupMenuItem(menu, "清空所有记录", "clean-all");
+        addTempFilterMenuItem(menu);
+        addPopupMenuItem(menu, "清空临时过滤规则", "clean-temp-filter");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
         menu.show(this, x, y);
@@ -175,6 +185,33 @@ public class TaskTable extends JTable implements ActionListener {
         item.setActionCommand(actionCommand);
         item.addActionListener(this);
         menu.add(item);
+    }
+
+    private void addTempFilterMenuItem(JPopupMenu menu) {
+        JMenu root = new JMenu("临时过滤选中数据");
+        int selectedColumn = getSelectedColumn();
+        // 处理未选中的情况
+        if (selectedColumn < 0) {
+            selectedColumn = 0;
+        }
+        // 选中的列置顶
+        String topName = TaskTableModel.COLUMN_NAMES[selectedColumn];
+        JMenuItem topItem = new JMenuItem(topName);
+        topItem.setActionCommand("temp-filter-item-" + topName);
+        topItem.addActionListener(this);
+        root.add(topItem);
+        // 添加其它的列
+        for (int i = 0; i < TaskTableModel.COLUMN_NAMES.length; i++) {
+            if (i == selectedColumn) {
+                continue;
+            }
+            String itemName = TaskTableModel.COLUMN_NAMES[i];
+            JMenuItem menuItem = new JMenuItem(itemName);
+            menuItem.setActionCommand("temp-filter-item-" + itemName);
+            menuItem.addActionListener(this);
+            root.add(menuItem);
+        }
+        menu.add(root);
     }
 
     private Color findColorByName(String colorName) {
@@ -244,8 +281,16 @@ public class TaskTable extends JTable implements ActionListener {
     /**
      * 设置过滤器
      */
-    public void setRowFilter(RowFilter<TaskTableModel, Integer> filter) {
-        mTableRowSorter.setRowFilter(filter);
+    public void setRowFilter(ArrayList<TableFilter<AbstractTableModel>> filters) {
+        if (filters == null) {
+            filters = new ArrayList<>();
+        }
+        mLastFilters = filters;
+        ArrayList<TableFilter<AbstractTableModel>> localFilter = new ArrayList<>(filters);
+        if (mTempFilters != null && !mTempFilters.isEmpty()) {
+            localFilter.addAll(mTempFilters);
+        }
+        mTableRowSorter.setRowFilter(RowFilter.andFilter(localFilter));
     }
 
     /**
@@ -288,22 +333,8 @@ public class TaskTable extends JTable implements ActionListener {
                 if (mOnTaskTableEventListener == null) {
                     break;
                 }
-                StringBuilder result = new StringBuilder();
-                for (int index : selectedRows) {
-                    TaskData data = getTaskData(index);
-                    byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
-                    String value;
-                    if ("fetch-body-md5".equals(action)) {
-                        value = Utils.md5(bodyBytes);
-                    } else {
-                        value = IconHash.hash(bodyBytes);
-                    }
-                    if (!StringUtils.isEmpty(result)) {
-                        result.append("\n\n");
-                    }
-                    result.append(String.format("#%d：\n%s", data.getId(), value));
-                }
-                showTextAreaDialog(item.getText(), result.toString());
+                String result = fetchDataByAction(action, selectedRows);
+                showTextAreaDialog(item.getText(), result);
                 break;
             case "send-to-repeater":
                 ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
@@ -319,18 +350,7 @@ public class TaskTable extends JTable implements ActionListener {
                 if (mOnTaskTableEventListener == null) {
                     break;
                 }
-                ArrayList<String> hosts = new ArrayList<>();
-                for (int index : selectedRows) {
-                    TaskData data = getTaskData(index);
-                    try {
-                        String host = new URL(data.getHost()).getHost();
-                        if (!hosts.contains(host)) {
-                            hosts.add(host);
-                        }
-                    } catch (MalformedURLException ex) {
-                        Logger.error(ex.getMessage());
-                    }
-                }
+                ArrayList<String> hosts = getSelectedHosts(selectedRows);
                 mOnTaskTableEventListener.addToBlackHost(hosts);
                 break;
             case "remove-items":
@@ -342,13 +362,185 @@ public class TaskTable extends JTable implements ActionListener {
                 mTaskTableModel.removeItems(removeList);
                 break;
             case "clean-all":
-                mTaskTableModel.clearAll();
-                if (mOnTaskTableEventListener != null) {
-                    mOnTaskTableEventListener.onChangeSelection(null);
-                }
-                mLastSelectedRow = -1;
+                clearAll();
+                break;
+            case "clean-temp-filter":
+                clearTempFilter();
+                break;
+            default:
+                // 处理临时过滤事件
+                onTempFilterEvent(action, selectedRows);
                 break;
         }
+    }
+
+    /**
+     * 根据 action 获取数据
+     *
+     * @param action       action
+     * @param selectedRows 选中行
+     * @return 失败返回空字符串
+     */
+    private String fetchDataByAction(String action, int[] selectedRows) {
+        StringBuilder result = new StringBuilder();
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
+            String value;
+            switch (action) {
+                case "fetch-body-md5":
+                    value = Utils.md5(bodyBytes);
+                    break;
+                case "fetch-body-hash":
+                default:
+                    value = IconHash.hash(bodyBytes);
+                    break;
+            }
+            if (!StringUtils.isEmpty(result)) {
+                result.append("\n\n");
+            }
+            result.append(String.format("#%d：\n%s", data.getId(), value));
+        }
+        return result.toString();
+    }
+
+    /**
+     * 获取当前选中的 Host 数据列表
+     *
+     * @param selectedRows 选择的行下标
+     * @return Host 列表
+     */
+    private ArrayList<String> getSelectedHosts(int[] selectedRows) {
+        ArrayList<String> hosts = new ArrayList<>();
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            try {
+                String host = new URL(data.getHost()).getHost();
+                if (!hosts.contains(host)) {
+                    hosts.add(host);
+                }
+            } catch (MalformedURLException ex) {
+                Logger.error(ex.getMessage());
+            }
+        }
+        return hosts;
+    }
+
+    /**
+     * 处理临时过滤事件
+     *
+     * @param action       对应 action 值
+     * @param selectedRows 选中项
+     */
+    private void onTempFilterEvent(String action, int[] selectedRows) {
+        if (action == null || !action.startsWith("temp-filter-item-")) {
+            return;
+        }
+        String columnName = action.replace("temp-filter-item-", "");
+        int columnIndex = findColumnIndexByName(columnName);
+        if (columnIndex < 0) {
+            return;
+        }
+        FilterRule rule = getTempFilterRuleByColumn(columnIndex);
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            Object objValue = ClassUtils.getValueByFieldId(data, columnIndex);
+            String value = "";
+            if (objValue != null) {
+                value = String.valueOf(objValue);
+            }
+            if (checkTempFilterRuleRepeat(rule, value)) {
+                continue;
+            }
+            int logic = 0;
+            if (!rule.getItems().isEmpty()) {
+                logic = FilterRule.LOGIC_AND;
+            }
+            rule.addRule(logic, FilterRule.OPERATE_NOT_EQUAL, value);
+        }
+        // 检测规则表是否为空
+        if (!rule.getItems().isEmpty()) {
+            mTempFilters.add(new TableFilter<>(rule));
+        }
+        // 更新过滤规则
+        setRowFilter(mLastFilters);
+    }
+
+    /**
+     * 根据列名获取列下标
+     *
+     * @param columnName 列名
+     * @return 失败返回-1
+     */
+    private int findColumnIndexByName(String columnName) {
+        for (int i = 0; i < TaskTableModel.COLUMN_NAMES.length; i++) {
+            String name = TaskTableModel.COLUMN_NAMES[i];
+            if (name.equals(columnName)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 根据列下标，获取临时过滤的 FilterRule 实例
+     *
+     * @param columnIndex 对应的列下标
+     * @return 未找到返回一个新创建的 FilterRule 实例
+     */
+    private FilterRule getTempFilterRuleByColumn(int columnIndex) {
+        FilterRule result = new FilterRule(columnIndex);
+        if (mTempFilters == null || mLastFilters.isEmpty()) {
+            return result;
+        }
+        for (TableFilter<AbstractTableModel> item : mTempFilters) {
+            FilterRule rule = item.getRule();
+            if (rule.getColumnIndex() == columnIndex) {
+                return rule;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 检查临时过滤规则实例，是否存在重复规则
+     *
+     * @param rule  规则实例
+     * @param value 规则值
+     * @return true=重复；false=不重复
+     */
+    private boolean checkTempFilterRuleRepeat(FilterRule rule, String value) {
+        ArrayList<FilterRule.Item> items = rule.getItems();
+        if (items.isEmpty()) {
+            return false;
+        }
+        for (FilterRule.Item item : items) {
+            if (value.equals(item.getValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 清空所有记录
+     */
+    public void clearAll() {
+        mTaskTableModel.clearAll();
+        if (mOnTaskTableEventListener != null) {
+            mOnTaskTableEventListener.onChangeSelection(null);
+        }
+        mLastSelectedRow = -1;
+        // 同时清除临时过滤规则
+        clearTempFilter();
+    }
+
+    /**
+     * 清除临时过滤规则
+     */
+    private void clearTempFilter() {
+        mTempFilters.clear();
+        setRowFilter(mLastFilters);
     }
 
     private static void showTextAreaDialog(String title, String text) {

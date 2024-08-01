@@ -498,24 +498,23 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void runPayloadProcessingTask(IHttpService service, String url, byte[] reqRawBytes) {
         // 检测是否启用 Payload Processing 请求
-        if (!mDataBoardTab.hasPayloadProcessing()) {
-            return;
+        if (mDataBoardTab.hasPayloadProcessing()) {
+            // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
+            getPayloadProcess().parallelStream()
+                    .filter(ProcessingItem::isEnabledWithoutMerge).forEach((item) -> {
+                        ArrayList<PayloadItem> items = item.getItems();
+                        byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
+                        if (requestBytes == null) {
+                            return;
+                        }
+                        // 检测是否未进行任何处理
+                        boolean equals = Arrays.equals(reqRawBytes, requestBytes);
+                        if (equals) {
+                            return;
+                        }
+                        doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
+                    });
         }
-        // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
-        getPayloadProcess().parallelStream()
-                .filter(ProcessingItem::isEnabledWithoutMerge).forEach((item) -> {
-                    ArrayList<PayloadItem> items = item.getItems();
-                    byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
-                    if (requestBytes == null) {
-                        return;
-                    }
-                    // 检测是否未进行任何处理
-                    boolean equals = Arrays.equals(reqRawBytes, requestBytes);
-                    if (equals) {
-                        return;
-                    }
-                    doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
-                });
     }
 
     /**
@@ -990,16 +989,17 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String protocol = service.getProtocol();
         String host = service.getHost();
         int port = service.getPort();
-        if (port == 80 || port == 443) {
-            return protocol + "://" + host;
-        }
-        return protocol + "://" + host + ":" + port;
+        return concatUrl(protocol, host, port);
     }
 
     private String getHostByUrl(URL url) {
         String protocol = url.getProtocol();
         String host = url.getHost();
         int port = url.getPort();
+        return concatUrl(protocol, host, port);
+    }
+
+    private String concatUrl(String protocol, String host, int port) {
         if (port == 80 || port == 443) {
             return protocol + "://" + host;
         }

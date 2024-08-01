@@ -25,6 +25,10 @@ public class TableFilter<T extends AbstractTableModel> extends RowFilter<T, Obje
         this.rule = rule;
     }
 
+    public FilterRule getRule() {
+        return this.rule;
+    }
+
     @Override
     public boolean include(Entry<? extends T, ?> entry) {
         T model = entry.getModel();
