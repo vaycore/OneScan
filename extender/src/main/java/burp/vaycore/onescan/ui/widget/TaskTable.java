@@ -490,7 +490,7 @@ public class TaskTable extends JTable implements ActionListener {
      */
     private FilterRule getTempFilterRuleByColumn(int columnIndex) {
         FilterRule result = new FilterRule(columnIndex);
-        if (mTempFilters == null || mLastFilters.isEmpty()) {
+        if (mTempFilters == null || mTempFilters.isEmpty()) {
             return result;
         }
         for (TableFilter<AbstractTableModel> item : mTempFilters) {

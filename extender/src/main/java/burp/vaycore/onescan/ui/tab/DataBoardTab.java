@@ -156,7 +156,7 @@ public class DataBoardTab extends BaseTab {
      */
     private void loadFilterRules() {
         ArrayList<FilterRule> rules = Config.getDataboardFilterRules();
-        if (rules == null || rules.isEmpty()) {
+        if (rules == null) {
             return;
         }
         // 借助 TableFilterPanel 组件转换配置
