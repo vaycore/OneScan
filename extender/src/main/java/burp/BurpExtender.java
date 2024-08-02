@@ -1056,7 +1056,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             mCurrentReqResp = null;
             // 清空记录时，同时也清空去重过滤列表
             sRepeatFilter.clear();
+            // 清空显示的请求、响应数据包
+            mRequestTextEditor.setMessage("".getBytes(), true);
+            mResponseTextEditor.setMessage("".getBytes(), false);
+            return;
         }
+        // 加载请求、响应数据包
         mRequestTextEditor.setMessage("Loading...".getBytes(), true);
         mResponseTextEditor.setMessage("Loading...".getBytes(), false);
         if (mRefreshMsgTask != null && !mRefreshMsgTask.isDone()) {
@@ -1083,6 +1088,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         if (response == null || response.length == 0) {
             response = "".getBytes();
+        }
+        // 检测是否超过配置的显示长度限制
+        int maxLength = StringUtils.parseInt(Config.get(Config.KEY_MAX_DISPLAY_LENGTH));
+        if (maxLength >= 100000 && request.length >= maxLength) {
+            request = "Request length exceeds configured limit".getBytes();
+        }
+        if (maxLength >= 100000 && response.length >= maxLength) {
+            response = "Response length exceeds configured limit".getBytes();
         }
         mRequestTextEditor.setMessage(request, true);
         mResponseTextEditor.setMessage(response, false);

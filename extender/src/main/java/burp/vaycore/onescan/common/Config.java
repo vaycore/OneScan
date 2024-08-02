@@ -34,6 +34,7 @@ public class Config {
     public static final String KEY_SCAN_LEVEL_DIRECT = "scan-level-direct";
     public static final String KEY_SCAN_LEVEL = "scan-level";
     public static final String KEY_RETRY_COUNT = "retry-count";
+    public static final String KEY_MAX_DISPLAY_LENGTH = "max-display-length";
     public static final String KEY_COLLECT_PATH = "collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
     public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
@@ -64,6 +65,7 @@ public class Config {
         initDefaultConfig(Config.KEY_SCAN_LEVEL_DIRECT, "left");
         initDefaultConfig(Config.KEY_SCAN_LEVEL, "99");
         initDefaultConfig(Config.KEY_RETRY_COUNT, "3");
+        initDefaultConfig(Config.KEY_MAX_DISPLAY_LENGTH, "0");
         initDefaultConfig(Config.KEY_COLLECT_PATH, getWorkDir() + "collect");
         initDefaultConfig(KEY_EXCLUDE_SUFFIX, "3g2|3gp|7z|aac|abw|aif|aifc|aiff|arc|au|avi|azw|bin|bmp|bz|" +
                 "bz2|cmx|cod|csh|css|csv|doc|docx|eot|epub|gif|gz|ico|ics|ief|jar|jfif|jpe|jpeg|jpg|m3u|mid|midi|" +
