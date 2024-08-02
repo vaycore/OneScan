@@ -37,10 +37,11 @@ https://www.xxxxxx.com/a/b/c/xxxxxx.zip
 
 ## 插件安装
 
-BurpSuite 安装流程如下：
+BurpSuite 安装流程如下（不同版本可能有所差异）：
 
 ```text
 Extender -> Extensions -> Add -> Select File -> Next
+Extensions -> Installed -> Add -> Select File -> Next
 ```
 
 流程结束后，打印如下信息表示插件安装完成（需要在 Config -> Other -> HaE 中配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径后，才会显示 **HaE** 插件的日志信息、数据高亮功能）：
@@ -107,6 +108,7 @@ C:\Users\<用户名>\.config\OneScan\
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 Url 目标进行扫描
 - `Stop` 停止正在扫描的任务
+- `Clear` 清空所有记录（与菜单项 “清空所有记录” 功能一致，同时也会清空临时过滤规则）
 
 #### 过滤规则配置
 
@@ -120,6 +122,20 @@ C:\Users\<用户名>\.config\OneScan\
 - `Reset` 重置所有过滤规则
 - `Cancel` 取消本次的所有变更
 - `OK` 使配置的规则生效
+
+#### 临时过滤规则
+
+通过右键菜单，点击“临时过滤选中数据”添加临时过滤规则：
+
+![](imgs/main_panel_temp_filter.png)
+
+只支持临时添加相同值的过滤（复杂的规则，请点击 `Filter` 按钮处理），例如选中了 `Status` 是 `400` 和 `503` 的两条数据，生成的临时过滤规则示例如下：
+
+```text
+Status != 400 && Status != 503
+```
+
+**注：** 在 “清空所有记录” 后，同时也会 “清空临时过滤规则”
 
 ### Config配置
 
@@ -163,6 +179,7 @@ Other配置界面如下
 
 ![](imgs/config_other.png)
 
+- `Maximum display length` 限制请求、响应包的最大显示长度（插件 `1.6.11` 版本新增）
 - `Collect directory` 数据收集存放目录
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
 - `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮（配置路径示例如图）
