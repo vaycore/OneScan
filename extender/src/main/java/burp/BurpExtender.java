@@ -69,11 +69,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private ExecutorService mThreadPool;
     private ExecutorService mLastThreadPool;
     private ExecutorService mFpThreadPool;
+    private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
     private static final Vector<String> sRepeatFilter = new Vector<>();
     private static final Vector<String> sWaitTasks = new Vector<>();
     private QpsLimiter mQpsLimit;
-    private SwingWorker<Void, Void> mRefreshMsgTask;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
@@ -91,6 +91,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         this.mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
         this.mLastThreadPool = mThreadPool;
         this.mFpThreadPool = Executors.newFixedThreadPool(FP_THREAD_COUNT);
+        this.mRefreshMsgTask = Executors.newSingleThreadExecutor();
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
         // 初始化日志打印
         Logger.init(Constants.DEBUG, mCallbacks.getStdout(), mCallbacks.getStderr());
@@ -1064,17 +1065,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 加载请求、响应数据包
         mRequestTextEditor.setMessage("Loading...".getBytes(), true);
         mResponseTextEditor.setMessage("Loading...".getBytes(), false);
-        if (mRefreshMsgTask != null && !mRefreshMsgTask.isDone()) {
-            mRefreshMsgTask.cancel(true);
-        }
-        mRefreshMsgTask = new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() {
-                BurpExtender.this.refreshReqRespMessage();
-                return null;
-            }
-        };
-        mRefreshMsgTask.execute();
+        mRefreshMsgTask.execute(this::refreshReqRespMessage);
     }
 
     /**
