@@ -284,7 +284,7 @@ Connection: close
 
 非常感谢各位师傅关注此项目
 
-[![](https://starchart.cc/vaycore/OneScan.svg)](https://starchart.cc/vaycore/OneScan)
+[![Stargazers over time](https://starchart.cc/vaycore/OneScan.svg?variant=adaptive)](https://starchart.cc/vaycore/OneScan)
 
 ## END
 
