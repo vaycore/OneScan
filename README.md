@@ -78,7 +78,7 @@ C:\Users\<用户名>\.config\OneScan\
 
 ### 动态变量
 
-目前支持的动态变量如下（以目标：`http://www.xxxxxx.com:81/path/to/index.html` 为例）：
+目前支持的动态变量如下（以目标：`http://www.xxxxxx.com:81/path/to/index.html` 为例，日期和时间以：`2030-08-09 07:08:09` 为例）：
 
 ```text
 {{host}} - 请求头中的Host（格式：www.xxxxxx.com:81）
@@ -92,6 +92,18 @@ C:\Users\<用户名>\.config\OneScan\
 {{random.ua}} - 随机UserAgent值，随机源可配置
 {{subdomain}} - 子域名动态变量（格式：www；只有主域名时：`xxxxxx.com` => `xxxxxx`）
 {{webroot}} - 一级目录动态变量（格式：path；不存在一级目录时，会自动跳过这条Payload）
+{{date.yyyy}} - 日期：年（格式：2030）
+{{date.MM}} - 日期：月（格式：08）
+{{date.dd}} - 日期：日（格式：09）
+{{date.yy}} - 日期：年（格式：30）
+{{date.M}} - 日期：月（格式：8）
+{{date.d}} - 日期：日（格式：9）
+{{time.HH}} - 时间：小时（格式：07）
+{{time.mm}} - 时间：分钟（格式：08）
+{{time.ss}} - 时间：秒（格式：09）
+{{time.H}} - 时间：小时（格式：7）
+{{time.m}} - 时间：分钟（格式：8）
+{{time.s}} - 时间：秒（格式：9）
 ```
 
 ### Databoard数据看板
