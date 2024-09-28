@@ -772,6 +772,25 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             request = fillVariable(request, "random.local-ip", randomLocalIP);
             request = fillVariable(request, "random.ua", randomUA);
             request = fillVariable(request, "webroot", webroot);
+            // 填充日期、时间相关的动态变量
+            if (request.contains("{{date.") || request.contains("{{time.")) {
+                String currentDate = DateUtils.getCurrentDate("yyyy-MM-dd HH:mm:ss;yy-M-d H:m:s");
+                String[] split = currentDate.split(";");
+                String[] leftDateTime = parseDateTime(split[0]);
+                request = fillVariable(request, "date.yyyy", leftDateTime[0]);
+                request = fillVariable(request, "date.MM", leftDateTime[1]);
+                request = fillVariable(request, "date.dd", leftDateTime[2]);
+                request = fillVariable(request, "time.HH", leftDateTime[3]);
+                request = fillVariable(request, "time.mm", leftDateTime[4]);
+                request = fillVariable(request, "time.ss", leftDateTime[5]);
+                String[] rightDateTime = parseDateTime(split[1]);
+                request = fillVariable(request, "date.yy", rightDateTime[0]);
+                request = fillVariable(request, "date.M", rightDateTime[1]);
+                request = fillVariable(request, "date.d", rightDateTime[2]);
+                request = fillVariable(request, "time.H", rightDateTime[3]);
+                request = fillVariable(request, "time.m", rightDateTime[4]);
+                request = fillVariable(request, "time.s", rightDateTime[5]);
+            }
             return request;
         } catch (IllegalArgumentException e) {
             Logger.debug(e.getMessage());
@@ -800,6 +819,30 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             throw new IllegalArgumentException(key + " fill failed, value is empty.");
         }
         return src.replace(key, value);
+    }
+
+    /**
+     * 解析日期时间，将每个字段的数据存入数组
+     *
+     * @param dateTime 日期时间字符串（格式：yyyy-MM-dd HH:mm:ss 或者 yy-M-d H:m:s）
+     * @return [0]=年；[1]=月；[2]=日；[3]=时；[4]=分；[5]=秒
+     */
+    private String[] parseDateTime(String dateTime) {
+        String[] result = new String[6];
+        String[] split = dateTime.split(" ");
+        // 日期
+        String date = split[0];
+        String[] dateSplit = date.split("-");
+        result[0] = dateSplit[0];
+        result[1] = dateSplit[1];
+        result[2] = dateSplit[2];
+        // 时间
+        String time = split[1];
+        String[] timeSplit = time.split(":");
+        result[3] = timeSplit[0];
+        result[4] = timeSplit[1];
+        result[5] = timeSplit[2];
+        return result;
     }
 
     /**
