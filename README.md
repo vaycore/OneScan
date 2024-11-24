@@ -120,7 +120,7 @@ C:\Users\<用户名>\.config\OneScan\
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 Url 目标进行扫描
 - `Stop` 停止正在扫描的任务
-- `Clear` 清空所有记录（与菜单项 “清空所有记录” 功能一致，同时也会清空临时过滤规则）
+- `Actions` 操作菜单（列表鼠标右键菜单的所有功能）
 
 #### 过滤规则配置
 
@@ -146,8 +146,6 @@ C:\Users\<用户名>\.config\OneScan\
 ```text
 Status != 400 && Status != 503
 ```
-
-**注：** 在 “清空所有记录” 后，同时也会 “清空临时过滤规则”
 
 ### Config配置
 
@@ -265,7 +263,7 @@ Other配置界面如下
 
 ## 插件演示
 
-将如下数据包主动发送到OneScan：
+将如下数据包主动发送到 OneScan 插件扫描：
 
 ```text
 POST /mcp/pc/pcsearch HTTP/1.1
