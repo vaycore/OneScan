@@ -24,6 +24,7 @@ import burp.hae.montoya.extension.ExtensionImpl;
 import burp.hae.montoya.http.HttpImpl;
 import burp.hae.montoya.logging.LoggingImpl;
 import burp.hae.montoya.proxy.ProxyImpl;
+import burp.hae.montoya.scanner.ScannerImpl;
 import burp.hae.montoya.ui.UserInterfaceImpl;
 import burp.hae.montoya.utilities.UtilitiesImpl;
 
@@ -40,6 +41,7 @@ public class MontoyaApiImpl implements MontoyaApi {
     private final Proxy proxy;
     private final UserInterface userInterface;
     private final UtilitiesImpl utilities;
+    private final ScannerImpl scanner;
 
     public MontoyaApiImpl(IBurpExtenderCallbacks callbacks) {
         this.extension = new ExtensionImpl(callbacks);
@@ -48,6 +50,7 @@ public class MontoyaApiImpl implements MontoyaApi {
         this.proxy = new ProxyImpl(callbacks);
         this.userInterface = new UserInterfaceImpl(callbacks);
         this.utilities = new UtilitiesImpl(callbacks);
+        this.scanner = new ScannerImpl(callbacks);
     }
 
     @Override
@@ -112,7 +115,7 @@ public class MontoyaApiImpl implements MontoyaApi {
 
     @Override
     public Scanner scanner() {
-        return null;
+        return this.scanner;
     }
 
     @Override

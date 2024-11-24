@@ -47,7 +47,8 @@ public class HttpImpl implements Http {
 
             @Override
             public void deregister() {
-                HttpImpl.this.httpHandler = null;
+                // 不受 HaE 插件 'Enable active http message handler' 开关影响
+                //HttpImpl.this.httpHandler = null;
             }
         };
     }
