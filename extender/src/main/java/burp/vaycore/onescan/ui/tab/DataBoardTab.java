@@ -16,7 +16,7 @@ import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.DialogCallbackAdapter;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
-import burp.vaycore.onescan.ui.widget.SimpleWordlist;
+import burp.vaycore.onescan.ui.widget.ImportUrlWindow;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 
 import javax.swing.*;
@@ -31,7 +31,7 @@ import java.util.List;
  * <p>
  * Created by vaycore on 2022-08-07.
  */
-public class DataBoardTab extends BaseTab {
+public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrlListener {
 
     public static final String EVENT_IMPORT_URL = "event-import-url";
     public static final String EVENT_STOP_TASK = "event-stop-task";
@@ -44,8 +44,7 @@ public class DataBoardTab extends BaseTab {
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
     private JCheckBox mPayloadProcessing;
-    private String mLastUrlPrefix;
-    private List<String> mLastImportData;
+    private ImportUrlWindow mImportUrlWindow;
 
     @Override
     protected void initData() {
@@ -191,37 +190,23 @@ public class DataBoardTab extends BaseTab {
     }
 
     private void importUrl() {
-        JPanel panel = new JPanel(new VLayout());
-        panel.setPreferredSize(new Dimension(440, 400));
-        // URL前缀
-        JPanel prefixPanel = new JPanel(new HLayout(0, true));
-        panel.add(prefixPanel);
-        prefixPanel.add(new JLabel("URL前缀（非必选）："));
-        HintTextField textField = new HintTextField(mLastUrlPrefix);
-        textField.setHintText("URL前缀与列表的每一项进行拼接");
-        prefixPanel.add(textField, "1w");
-        // URL字典列表
-        SimpleWordlist wordlist = new SimpleWordlist(mLastImportData);
-        panel.add(wordlist, "1w");
-        int ret = UIHelper.showCustomDialog("Import Url", panel, this);
-        if (ret == JOptionPane.OK_OPTION) {
-            List<String> data = wordlist.getListData();
-            if (data.isEmpty()) {
-                return;
-            }
-            String prefix = textField.getText();
-            // 保留最后一次导入的数据
-            mLastUrlPrefix = prefix;
-            mLastImportData = new ArrayList<>(data);
-            // 如果存在前缀，对每一项进行拼接
-            if (StringUtils.isNotEmpty(prefix)) {
-                for (int i = 0; i < data.size(); i++) {
-                    String newItem = prefix + data.get(i);
-                    data.set(i, newItem);
-                }
-            }
-            sendTabEvent(EVENT_IMPORT_URL, data);
+        if (mImportUrlWindow == null) {
+            mImportUrlWindow = new ImportUrlWindow();
+            mImportUrlWindow.setOnImportUrlListener(this);
         }
+        mImportUrlWindow.showWindow();
+    }
+
+    @Override
+    public void onImportUrl(String prefix, List<String> data) {
+        // 如果存在前缀，对每一项进行拼接
+        if (StringUtils.isNotEmpty(prefix)) {
+            for (int i = 0; i < data.size(); i++) {
+                String newItem = prefix + data.get(i);
+                data.set(i, newItem);
+            }
+        }
+        sendTabEvent(EVENT_IMPORT_URL, data);
     }
 
     private void stopTask() {

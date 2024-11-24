@@ -92,6 +92,13 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     }
 
     /**
+     * 列表数据是否为空
+     */
+    public boolean isEmptyListData() {
+       return mListModel == null || mListModel.isEmpty();
+    }
+
+    /**
      * 添加数据修改监听器
      *
      * @param l 监听器
