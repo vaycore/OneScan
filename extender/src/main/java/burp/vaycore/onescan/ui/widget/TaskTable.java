@@ -166,6 +166,10 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     private void showPopupMenu(int x, int y) {
+        showPopupMenu(this, x, y);
+    }
+
+    public void showPopupMenu(Component invoker, int x, int y) {
         JPopupMenu menu = new JPopupMenu();
         addPopupMenuItem(menu, "获取bodyMd5值", "fetch-body-md5");
         addPopupMenuItem(menu, "获取bodyHash值", "fetch-body-hash");
@@ -177,7 +181,7 @@ public class TaskTable extends JTable implements ActionListener {
         addPopupMenuItem(menu, "清空临时过滤规则", "clean-temp-filter");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
-        menu.show(this, x, y);
+        menu.show(invoker, x, y);
     }
 
     private void addPopupMenuItem(JPopupMenu menu, String name, String actionCommand) {
@@ -525,14 +529,12 @@ public class TaskTable extends JTable implements ActionListener {
     /**
      * 清空所有记录
      */
-    public void clearAll() {
+    private void clearAll() {
         mTaskTableModel.clearAll();
         if (mOnTaskTableEventListener != null) {
             mOnTaskTableEventListener.onChangeSelection(null);
         }
         mLastSelectedRow = -1;
-        // 同时清除临时过滤规则
-        clearTempFilter();
     }
 
     /**

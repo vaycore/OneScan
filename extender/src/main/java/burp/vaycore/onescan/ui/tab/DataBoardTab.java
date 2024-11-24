@@ -113,11 +113,16 @@ public class DataBoardTab extends BaseTab {
         stopBtn.setToolTipText("Stop all task");
         stopBtn.addActionListener((e) -> stopTask());
         controlPanel.add(stopBtn);
-        // 清除记录按钮
-        JButton clearBtn = new JButton("Clear");
-        clearBtn.setToolTipText("Clear history");
-        clearBtn.addActionListener((e) -> clearHistory());
-        controlPanel.add(clearBtn);
+        // 操作菜单按钮
+        JButton actionsBtn = new JButton("Actions");
+        actionsBtn.setToolTipText("Actions menu");
+        actionsBtn.addActionListener((e) -> {
+            JButton btn = (JButton) e.getSource();
+            if (mTaskTable != null) {
+                mTaskTable.showPopupMenu(btn, 0, btn.getHeight());
+            }
+        });
+        controlPanel.add(actionsBtn);
         // 过滤设置
         controlPanel.add(new JPanel(), "1w");
         mFilterRuleText = new HintTextField();
@@ -228,12 +233,6 @@ public class DataBoardTab extends BaseTab {
         // 停止后，将代理监听关闭
         mListenProxyMessage.setSelected(false);
         UIHelper.showTipsDialog(message);
-    }
-
-    private void clearHistory() {
-        if (mTaskTable != null) {
-            mTaskTable.clearAll();
-        }
     }
 
     public TaskTable getTaskTable() {
