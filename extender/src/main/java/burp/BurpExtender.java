@@ -152,24 +152,24 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 扫描选定目标
             JMenuItem sendToOneScanItem = new JMenuItem("Send to OneScan");
             items.add(sendToOneScanItem);
-            sendToOneScanItem.addActionListener((event) -> {
+            sendToOneScanItem.addActionListener((event) -> new Thread(() -> {
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
                     doScan(httpReqResp, "Send");
                 }
-            });
+            }).start());
             // 选择 Payload 扫描
             List<String> payloadList = WordlistManager.getItemList(WordlistManager.KEY_PAYLOAD);
             if (!payloadList.isEmpty() && payloadList.size() > 1) {
                 JMenu menu = new JMenu("Use payload scan");
                 items.add(menu);
-                ActionListener listener = (event) -> {
+                ActionListener listener = (event) -> new Thread(() -> {
                     String action = event.getActionCommand();
                     IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                     for (IHttpRequestResponse httpReqResp : messages) {
                         doScan(httpReqResp, "Send", action);
                     }
-                };
+                }).start();
                 for (String itemName : payloadList) {
                     JMenuItem item = new JMenuItem(itemName);
                     item.setActionCommand(itemName);
