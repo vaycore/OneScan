@@ -11,7 +11,7 @@ public interface Constants {
 
     // 插件信息
     String PLUGIN_NAME = "OneScan";
-    String PLUGIN_VERSION = "1.6.18";
+    String PLUGIN_VERSION = "1.6.20";
     boolean DEBUG = false;
 
     // 插件启动显示的信息
