@@ -2,9 +2,10 @@ package burp.hae.montoya.http;
 
 import burp.IHttpService;
 import burp.api.montoya.http.HttpService;
+import burp.vaycore.common.utils.IPUtils;
+import burp.vaycore.common.utils.StringUtils;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 /**
  * <p>
@@ -20,26 +21,50 @@ public class HttpServiceImpl implements HttpService {
 
     @Override
     public String host() {
-        return this.httpService.getHost();
+        if (this.httpService == null) {
+            return "0.0.0.0";
+        }
+        String host = this.httpService.getHost();
+        if (StringUtils.isEmpty(host)) {
+            return "0.0.0.0";
+        }
+        return host;
     }
 
+    /**
+     * @return 范围（1-65535）
+     */
     @Override
     public int port() {
-        return this.httpService.getPort();
+        if (this.httpService == null) {
+            return 80;
+        }
+        int port = this.httpService.getPort();
+        if (port <= 0 || port > 65535) {
+            return 80;
+        }
+        return port;
     }
 
     @Override
     public boolean secure() {
-        return "https".equals(httpService.getProtocol());
+        if (this.httpService == null) {
+            return false;
+        }
+        return "https".equalsIgnoreCase(this.httpService.getProtocol());
     }
 
     @Override
     public String ipAddress() {
-        String host = httpService.getHost();
+        String host = this.host();
+        // 如果是 IPv4 地址，直接返回
+        if (IPUtils.hasIPv4(host)) {
+            return host;
+        }
         try {
             InetAddress ip = InetAddress.getByName(host);
             return ip.getHostAddress();
-        } catch (UnknownHostException e) {
+        } catch (Exception e) {
             return "0.0.0.0";
         }
     }
