@@ -1,8 +1,6 @@
 package burp.vaycore.common.utils;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,15 +77,13 @@ public class JsonUtils {
             return false;
         }
         text = text.trim();
-        // 开关与结尾都是大括号，以对象方式解析
+        // 开关与结尾都是大括号，尝试检测
         if (text.startsWith("{") && text.endsWith("}")) {
-            Map<String, Object> map = GsonUtils.toMap(text);
-            return map != null && !map.isEmpty();
+            return GsonUtils.hasJson(text);
         }
-        // 开关与结尾都是中括号，以数组方式解析
+        // 开关与结尾都是中括号，尝试检测
         if (text.startsWith("[") && text.endsWith("]")) {
-            List<Object> list = GsonUtils.toList(text, Object.class);
-            return list != null && !list.isEmpty();
+            return GsonUtils.hasJson(text);
         }
         return false;
     }

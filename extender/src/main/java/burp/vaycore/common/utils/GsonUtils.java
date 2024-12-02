@@ -1,7 +1,6 @@
 package burp.vaycore.common.utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
@@ -19,6 +18,20 @@ public class GsonUtils {
 
     private GsonUtils() {
         throw new IllegalAccessError("utils class not support create instance.");
+    }
+
+    public static boolean hasJson(String data) {
+        try {
+            JsonElement element = JsonParser.parseString(data);
+            if (element.isJsonObject()) {
+                return !element.getAsJsonObject().isEmpty();
+            } else if (element.isJsonArray()) {
+                return !element.getAsJsonArray().isEmpty();
+            }
+            return false;
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
     }
 
     public static String toJson(Object obj) {
