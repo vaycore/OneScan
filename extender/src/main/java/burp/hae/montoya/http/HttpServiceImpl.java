@@ -41,7 +41,7 @@ public class HttpServiceImpl implements HttpService {
         }
         int port = this.httpService.getPort();
         if (port <= 0 || port > 65535) {
-            return 80;
+            return this.secure() ? 443 : 80;
         }
         return port;
     }
