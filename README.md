@@ -1,11 +1,20 @@
-# OneScan
+<div align="center">
+<h1>OneScan</h1>
+<p>OneScan 是一款用于递归目录扫描的 BurpSuite 插件，为发现更深层次目录下隐藏的漏洞赋能</p>
+<div align="center">
 
-OneScan是递归目录扫描的BurpSuite插件。
+[![Repo stars](https://img.shields.io/github/stars/vaycore/OneScan)](https://github.com/vaycore/OneScan/stargazers)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/vaycore/OneScan?label=Commit)](https://github.com/vaycore/OneScan/commits/)
+[![Downloads total](https://img.shields.io/github/downloads/vaycore/OneScan/total?label=Downloads)](https://github.com/vaycore/OneScan/releases)
+[![Repo tags](https://img.shields.io/github/v/tag/vaycore/OneScan?label=Latest)](https://github.com/vaycore/OneScan/tags)
+[![Downloads latest total](https://img.shields.io/github/downloads/vaycore/OneScan/latest/total?label=Downloads@latest)](https://github.com/vaycore/OneScan/releases)
+
+</div>
+</div>
 
 ## 插件介绍
 
-OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码变现。插件起初是为了发现站点的 `Swagger-API` 文档页面，例如有些站点将 `Swagger-API`
-文档存放在当前API接口同路由下（或者更深层次目录），使用OneScan插件可以快速发现这类页面和接口
+OneScan 插件的思路由 One 哥提供，我负责将 One 哥的思路进行编码变现。插件起初是为了发现站点深层目录下的 `Swagger-API` 接口文档，后面随着功能的完善和使用姿势的增加，目前可以完成：发现隐藏接口、发现敏感信息泄漏、测试未授权、越权接口等测试工作
 
 > 参与开发人员：
 >
@@ -15,7 +24,7 @@ OneScan插件的思路由One哥提供，我负责将One哥的思路进行编码�
 
 ### 简单示例
 
-例如配置Payload字典如下：
+例如配置 Payload 字典如下：
 
 ```text
 /api-docs
@@ -48,7 +57,7 @@ Extensions -> Installed -> Add -> Select File -> Next
 
 ![](imgs/install_success.png)
 
-插件配置文件默认存放路径如下（优先检测当前插件 jar 包所在目录下是否存在 `OneScan` 目录，如果存在，将使用该目录作为工作目录；否则，使用如下路径作为工作目录）：
+插件配置文件默认存放路径如下（优先检测当前插件 JAR 包所在目录下是否存在 `OneScan` 目录，如果存在，将使用该目录作为工作目录；否则，使用如下路径作为工作目录）：
 
 ```text
 linux、macOS：
@@ -62,17 +71,17 @@ C:\Users\<用户名>\.config\OneScan\
 
 ### 主动扫描
 
-可以从BurpSuite其它位置发送到OneScan主动扫描
+可以从 BurpSuite 其它位置发送到 OneScan 主动扫描
 
 ![](imgs/send_to_onescan.png)
 
-可以使用已配置的字典发送到OneScan主动扫描（存在1个以上的字典配置才会出现该菜单）：
+可以使用已配置的字典发送到 OneScan 主动扫描（存在1个以上的字典配置才会显示该菜单）：
 
 ![](imgs/use_payload_scan.png)
 
 ### 辅助面板
 
-提取请求和响应包中**JSON**格式的字段，插件`1.0.0`版本新增`Fingerprint`指纹信息展示
+提取请求和响应包中 **JSON** 格式的字段，插件 `1.0.0` 版本新增 `Fingerprint` 指纹信息展示
 
 ![](imgs/onescan_info.png)
 
@@ -112,19 +121,19 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/main_panel.png)
 
-- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过OneScan（建议配置白名单后启用）
-- `Exclude Header` 开关排除请求头（默认禁用），根据 `Request -> Exclude header` 里的配置，排除请求头中对应的值
+- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过 OneScan（建议配置白名单后启用）
+- `Remove Header` 开关移除请求头（默认禁用），根据 `Request -> Remove header` 里的配置，移除请求头中对应的值
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
 - `Payload Processing` 开关 Payload Processing 功能（默认启用）
 - `Filter` 设置数据过滤规则
-- `Import url` 导入 Url 目标进行扫描
+- `Import url` 导入 URL 目标扫描
 - `Stop` 停止正在扫描的任务
 - `Actions` 操作菜单（列表鼠标右键菜单的所有功能）
 
 #### 过滤规则配置
 
-点击主面板的`Filter`按钮，打开设置过滤规则对话框（插件`0.5.2`版本新增功能）
+点击主面板的 `Filter` 按钮，打开设置过滤规则对话框（插件 `0.5.2` 版本新增功能）
 
 ![](imgs/setup_filter.png)
 
@@ -137,7 +146,7 @@ C:\Users\<用户名>\.config\OneScan\
 
 #### 临时过滤规则
 
-通过右键菜单，点击“临时过滤选中数据”添加临时过滤规则：
+通过右键菜单，点击 `Temporarily filter selected data` 添加临时过滤规则：
 
 ![](imgs/main_panel_temp_filter.png)
 
@@ -149,29 +158,29 @@ Status != 400 && Status != 503
 
 ### Config配置
 
-#### Payload（字典、Payload处理）
+#### Payload（字典、请求包处理）
 
-Payload配置界面如下
+Payload 配置界面如下
 
 ![](imgs/config_payload.png)
 
 - `Payload` 配置递归扫描的字典
-- `Payload Processing` 配置请求过程中对数据包的处理（例如：URL添加前缀、后缀，Body正则匹配和替换）
+- `Payload Processing` 配置请求过程中对数据包的处理（例如：URL 添加前缀、后缀，Body 正则匹配和替换）
 
 #### Request（请求相关配置）
 
-Request配置界面如下
+Request 配置界面如下
 
 ![](imgs/config_request.png)
 
-- `QPS` QPS限制，限制每秒请求的数量，范围（`1-9999`）
+- `QPS` QPS 限制，限制每秒请求的数量，范围（`1-9999`）
 - `Request delay` 请求延时限制，限制每次请求的间隔时间，范围（`0-99999`）。（单位：毫秒）
 - `Scan level` 限制目录扫描层级，范围（`1-99`）。限制方向：`Left to right`（从左往右），`Right to left`（从右往左）
 - `Retry` 请求失败时重试次数配置，范围（`0-9`）
 - `Include method` 配置请求方法白名单
 - `Exclude suffix` 排除指定后缀的数据包
 - `Header` 递归扫描过程的请求头配置，可配置变量
-- `Exclude header` 请求时排除请求头中对应的值
+- `Remove header` 请求时移除请求头中对应的值
 - `UserAgent` 这里配置的是 `{{random.ua}}` 变量列表里的值
 
 #### Host（主要是黑、白名单配置）
@@ -180,8 +189,8 @@ Host配置界面如下
 
 ![](imgs/config_host.png)
 
-- `Host Whitelist` 配置白名单列表，如果该列表不为空，插件则只能请求该列表中的Host
-- `Host Blacklist` 配置黑名单列表，插件不对该列表配置的Host进行请求
+- `Host Allowlist` 配置白名单列表，如果该列表不为空，插件则只能请求该列表中的 Host
+- `Host Blocklist` 配置黑名单列表，插件不对该列表配置的 Host 进行请求
 
 #### Other（其它配置）
 
@@ -192,12 +201,12 @@ Other配置界面如下
 - `Maximum display length` 限制请求、响应包的最大显示长度（插件 `1.6.11` 版本新增）
 - `Collect directory` 数据收集存放目录
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
-- `HaE` 配置与 [HaE](https://github.com/gh0stkey/HaE) 插件联动，实现主面板数据高亮（配置路径示例如图）
-- `Clear Temp` 清除指纹识别缓存（用于加快指纹识别的速度）
+- `HaE` 配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径，与 [HaE](https://github.com/gh0stkey/HaE) 联动，实现主面板数据高亮
+- `Clear cache` 清除指纹识别缓存（缓存用于加快指纹识别的速度）
 
 ### Fingerprint指纹
 
-插件`1.0.0`版本新增`Fingerprint`指纹模块，指纹管理界面如下
+插件 `1.0.0` 版本新增 `Fingerprint` 指纹模块，指纹管理界面如下
 
 ![](imgs/fingerprint_panel.png)
 
@@ -208,7 +217,7 @@ Other配置界面如下
 - `Delete` 删除选中的指纹信息
 - `Test` 测试指纹规则
 
-指纹信息全程使用UI添加，不需要编写正则匹配规则（也可以使用正则匹配），UI界面如下：
+指纹信息全程使用 UI 添加，不需要编写正则匹配规则（也可以使用正则匹配），UI 界面如下：
 
 ![](imgs/create_fingerprint_ui.png)
 
@@ -299,4 +308,4 @@ Connection: close
 ## END
 
 - 代码写的很乱，还请师傅们见谅
-- 欢迎各位师傅提交 `Issue` 和 `Pull requests`，一起完善项目
+- 欢迎各位师傅提交 `Issues` 和 `Pull requests`，一起完善项目
