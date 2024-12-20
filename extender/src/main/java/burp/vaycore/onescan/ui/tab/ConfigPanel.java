@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.tab;
 
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
 import burp.vaycore.onescan.ui.tab.config.HostTab;
@@ -25,7 +26,7 @@ public class ConfigPanel extends JTabbedPane implements OnTabEventListener {
     }
 
     public String getTitleName() {
-        return "Config";
+        return L.get("tab_name.config");
     }
 
     private void initView() {

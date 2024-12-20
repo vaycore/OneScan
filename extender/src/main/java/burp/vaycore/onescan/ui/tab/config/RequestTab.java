@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.NumberFilter;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
@@ -31,26 +32,26 @@ public class RequestTab extends BaseConfigTab {
     @Override
     protected void initView() {
         // QPS限制器配置
-        addTextConfigPanel("QPS", "Set http request QPS limit",
+        addTextConfigPanel(L.get("qps"), L.get("qps_sub_title"),
                 20, Config.KEY_QPS_LIMIT).addKeyListener(new NumberFilter(4));
         // 请求延时配置
-        addTextConfigPanel("Request delay", "Set http request delay time（Unit: millis）",
+        addTextConfigPanel(L.get("request_delay"), L.get("request_delay_sub_title"),
                 20, Config.KEY_REQUEST_DELAY).addKeyListener(new NumberFilter(5));
         // 控制递归层数
         addScanLevelConfigPanel();
         // 请求重试配置
-        addTextConfigPanel("Retry", "Set request retry count",
+        addTextConfigPanel(L.get("retry"), L.get("retry_sub_title"),
                 20, Config.KEY_RETRY_COUNT).addKeyListener(new NumberFilter(1));
         // 过滤请求方法
-        addTextConfigPanel("Include method", "Set request method whitelist", 20, Config.KEY_INCLUDE_METHOD);
+        addTextConfigPanel(L.get("include_method"), L.get("include_method_sub_title"), 20, Config.KEY_INCLUDE_METHOD);
         // 根据后缀过滤请求包
-        addTextConfigPanel("Exclude suffix", "Proxy message suffix filter", 50, Config.KEY_EXCLUDE_SUFFIX);
+        addTextConfigPanel(L.get("exclude_suffix"), L.get("exclude_suffix_sub_title"), 50, Config.KEY_EXCLUDE_SUFFIX);
         // 请求头配置
-        addWordListPanel("Header", "Request header options", WordlistManager.KEY_HEADERS);
-        // 排除请求头配置
-        addWordListPanel("Exclude header", "Exclude request header by key", WordlistManager.KEY_EXCLUDE_HEADERS);
+        addWordListPanel(L.get("header"), L.get("header_sub_title"), WordlistManager.KEY_HEADERS);
+        // 移除请求头配置
+        addWordListPanel(L.get("remove_header"), L.get("remove_header_sub_title"), WordlistManager.KEY_REMOVE_HEADERS);
         // 请求头UserAgent配置
-        addWordListPanel("UserAgent", "Set {{random.ua}} list options", WordlistManager.KEY_USER_AGENT);
+        addWordListPanel(L.get("user_agent"), L.get("user_agent_sub_title"), WordlistManager.KEY_USER_AGENT);
     }
 
     protected void addScanLevelConfigPanel() {
@@ -58,10 +59,10 @@ public class RequestTab extends BaseConfigTab {
         String direct = Config.get(Config.KEY_SCAN_LEVEL_DIRECT);
         // 单选按钮布局
         JPanel radioPanel = new JPanel(new HLayout(10));
-        JRadioButton left = new JRadioButton("Left to right");
+        JRadioButton left = new JRadioButton(L.get("left_to_right"));
         left.setSelected(Config.DIRECT_LEFT.equals(direct));
         radioPanel.add(left);
-        JRadioButton right = new JRadioButton("Right to left");
+        JRadioButton right = new JRadioButton(L.get("right_to_left"));
         right.setSelected(!Config.DIRECT_LEFT.equals(direct));
         radioPanel.add(right);
         UIHelper.createRadioGroup(left, right);
@@ -76,20 +77,20 @@ public class RequestTab extends BaseConfigTab {
         JTextField textField = new JTextField(Config.get(configKey), 20);
         textField.addKeyListener(new NumberFilter(2));
         textFieldPanel.add(textField);
-        JButton button = new JButton("Save");
+        JButton button = new JButton(L.get("save"));
         button.addActionListener(e -> {
             boolean state = onTextConfigSave(configKey, textField.getText());
             if (state) {
-                UIHelper.showTipsDialog("Save success!");
+                UIHelper.showTipsDialog(L.get("save_success"));
             }
         });
         textFieldPanel.add(button);
-        addConfigItem("Scan level", "Set directory scan level", radioPanel, textFieldPanel);
+        addConfigItem(L.get("scan_level"), L.get("scan_level_sub_title"), radioPanel, textFieldPanel);
     }
 
     @Override
     public String getTitleName() {
-        return "Request";
+        return L.get("tab_name.request");
     }
 
     @Override
@@ -97,7 +98,7 @@ public class RequestTab extends BaseConfigTab {
         int value = StringUtils.parseInt(text, -1);
         if (Config.KEY_QPS_LIMIT.equals(configKey)) {
             if (value < 1 || value > 9999) {
-                UIHelper.showTipsDialog("QPS limit value invalid.(range: 1-9999)");
+                UIHelper.showTipsDialog(L.get("qps_limit_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);
@@ -106,7 +107,7 @@ public class RequestTab extends BaseConfigTab {
             return true;
         } else if (Config.KEY_REQUEST_DELAY.equals(configKey)) {
             if (value < 0 || value > 99999) {
-                UIHelper.showTipsDialog("Request delay value invalid.(range: 1-99999)");
+                UIHelper.showTipsDialog(L.get("request_delay_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);
@@ -115,13 +116,13 @@ public class RequestTab extends BaseConfigTab {
             return true;
         } else if (Config.KEY_SCAN_LEVEL.equals(configKey)) {
             if (value < 1 || value > 99) {
-                UIHelper.showTipsDialog("Scan Level value invalid.(range: 1-99)");
+                UIHelper.showTipsDialog(L.get("scan_level_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);
         } else if (Config.KEY_RETRY_COUNT.equals(configKey)) {
             if (value < 0 || value > 9) {
-                UIHelper.showTipsDialog("Retry count value invalid.(range: 0-9)");
+                UIHelper.showTipsDialog(L.get("retry_count_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);

@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.tab.config;
 
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
 
@@ -13,13 +14,13 @@ public class HostTab extends BaseConfigTab {
     @Override
     protected void initView() {
         // Host白名单配置
-        addWordListPanel("Host Whitelist", "Host Whitelist options", WordlistManager.KEY_WHITE_HOST);
+        addWordListPanel(L.get("host_allowlist"), L.get("host_allowlist_sub_title"), WordlistManager.KEY_HOST_ALLOWLIST);
         // Host黑名单配置
-        addWordListPanel("Host Blacklist", "Host Blacklist options", WordlistManager.KEY_BLACK_HOST);
+        addWordListPanel(L.get("host_blocklist"), L.get("host_blocklist_sub_title"), WordlistManager.KEY_HOST_BLOCKLIST);
     }
 
     @Override
     public String getTitleName() {
-        return "Host";
+        return L.get("tab_name.host");
     }
 }

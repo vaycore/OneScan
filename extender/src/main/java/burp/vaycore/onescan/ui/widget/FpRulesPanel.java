@@ -7,6 +7,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.onescan.bean.FpRule;
 import burp.vaycore.onescan.common.FpMethodHandler;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,7 +48,7 @@ public class FpRulesPanel extends JPanel {
         JPanel columnPanel = new JPanel();
         add(columnPanel);
         columnPanel.setLayout(new HLayout(10, true));
-        JButton addItemBtn = new JButton("Add Rule");
+        JButton addItemBtn = new JButton(L.get("fingerprint_rules.add_rule"));
         addItemBtn.setActionCommand("add-rule-item");
         addItemBtn.addActionListener((e) -> {
             addRuleItem(null);
@@ -108,7 +109,7 @@ public class FpRulesPanel extends JPanel {
         }
         Field[] fields = FpRule.class.getDeclaredFields();
         Vector<String> result = new Vector<>();
-        result.add("数据源");
+        result.add(L.get("fingerprint_rules.data_source"));
         for (Field field : fields) {
             field.setAccessible(true);
             String name = field.getName();
@@ -131,7 +132,7 @@ public class FpRulesPanel extends JPanel {
         } else {
             Method[] methods = FpMethodHandler.class.getDeclaredMethods();
             Vector<String> result = new Vector<>();
-            result.add("匹配方法");
+            result.add(L.get("fingerprint_rules.match_method"));
             for (Method method : methods) {
                 String name = method.getName();
                 result.add(name);
@@ -167,13 +168,13 @@ public class FpRulesPanel extends JPanel {
     }
 
     public ArrayList<FpRule> showDialog(Component parentComponent) {
-        int state = UIHelper.showCustomDialog("Setup Rules", this, parentComponent);
+        int state = UIHelper.showCustomDialog(L.get("fingerprint_rules.dialog_title"), this, parentComponent);
         if (state != JOptionPane.OK_OPTION) {
             return null;
         }
         ArrayList<FpRule> rules = exportRules();
         if (rules.isEmpty()) {
-            UIHelper.showTipsDialog("Rules is empty.", parentComponent);
+            UIHelper.showTipsDialog(L.get("fingerprint_rules.empty_hint"), parentComponent);
             return showDialog(parentComponent);
         }
         return rules;

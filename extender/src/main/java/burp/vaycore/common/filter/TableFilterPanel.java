@@ -5,6 +5,7 @@ import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -51,22 +52,22 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         JPanel columnPanel = new JPanel();
         add(columnPanel);
         columnPanel.setLayout(new HLayout(10, true));
-        JLabel filterLabel = new JLabel("Select column:");
+        JLabel filterLabel = new JLabel(L.get("table_filter.select_column"));
         columnPanel.add(filterLabel);
         mColumnList = new JComboBox<>(mColumns);
         mColumnList.setSelectedIndex(mLastColumnIndex);
         mColumnList.addItemListener(this);
-        columnPanel.add(mColumnList,"20%");
+        columnPanel.add(mColumnList, "20%");
         columnPanel.add(new JPanel(), "1w");
         // 添加过滤
-        JButton addItemBtn = new JButton("Add filter");
-        addItemBtn.setToolTipText("Add filter");
+        JButton addItemBtn = new JButton(L.get("table_filter.add_filter"));
+        addItemBtn.setToolTipText(L.get("table_filter.add_filter"));
         addItemBtn.setActionCommand("add-filter-item");
         addItemBtn.addActionListener(this);
         columnPanel.add(addItemBtn, "20%");
         // 清除过滤
-        JButton clearBtn = new JButton("Clear");
-        clearBtn.setToolTipText("Clear");
+        JButton clearBtn = new JButton(L.get("table_filter.clear"));
+        clearBtn.setToolTipText(L.get("table_filter.clear"));
         clearBtn.setActionCommand("clear-filter-item");
         clearBtn.addActionListener(this);
         columnPanel.add(clearBtn, "15%");
@@ -111,10 +112,10 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         radioBtnPanel.setBorder(new EmptyBorder(0, 5, 0, 0));
         panel.add(radioBtnPanel);
         radioBtnPanel.setLayout(new HLayout(10));
-        JRadioButton andRadioBtn = new JRadioButton("AND");
+        JRadioButton andRadioBtn = new JRadioButton(L.get("table_filter.and"));
         andRadioBtn.setFocusable(false);
         andRadioBtn.setSelected(logic == FilterRule.LOGIC_AND);
-        JRadioButton orRadioBtn = new JRadioButton("OR");
+        JRadioButton orRadioBtn = new JRadioButton(L.get("table_filter.or"));
         orRadioBtn.setFocusable(false);
         orRadioBtn.setSelected(logic == FilterRule.LOGIC_OR);
         UIHelper.createRadioGroup(andRadioBtn, orRadioBtn);
@@ -130,7 +131,7 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         rulePanel.add(operateBox);
         JTextField input = new JTextField(value);
         rulePanel.add(input, "1w");
-        JButton delBtn = new JButton("X");
+        JButton delBtn = new JButton(L.get("table_filter.x"));
         rulePanel.add(delBtn, "40px");
         delBtn.setEnabled(logic > 0);
         delBtn.addActionListener(e -> {
@@ -311,7 +312,8 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
      * @param callback 对话框回调接口
      */
     public void showDialog(DialogCallback callback) {
-        int state = UIHelper.showCustomDialog("Setup filter", new String[]{"OK", "Cancel", "Reset"}, this);
+        int state = UIHelper.showCustomDialog(L.get("table_filter_dialog.title"),
+                new String[]{L.get("ok"), L.get("cancel"), L.get("reset")}, this);
         if (state == JOptionPane.YES_OPTION) {
             ArrayList<FilterRule> filterRules = exportRules();
             ArrayList<TableFilter<AbstractTableModel>> filters = exportTableFilters();

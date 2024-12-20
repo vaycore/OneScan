@@ -14,6 +14,7 @@ import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.DialogCallbackAdapter;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.onescan.ui.widget.ImportUrlWindow;
@@ -38,7 +39,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
 
     private TaskTable mTaskTable;
     private JCheckBox mListenProxyMessage;
-    private JCheckBox mExcludeHeader;
+    private JCheckBox mRemoveHeader;
     private JCheckBox mReplaceHeader;
     private JCheckBox mDirScan;
     private ArrayList<FilterRule> mLastFilters;
@@ -55,11 +56,11 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     }
 
     public String getTitleName() {
-        return "Databoard";
+        return L.get("tab_name.databoard");
     }
 
     public void testInit() {
-        init(new JTextArea("Request"), new JTextArea("Response"));
+        init(new JTextArea(L.get("request")), new JTextArea(L.get("response")));
         // 添加测试数据
         for (int i = 0; i < 100; i++) {
             TaskData data = new TaskData();
@@ -93,28 +94,28 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         controlPanel.setLayout(new HLayout(5, true));
         add(controlPanel);
         // 代理监听开关
-        mListenProxyMessage = newJCheckBox(controlPanel, "Listen Proxy Message", Config.KEY_ENABLE_LISTEN_PROXY);
-        // 请求头排除开关
-        mExcludeHeader = newJCheckBox(controlPanel, "Exclude Header", Config.KEY_ENABLE_EXCLUDE_HEADER);
+        mListenProxyMessage = newJCheckBox(controlPanel, L.get("listen_proxy_message"), Config.KEY_ENABLE_LISTEN_PROXY);
+        // 请求头移除开关
+        mRemoveHeader = newJCheckBox(controlPanel, L.get("remove_header"), Config.KEY_ENABLE_REMOVE_HEADER);
         // 请求头替换开关
-        mReplaceHeader = newJCheckBox(controlPanel, "Replace Header", Config.KEY_ENABLE_REPLACE_HEADER);
+        mReplaceHeader = newJCheckBox(controlPanel, L.get("replace_header"), Config.KEY_ENABLE_REPLACE_HEADER);
         // 递归扫描开关
-        mDirScan = newJCheckBox(controlPanel, "DirScan", Config.KEY_ENABLE_DIR_SCAN);
+        mDirScan = newJCheckBox(controlPanel, L.get("dir_scan"), Config.KEY_ENABLE_DIR_SCAN);
         // 启用Payload Processing
-        mPayloadProcessing = newJCheckBox(controlPanel, "Payload Processing", Config.KEY_ENABLE_PAYLOAD_PROCESSING);
+        mPayloadProcessing = newJCheckBox(controlPanel, L.get("payload_processing"), Config.KEY_ENABLE_PAYLOAD_PROCESSING);
         // 导入Url
-        JButton importUrlBtn = new JButton("Import url");
-        importUrlBtn.setToolTipText("Import url");
+        JButton importUrlBtn = new JButton(L.get("import_url"));
+        importUrlBtn.setToolTipText(L.get("import_url"));
         importUrlBtn.addActionListener((e) -> importUrl());
         controlPanel.add(importUrlBtn);
         // 停止按钮
-        JButton stopBtn = new JButton("Stop");
-        stopBtn.setToolTipText("Stop all task");
+        JButton stopBtn = new JButton(L.get("stop"));
+        stopBtn.setToolTipText(L.get("stop_all_task"));
         stopBtn.addActionListener((e) -> stopTask());
         controlPanel.add(stopBtn);
         // 操作菜单按钮
-        JButton actionsBtn = new JButton("Actions");
-        actionsBtn.setToolTipText("Actions menu");
+        JButton actionsBtn = new JButton(L.get("actions"));
+        actionsBtn.setToolTipText(L.get("actions_menu"));
         actionsBtn.addActionListener((e) -> {
             JButton btn = (JButton) e.getSource();
             if (mTaskTable != null) {
@@ -126,10 +127,10 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         controlPanel.add(new JPanel(), "1w");
         mFilterRuleText = new HintTextField();
         mFilterRuleText.setEditable(false);
-        mFilterRuleText.setHintText("No filter rules.");
+        mFilterRuleText.setHintText(L.get("no_filter_rules"));
         controlPanel.add(mFilterRuleText, "2w");
-        JButton filterBtn = new JButton("Filter");
-        filterBtn.setToolTipText("Filter data");
+        JButton filterBtn = new JButton(L.get("filter"));
+        filterBtn.setToolTipText(L.get("filter_data"));
         filterBtn.addActionListener(e -> showSetupFilterDialog());
         controlPanel.add(filterBtn, "65px");
         // 主面板
@@ -212,9 +213,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     private void stopTask() {
         sendTabEvent(EVENT_STOP_TASK);
         // 提示信息
-        String message = hasListenProxyMessage() ?
-                "Stop OK!\nSet 'Listen Proxy Message' temporarily to off" :
-                "Stop OK!";
+        String message = hasListenProxyMessage() ? L.get("stop_task_tips") : L.get("stop_ok_tips");
         // 停止后，将代理监听关闭
         mListenProxyMessage.setSelected(false);
         UIHelper.showTipsDialog(message);
@@ -228,8 +227,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         return mListenProxyMessage != null && mListenProxyMessage.isSelected();
     }
 
-    public boolean hasExcludeHeader() {
-        return mExcludeHeader != null && mExcludeHeader.isSelected();
+    public boolean hasRemoveHeader() {
+        return mRemoveHeader != null && mRemoveHeader.isSelected();
     }
 
     public boolean hasReplaceHeader() {

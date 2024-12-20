@@ -20,9 +20,9 @@ public class WordlistManager {
     public static final String KEY_PAYLOAD = "payload";
     public static final String KEY_HEADERS = "headers";
     public static final String KEY_USER_AGENT = "user-agent";
-    public static final String KEY_WHITE_HOST = "white-host";
-    public static final String KEY_BLACK_HOST = "black-host";
-    public static final String KEY_EXCLUDE_HEADERS = "exclude-headers";
+    public static final String KEY_HOST_ALLOWLIST = "host-allowlist";
+    public static final String KEY_HOST_BLOCKLIST = "host-blocklist";
+    public static final String KEY_REMOVE_HEADERS = "remove-headers";
     private static String sWordlistDir;
 
     private WordlistManager() {
@@ -44,13 +44,44 @@ public class WordlistManager {
             throw new IllegalArgumentException("Wordlist path not found.");
         }
         sWordlistDir = path;
+        onVersionUpgrade();
         initDirs();
         initDefaultWordlist(WordlistManager.KEY_PAYLOAD, "payload.txt", reInitFile);
         initDefaultWordlist(WordlistManager.KEY_HEADERS, "header.txt", reInitFile);
         initDefaultWordlist(WordlistManager.KEY_USER_AGENT, "user_agent.txt", reInitFile);
-        initDefaultWordlist(WordlistManager.KEY_WHITE_HOST, "whitelist.txt", reInitFile);
-        initDefaultWordlist(WordlistManager.KEY_BLACK_HOST, "blacklist.txt", reInitFile);
-        initDefaultWordlist(WordlistManager.KEY_EXCLUDE_HEADERS, "exclude_header.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_HOST_ALLOWLIST, "host_allowlist.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_HOST_BLOCKLIST, "host_blocklist.txt", reInitFile);
+        initDefaultWordlist(WordlistManager.KEY_REMOVE_HEADERS, "remove_header.txt", reInitFile);
+    }
+
+    /**
+     * 版本更新处理
+     */
+    private static void onVersionUpgrade() {
+        String[] renames = {
+                "white-host",
+                "black-host",
+                "exclude-headers",
+        };
+        String[] renameTargets = {
+                WordlistManager.KEY_HOST_ALLOWLIST,
+                WordlistManager.KEY_HOST_BLOCKLIST,
+                WordlistManager.KEY_REMOVE_HEADERS,
+        };
+        for (int i = 0; i < renames.length; i++) {
+            String name = renames[i];
+            String path = sWordlistDir + File.separator + name;
+            // 如果目录存在，重命名为新目录名
+            if (FileUtils.isDir(path)) {
+                String newName = renameTargets[i];
+                String newPath = sWordlistDir + File.separator + newName;
+                File f = new File(path);
+                boolean state = f.renameTo(new File(newPath));
+                if (state) {
+                    Logger.debug("rename %s to %s OK!", path, newPath);
+                }
+            }
+        }
     }
 
     private static void initDirs() {
@@ -200,15 +231,15 @@ public class WordlistManager {
         return getList(WordlistManager.KEY_USER_AGENT);
     }
 
-    public static List<String> getWhiteHost() {
-        return getList(WordlistManager.KEY_WHITE_HOST);
+    public static List<String> getHostAllowlist() {
+        return getList(WordlistManager.KEY_HOST_ALLOWLIST);
     }
 
-    public static List<String> getBlackHost() {
-        return getList(WordlistManager.KEY_BLACK_HOST);
+    public static List<String> getHostBlocklist() {
+        return getList(WordlistManager.KEY_HOST_BLOCKLIST);
     }
 
-    public static List<String> getExcludeHeader() {
-        return getList(WordlistManager.KEY_EXCLUDE_HEADERS);
+    public static List<String> getRemoveHeaders() {
+        return getList(WordlistManager.KEY_REMOVE_HEADERS);
     }
 }

@@ -1,5 +1,7 @@
 package burp.vaycore.onescan.ui.widget.payloadlist;
 
+import burp.vaycore.onescan.common.L;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +13,12 @@ import java.util.Vector;
  */
 public class ProcessingListModel extends AbstractTableModel {
 
-    private final String[] COLUMN_NAMES = new String[]{"Enabled", "Merge", "RuleName", "RuleCount"};
+    private final String[] COLUMN_NAMES = new String[]{
+            L.get("processing_table_columns.enabled"),
+            L.get("processing_table_columns.merge"),
+            L.get("processing_table_columns.rule_name"),
+            L.get("processing_table_columns.rule_count"),
+    };
     private final Vector<ProcessingItem> mData;
 
     public ProcessingListModel() {

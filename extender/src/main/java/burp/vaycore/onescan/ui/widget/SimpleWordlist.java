@@ -6,6 +6,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.common.widget.HintTextField;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnDataChangeListener;
 
 import javax.swing.*;
@@ -95,7 +96,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
      * 列表数据是否为空
      */
     public boolean isEmptyListData() {
-       return mListModel == null || mListModel.isEmpty();
+        return mListModel == null || mListModel.isEmpty();
     }
 
     /**
@@ -118,14 +119,14 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     private JPanel newLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new VLayout(3));
-        panel.add(newButton("Paste", "paste-item"));
-        panel.add(newButton("Remove", "remove-item"));
-        panel.add(newButton("Clear", "clear-item"));
-        panel.add(newButton("Up", "up-item"));
-        panel.add(newButton("Down", "down-item"));
-        panel.add(newButton("Unique", "unique-item"));
+        panel.add(newButton(L.get("paste"), "paste-item"));
+        panel.add(newButton(L.get("remove"), "remove-item"));
+        panel.add(newButton(L.get("clear"), "clear-item"));
+        panel.add(newButton(L.get("up"), "up-item"));
+        panel.add(newButton(L.get("down"), "down-item"));
+        panel.add(newButton(L.get("unique"), "unique-item"));
         panel.add(new Panel(), "1w");
-        panel.add(newButton("Add", "add-input-item"));
+        panel.add(newButton(L.get("add"), "add-input-item"));
         return panel;
     }
 
@@ -146,7 +147,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         panel.add(scrollPane, "1w");
 
         mTfInputItem = new HintTextField();
-        mTfInputItem.setHintText("Enter a new item");
+        mTfInputItem.setHintText(L.get("enter_a_new_item"));
         mTfInputItem.setActionCommand("add-input-item");
         mTfInputItem.addActionListener(this);
         panel.add(mTfInputItem);
@@ -169,7 +170,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
                 mTfInputItem.requestFocus();
                 break;
             case "clear-item":
-                int state = UIHelper.showOkCancelDialog("确认清空列表？");
+                int state = UIHelper.showOkCancelDialog(L.get("confirm_clear_the_list_hint"));
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.removeAllElements();
                 }

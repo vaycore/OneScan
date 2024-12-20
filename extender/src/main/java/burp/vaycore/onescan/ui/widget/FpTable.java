@@ -3,6 +3,7 @@ package burp.vaycore.onescan.ui.widget;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.FpManager;
 
 import javax.swing.*;
@@ -105,7 +106,14 @@ public class FpTable extends JTable {
     public static class FpTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                "Name", "Company", "Lang", "SoftHard", "Frame", "ParentCategory", "Category"};
+                L.get("fingerprint_table_columns.name"),
+                L.get("fingerprint_table_columns.company"),
+                L.get("fingerprint_table_columns.lang"),
+                L.get("fingerprint_table_columns.soft_hard"),
+                L.get("fingerprint_table_columns.frame"),
+                L.get("fingerprint_table_columns.parent_category"),
+                L.get("fingerprint_table_columns.category"),
+        };
         private final ArrayList<FpData> mData = new ArrayList<>();
 
         public void add(FpData data) {

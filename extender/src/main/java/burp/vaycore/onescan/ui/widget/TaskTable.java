@@ -10,6 +10,7 @@ import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.TaskData;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -129,11 +130,11 @@ public class TaskTable extends JTable implements ActionListener {
         setColumnWidth(4, 200);
         setColumnWidth(5, 200);
         setColumnWidth(6, 125);
-        setColumnWidth(7, 50);
+        setColumnWidth(7, 70);
         setColumnWidth(8, 100);
         setColumnWidth(9, 200);
         setColumnWidth(10, 200);
-        setColumnWidth(11, 85);
+        setColumnWidth(11, 70);
     }
 
     private void setColumnWidth(int columnIndex, int width) {
@@ -171,14 +172,14 @@ public class TaskTable extends JTable implements ActionListener {
 
     public void showPopupMenu(Component invoker, int x, int y) {
         JPopupMenu menu = new JPopupMenu();
-        addPopupMenuItem(menu, "获取bodyMd5值", "fetch-body-md5");
-        addPopupMenuItem(menu, "获取bodyHash值", "fetch-body-hash");
-        addPopupMenuItem(menu, "发送选中项到Repeater", "send-to-repeater");
-        addPopupMenuItem(menu, "添加Host到黑名单", "add-to-black-host");
-        addPopupMenuItem(menu, "删除选中项", "remove-items");
-        addPopupMenuItem(menu, "清空所有记录", "clean-all");
+        addPopupMenuItem(menu, L.get("task_table_menu.get_body_md5"), "fetch-body-md5");
+        addPopupMenuItem(menu, L.get("task_table_menu.get_body_hash"), "fetch-body-hash");
+        addPopupMenuItem(menu, L.get("task_table_menu.send_to_repeater"), "send-to-repeater");
+        addPopupMenuItem(menu, L.get("task_table_menu.add_host_to_blocklist"), "add-to-black-host");
+        addPopupMenuItem(menu, L.get("task_table_menu.delete_selected_items"), "remove-items");
+        addPopupMenuItem(menu, L.get("task_table_menu.clear_history"), "clean-all");
         addTempFilterMenuItem(menu);
-        addPopupMenuItem(menu, "清空临时过滤规则", "clean-temp-filter");
+        addPopupMenuItem(menu, L.get("task_table_menu.clear_temp_filter_rules"), "clean-temp-filter");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
         menu.show(invoker, x, y);
@@ -192,7 +193,7 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     private void addTempFilterMenuItem(JPopupMenu menu) {
-        JMenu root = new JMenu("临时过滤选中数据");
+        JMenu root = new JMenu(L.get("task_table_menu.temp_filter_selected_data"));
         int selectedColumn = getSelectedColumn();
         // 处理未选中的情况
         if (selectedColumn < 0) {
@@ -553,7 +554,7 @@ public class TaskTable extends JTable implements ActionListener {
         area.setEditable(false);
         JScrollPane pane = new JScrollPane(area);
         panel.add(pane, "1w");
-        UIHelper.showCustomDialog(title, new String[]{"Close"}, panel);
+        UIHelper.showCustomDialog(title, new String[]{L.get("close")}, panel);
     }
 
     /**
@@ -596,7 +597,19 @@ public class TaskTable extends JTable implements ActionListener {
     public static class TaskTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                "#", "From", "Method", "Host", "Url", "Title", "IP", "Status", "Length", "Fingerprint", "Comment", "Color"};
+                L.get("task_table_columns.id"),
+                L.get("task_table_columns.from"),
+                L.get("task_table_columns.method"),
+                L.get("task_table_columns.host"),
+                L.get("task_table_columns.url"),
+                L.get("task_table_columns.title"),
+                L.get("task_table_columns.ip"),
+                L.get("task_table_columns.status"),
+                L.get("task_table_columns.length"),
+                L.get("task_table_columns.fingerprint"),
+                L.get("task_table_columns.comment"),
+                L.get("task_table_columns.color"),
+        };
         private final ArrayList<TaskData> mData;
         private final AtomicInteger mCounter;
 

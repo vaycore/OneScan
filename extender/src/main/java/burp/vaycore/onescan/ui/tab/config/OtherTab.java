@@ -5,6 +5,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.NumberFilter;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
@@ -25,17 +26,17 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
 
     protected void initView() {
         // 请求响应最大长度
-        addTextConfigPanel("Maximum display length", "Set the maximum display length of the editor（default: 0）",
+        addTextConfigPanel(L.get("maximum_display_length"), L.get("maximum_display_length_sub_title"),
                 20, Config.KEY_MAX_DISPLAY_LENGTH).addKeyListener(new NumberFilter(8));
-        addDirectoryConfigPanel("Collect directory", "Set Collect directory path", Config.KEY_COLLECT_PATH);
-        addDirectoryConfigPanel("Wordlist directory", "Set Wordlist directory path", Config.KEY_WORDLIST_PATH);
-        addConfigItem("HaE", "Set HaE plugin file path", newHaEPluginPathPanel());
-        addConfigItem("Clear Temp", "Clear fingerprint check temp", newFpClearTempPanel());
+        addDirectoryConfigPanel(L.get("collect_directory"), L.get("collect_directory_sub_title"), Config.KEY_COLLECT_PATH);
+        addDirectoryConfigPanel(L.get("wordlist_directory"), L.get("wordlist_directory_sub_title"), Config.KEY_WORDLIST_PATH);
+        addConfigItem(L.get("hae"), L.get("hae_sub_title"), newHaEPluginPathPanel());
+        addConfigItem(L.get("clear_cache"), L.get("clear_cache_sub_title"), newFpClearTempPanel());
     }
 
     @Override
     public String getTitleName() {
-        return "Other";
+        return L.get("tab_name.other");
     }
 
     private JPanel newHaEPluginPathPanel() {
@@ -44,11 +45,11 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
         mHaEPluginPath = new JTextField(getHaEPluginPath(), 35);
         mHaEPluginPath.setEditable(false);
         panel.add(mHaEPluginPath);
-        JButton button = new JButton("Select file...");
+        JButton button = new JButton(L.get("select_file"));
         button.setActionCommand("hae-plugin-select-file");
         button.addActionListener(this);
         panel.add(button);
-        JButton unload = new JButton("Unload");
+        JButton unload = new JButton(L.get("unload"));
         unload.setActionCommand("hae-plugin-unload");
         unload.addActionListener(this);
         panel.add(unload);
@@ -58,8 +59,8 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
     private JPanel newFpClearTempPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new HLayout());
-        JButton button = new JButton("Clear");
-        button.setActionCommand("clear-fingerprint-check-temp");
+        JButton button = new JButton(L.get("clear"));
+        button.setActionCommand("clear-fingerprint-check-cache");
         button.addActionListener(this);
         panel.add(button);
         return panel;
@@ -74,10 +75,10 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
             case "hae-plugin-select-file":
                 oldPath = getHaEPluginPath();
                 if (HaE.hasInstall()) {
-                    UIHelper.showTipsDialog("HaE plugin already loaded.");
+                    UIHelper.showTipsDialog(L.get("hae_plugin_already_loaded"));
                     return;
                 }
-                filepath = UIHelper.selectFileDialog("Select a file", oldPath);
+                filepath = UIHelper.selectFileDialog(L.get("select_a_file"), oldPath);
                 if (StringUtils.isEmpty(filepath) || oldPath.equals(filepath)) {
                     return;
                 }
@@ -85,7 +86,7 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                 HaE.loadPlugin(filepath, new HaE.LoadPluginCallback() {
                     @Override
                     public void onLoadSuccess() {
-                        UIHelper.showTipsDialog("HaE load success!");
+                        UIHelper.showTipsDialog(L.get("hae_load_success"));
                         Config.put(Config.KEY_HAE_PLUGIN_PATH, filepath);
                     }
 
@@ -102,22 +103,23 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                 if (state) {
                     mHaEPluginPath.setText("");
                     Config.put(Config.KEY_HAE_PLUGIN_PATH, "");
-                    UIHelper.showTipsDialog("HaE unload success!");
+                    UIHelper.showTipsDialog(L.get("hae_unload_success"));
+                } else if (!HaE.hasInstall()) {
+                    UIHelper.showTipsDialog(L.get("hae_not_installed"));
                 } else {
-                    UIHelper.showTipsDialog("HaE unload failed!");
+                    UIHelper.showTipsDialog(L.get("hae_unload_failed"));
                 }
                 break;
-            case "clear-fingerprint-check-temp":
+            case "clear-fingerprint-check-cache":
                 String count = FpManager.getTempCount();
                 if ("0".equals(count)) {
-                    UIHelper.showTipsDialog("Temp is empty.");
+                    UIHelper.showTipsDialog(L.get("cache_is_empty"));
                     return;
                 }
-                String msg = String.format("存在%s条指纹识别缓存，是否清空缓存？", count);
-                int ret = UIHelper.showOkCancelDialog(msg);
+                int ret = UIHelper.showOkCancelDialog(L.get("clear_cache_dialog_message", count));
                 if (ret == 0) {
                     FpManager.clearTemp();
-                    UIHelper.showTipsDialog("Clear success.");
+                    UIHelper.showTipsDialog(L.get("clear_success"));
                 }
                 break;
             default:
@@ -143,7 +145,7 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                 return true;
             }
             if (value < 100000 || value > 99999999) {
-                UIHelper.showTipsDialog("Invalid maximum display length value.(range: 100000-99999999)");
+                UIHelper.showTipsDialog(L.get("maximum_display_length_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);

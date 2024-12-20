@@ -1,7 +1,5 @@
 package burp.vaycore.onescan.ui.widget.payloadlist;
 
-import burp.vaycore.common.utils.StringUtils;
-
 /**
  * 规则接口
  * <p>
@@ -66,8 +64,8 @@ public abstract class PayloadRule {
      * @param value 参数值
      */
     public void setParamValue(int index, String value) {
-        if (StringUtils.isEmpty(value)) {
-            return;
+        if (value == null) {
+            value = "";
         }
         paramValues[index] = value;
     }

@@ -6,6 +6,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.bean.FpData;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.onescan.ui.widget.FpDetailPanel;
@@ -49,21 +50,21 @@ public class FingerprintTab extends BaseTab implements ActionListener {
         textField.setEditable(false);
         panel.add(textField);
         // 重新加载指纹
-        JButton reload = new JButton("Reload");
+        JButton reload = new JButton(L.get("reload"));
         reload.addActionListener((e) -> {
             mFpTable.reloadData();
             refreshCount();
-            UIHelper.showTipsDialog("Reload success!");
+            UIHelper.showTipsDialog(L.get("reload_success"));
         });
         panel.add(reload);
-        panel.add(new JLabel("Count:"));
+        panel.add(new JLabel(L.get("count")));
         // 指纹数量展示
         mCountLabel = new JLabel(FpManager.getCount());
         panel.add(mCountLabel);
         panel.add(new JPanel(), "1w");
         // 指纹过滤功能
         mFpFilterRegexText = new HintTextField();
-        mFpFilterRegexText.setHintText("Regex filter.");
+        mFpFilterRegexText.setHintText(L.get("regex_filter"));
         mFpFilterRegexText.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -71,6 +72,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
                     doSearch();
                 }
             }
+
             @Override
             public void keyReleased(KeyEvent e) {
                 String text = mFpFilterRegexText.getText();
@@ -80,7 +82,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
             }
         });
         panel.add(mFpFilterRegexText, "1w");
-        JButton search = new JButton("Search");
+        JButton search = new JButton(L.get("search"));
         search.addActionListener((e) -> doSearch());
         panel.add(search);
         add(panel, "35px");
@@ -106,10 +108,10 @@ public class FingerprintTab extends BaseTab implements ActionListener {
     private JPanel addLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new VLayout(3));
-        addButton(panel, "Add", "add-item");
-        addButton(panel, "Edit", "edit-item");
-        addButton(panel, "Delete", "delete-item");
-        addButton(panel, "Test", "test");
+        addButton(panel, L.get("add"), "add-item");
+        addButton(panel, L.get("edit"), "edit-item");
+        addButton(panel, L.get("delete"), "delete-item");
+        addButton(panel, L.get("test"), "test");
         return panel;
     }
 
@@ -154,8 +156,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
                 if (data == null) {
                     return;
                 }
-                String tips = String.format("是否确认将 %s 从指纹库中删除？", data.getName());
-                int ret = UIHelper.showOkCancelDialog(tips);
+                int ret = UIHelper.showOkCancelDialog(L.get("fingerprint_delete_hint", data.getName()));
                 if (ret == 0) {
                     mFpTable.removeFpData(rowIndex);
                     refreshCount();
@@ -178,28 +179,28 @@ public class FingerprintTab extends BaseTab implements ActionListener {
         JTextArea area = new JTextArea();
         JScrollPane pane = new JScrollPane(area);
         panel.add(pane, "1w");
-        JButton test = new JButton("Test");
+        JButton test = new JButton(L.get("test"));
         panel.add(test);
-        panel.add(new JLabel("检测结果："));
+        panel.add(new JLabel(L.get("test_result")));
         JTextField result = new JTextField("");
         result.setEditable(false);
         panel.add(result);
         test.addActionListener((event) -> {
             String text = area.getText();
             if (StringUtils.isEmpty(text)) {
-                result.setText("input is empty.");
+                result.setText(L.get("input_is_empty"));
                 return;
             }
             text = text.replace("\n", "\r\n");
             byte[] bytes = text.getBytes();
             List<FpData> list = FpManager.check(bytes, false);
             String names = FpManager.listToNames(list);
-            result.setText(StringUtils.isEmpty(names) ? "none" : names);
+            result.setText(StringUtils.isEmpty(names) ? L.get("no_test_result_hint") : names);
         });
-        UIHelper.showCustomDialog("Test fingerprint", new String[]{"Close"}, panel);
+        UIHelper.showCustomDialog(L.get("fingerprint_test_dialog_title"), new String[]{L.get("close")}, panel);
     }
 
     public String getTitleName() {
-        return "Fingerprint";
+        return L.get("tab_name.fingerprint");
     }
 }

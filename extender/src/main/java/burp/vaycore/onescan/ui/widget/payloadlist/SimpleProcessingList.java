@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnDataChangeListener;
 
 import javax.swing.*;
@@ -90,12 +91,12 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
     private JPanel newLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new VLayout(3));
-        panel.add(newButton("Add", "add-item"));
-        panel.add(newButton("Edit", "edit-item"));
-        panel.add(newButton("Remove", "remove-item"));
-        panel.add(newButton("Clear", "clear-item"));
-        panel.add(newButton("Up", "up-item"));
-        panel.add(newButton("Down", "down-item"));
+        panel.add(newButton(L.get("add"), "add-item"));
+        panel.add(newButton(L.get("edit"), "edit-item"));
+        panel.add(newButton(L.get("remove"), "remove-item"));
+        panel.add(newButton(L.get("clear"), "clear-item"));
+        panel.add(newButton(L.get("up"), "up-item"));
+        panel.add(newButton(L.get("down"), "down-item"));
         return panel;
     }
 
@@ -133,7 +134,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
                 mListModel.add(newItem);
                 break;
             case "clear-item":
-                int state = UIHelper.showOkCancelDialog("确认清空列表？");
+                int state = UIHelper.showOkCancelDialog(L.get("confirm_clear_the_list_hint"));
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.clearAll();
                 }
@@ -150,6 +151,12 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
                 mListModel.set(index, item);
                 break;
             case "remove-item":
+                String name = mListModel.get(index).getName();
+                // 防止误删除，删除前先提示
+                int state = UIHelper.showOkCancelDialog(L.get("confirm_remove_processing_rule_hint", name));
+                if (state != JOptionPane.OK_OPTION) {
+                    return;
+                }
                 mListModel.remove(index);
                 if (index > 0) {
                     mListView.changeSelection(--index, 0, false, false);
@@ -186,21 +193,21 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
     }
 
     private ProcessingItem showItemOptionPane(boolean hasCreate, ProcessingItem item) {
-        String title = "Add payload processing";
+        String title = L.get("add_payload_processing_title");
         if (!hasCreate) {
-            title = "Edit payload processing";
+            title = L.get("edit_payload_processing_title");
         }
         // 布局
         JPanel panel = new JPanel(new VLayout(5));
         panel.setPreferredSize(new Dimension(490, 260));
         // 规则名
         JPanel namePanel = new JPanel(new HLayout(5, true));
-        namePanel.add(new JLabel("Rule Name："));
+        namePanel.add(new JLabel(L.get("rule_name_label")));
         JTextField nameUI = new JTextField();
         namePanel.add(nameUI, "1w");
         panel.add(namePanel);
         // 合并到请求
-        JCheckBox mergeUI = new JCheckBox("Merge to request");
+        JCheckBox mergeUI = new JCheckBox(L.get("merge_to_request"));
         panel.add(mergeUI);
         panel.add(new JPanel(), "5px");
         // 规则表UI
@@ -227,7 +234,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         // 检测 name 参数
         String name = nameUI.getText();
         if (StringUtils.isEmpty(name)) {
-            errorTips.append("Rule Name is empty.\n");
+            errorTips.append(L.get("rule_name_is_empty_hint")).append("\n");
         } else {
             item.setName(name);
         }
@@ -237,7 +244,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         // 检测 Rule list 参数
         ArrayList<PayloadItem> payloadItems = listUI.getDataList();
         if (payloadItems.isEmpty()) {
-            errorTips.append("Payload rule list is empty.");
+            errorTips.append(L.get("payload_rule_list_is_empty_hint"));
         } else {
             item.setItems(payloadItems);
         }

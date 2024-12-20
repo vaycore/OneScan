@@ -43,7 +43,7 @@ public class Config {
     public static final String KEY_DATABOARD_FILTER_RULES = "databoard-filter-rules";
     // 首页开关配置项
     public static final String KEY_ENABLE_LISTEN_PROXY = "enable-listen-proxy";
-    public static final String KEY_ENABLE_EXCLUDE_HEADER = "enable-exclude-header";
+    public static final String KEY_ENABLE_REMOVE_HEADER = "enable-remove-header";
     public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
     public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
     public static final String KEY_ENABLE_PAYLOAD_PROCESSING = "payload-processing";
@@ -76,7 +76,7 @@ public class Config {
         initDefaultConfig(Config.KEY_WORDLIST_PATH, getWorkDir() + "wordlist");
         // 默认开关配置
         initDefaultConfig(Config.KEY_ENABLE_LISTEN_PROXY, "false");
-        initDefaultConfig(Config.KEY_ENABLE_EXCLUDE_HEADER, "false");
+        initDefaultConfig(Config.KEY_ENABLE_REMOVE_HEADER, "false");
         initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
         initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
         initDefaultConfig(Config.KEY_ENABLE_PAYLOAD_PROCESSING, "true");
@@ -107,6 +107,7 @@ public class Config {
         if (!version.equals(Constants.PLUGIN_VERSION)) {
             putVersion(Constants.PLUGIN_VERSION);
             backupConfig(version);
+            upgradeConfigKey();
             upgradeDomain();
             upgradeRemoveHeaderList();
             upgradeWordlist();
@@ -128,6 +129,33 @@ public class Config {
                 Constants.PLUGIN_VERSION, bakPath);
     }
 
+    private static void upgradeConfigKey() {
+        // 将 enable-exclude-header 配置项迁移到新字段
+        if (hasKey("enable-exclude-header")) {
+            String enable = get("enable-exclude-header");
+            sConfigManager.put(Config.KEY_ENABLE_REMOVE_HEADER, enable);
+            sConfigManager.remove("enable-exclude-header");
+        }
+        // 将 white-host 配置项迁移到新字段
+        if (hasKey("white-host")) {
+            String enable = get("white-host");
+            sConfigManager.put(WordlistManager.KEY_HOST_ALLOWLIST, enable);
+            sConfigManager.remove("white-host");
+        }
+        // 将 black-host 配置项迁移到新字段
+        if (hasKey("black-host")) {
+            String enable = get("black-host");
+            sConfigManager.put(WordlistManager.KEY_HOST_BLOCKLIST, enable);
+            sConfigManager.remove("black-host");
+        }
+        // 将 exclude-headers 配置项迁移到新字段
+        if (hasKey("exclude-headers")) {
+            String enable = get("exclude-headers");
+            sConfigManager.put(WordlistManager.KEY_REMOVE_HEADERS, enable);
+            sConfigManager.remove("exclude-headers");
+        }
+    }
+
     private static void upgradeDomain() {
         String configJson = FileUtils.readFileToString(sConfigPath);
         if (configJson.contains("{{mdomain}}")) {
@@ -144,7 +172,7 @@ public class Config {
         // 将remove-header-list配置项迁移到新字段
         if (hasKey("remove-header-list")) {
             ArrayList<String> list = getList("remove-header-list");
-            WordlistManager.putList(WordlistManager.KEY_EXCLUDE_HEADERS, list);
+            WordlistManager.putList(WordlistManager.KEY_REMOVE_HEADERS, list);
             sConfigManager.remove("remove-header-list");
         }
     }
@@ -171,19 +199,19 @@ public class Config {
 
         if (hasKey("whitelist")) {
             list = getList("whitelist");
-            WordlistManager.putList(WordlistManager.KEY_WHITE_HOST, list);
+            WordlistManager.putList(WordlistManager.KEY_HOST_ALLOWLIST, list);
             sConfigManager.remove("whitelist");
         }
 
         if (hasKey("blacklist")) {
             list = getList("blacklist");
-            WordlistManager.putList(WordlistManager.KEY_BLACK_HOST, list);
+            WordlistManager.putList(WordlistManager.KEY_HOST_BLOCKLIST, list);
             sConfigManager.remove("blacklist");
         }
 
         if (hasKey("exclude-header")) {
             list = getList("exclude-header");
-            WordlistManager.putList(WordlistManager.KEY_EXCLUDE_HEADERS, list);
+            WordlistManager.putList(WordlistManager.KEY_REMOVE_HEADERS, list);
             sConfigManager.remove("exclude-header");
         }
 

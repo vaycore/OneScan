@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.widget.payloadlist.rule;
 
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 
 import java.util.regex.Matcher;
@@ -14,7 +15,7 @@ public class ConditionCheck extends PayloadRule {
 
     @Override
     public String ruleName() {
-        return "Condition check";
+        return L.get("payload_rule.condition_check.name");
     }
 
     @Override
@@ -25,7 +26,7 @@ public class ConditionCheck extends PayloadRule {
     @Override
     public String paramName(int index) {
         if (index == 0) {
-            return "Match regex";
+            return L.get("payload_rule.condition_check.param.match_regex");
         }
         return "";
     }
@@ -33,7 +34,7 @@ public class ConditionCheck extends PayloadRule {
     @Override
     public String toDescribe() {
         String[] values = getParamValues();
-        return String.format("Check [%s] condition", values[0]);
+        return L.get("payload_rule.condition_check.describe", values[0]);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.widget.payloadlist.rule;
 
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 
 /**
@@ -11,7 +12,7 @@ public class AddPrefix extends PayloadRule {
 
     @Override
     public String ruleName() {
-        return "Add prefix";
+        return L.get("payload_rule.add_prefix.name");
     }
 
     @Override
@@ -21,7 +22,7 @@ public class AddPrefix extends PayloadRule {
 
     @Override
     public String paramName(int index) {
-        return "Prefix";
+        return L.get("payload_rule.add_prefix.param.prefix");
     }
 
     @Override
@@ -35,7 +36,7 @@ public class AddPrefix extends PayloadRule {
         if (paramValue.contains("\n")) {
             paramValue = paramValue.replaceAll("\n", "\\\\n");
         }
-        return "Add Prefix: " + paramValue;
+        return L.get("payload_rule.add_prefix.describe", paramValue);
     }
 
     @Override

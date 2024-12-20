@@ -8,10 +8,7 @@ import burp.vaycore.common.utils.*;
 import burp.vaycore.onescan.OneScan;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.TaskData;
-import burp.vaycore.onescan.common.Config;
-import burp.vaycore.onescan.common.Constants;
-import burp.vaycore.onescan.common.HttpReqRespAdapter;
-import burp.vaycore.onescan.common.OnTabEventListener;
+import burp.vaycore.onescan.common.*;
 import burp.vaycore.onescan.info.OneScanInfoTab;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.FpManager;
@@ -150,7 +147,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mCallbacks.registerContextMenuFactory((invocation) -> {
             ArrayList<JMenuItem> items = new ArrayList<>();
             // 扫描选定目标
-            JMenuItem sendToOneScanItem = new JMenuItem("Send to OneScan");
+            JMenuItem sendToOneScanItem = new JMenuItem(L.get("send_to_plugin"));
             items.add(sendToOneScanItem);
             sendToOneScanItem.addActionListener((event) -> new Thread(() -> {
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
@@ -161,7 +158,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 选择 Payload 扫描
             List<String> payloadList = WordlistManager.getItemList(WordlistManager.KEY_PAYLOAD);
             if (!payloadList.isEmpty() && payloadList.size() > 1) {
-                JMenu menu = new JMenu("Use payload scan");
+                JMenu menu = new JMenu(L.get("use_payload_scan"));
                 items.add(menu);
                 ActionListener listener = (event) -> new Thread(() -> {
                     String action = event.getActionCommand();
@@ -232,8 +229,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return;
             }
             // 检测 Host 是否在白名单、黑名单列表中
-            if (hostWhitelistFilter(host) || hostBlacklistFilter(host)) {
-                Logger.debug("doScan whitelist and blacklist filter host: %s", host);
+            if (hostAllowlistFilter(host) || hostBlocklistFilter(host)) {
+                Logger.debug("doScan allowlist and blocklist filter host: %s", host);
                 return;
             }
             // 收集数据（只收集代理流量的数据）
@@ -256,16 +253,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         Logger.debug("doScan receive: %s%s", getHostByUrl(url), url.getPath());
         ArrayList<String> pathDict = getUrlPathDict(url.getPath());
+        List<String> payloads = WordlistManager.getPayload(payloadItem);
         // 一级目录一级目录递减访问
         for (int i = pathDict.size() - 1; i >= 0; i--) {
             String path = pathDict.get(i);
             // 拼接字典，发起请求
-            List<String> list = WordlistManager.getPayload(payloadItem);
-            for (String dict : list) {
+            for (String item : payloads) {
                 if (path.endsWith("/")) {
                     path = path.substring(0, path.length() - 1);
                 }
-                String urlPath = path + dict;
+                String urlPath = path + item;
                 runScanTask(httpReqResp, info, urlPath, "Scan");
             }
         }
@@ -300,8 +297,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param host Host
      * @return true=拦截；false=不拦截
      */
-    private boolean hostWhitelistFilter(String host) {
-        List<String> list = WordlistManager.getWhiteHost();
+    private boolean hostAllowlistFilter(String host) {
+        List<String> list = WordlistManager.getHostAllowlist();
         // 白名单为空，不启用白名单
         if (list.isEmpty()) {
             return false;
@@ -311,25 +308,25 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return false;
             }
         }
-        Logger.debug("hostWhitelistFilter filter host: %s", host);
+        Logger.debug("hostAllowlistFilter filter host: %s", host);
         return true;
     }
 
     /**
-     * Host过滤黑名单
+     * Host黑名单过滤
      *
      * @param host Host
      * @return true=拦截；false=不拦截
      */
-    private boolean hostBlacklistFilter(String host) {
-        List<String> list = WordlistManager.getBlackHost();
+    private boolean hostBlocklistFilter(String host) {
+        List<String> list = WordlistManager.getHostBlocklist();
         // 黑名单为空，不启用黑名单
         if (list.isEmpty()) {
             return false;
         }
         for (String item : list) {
             if (matchHost(host, item)) {
-                Logger.debug("hostBlacklistFilter filter host: %s （rule: %s）", host, item);
+                Logger.debug("hostBlocklistFilter filter host: %s （rule: %s）", host, item);
                 return true;
             }
         }
@@ -626,8 +623,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         IHttpService service = httpReqResp.getHttpService();
         // 配置的请求头
         List<String> configHeader = getHeader();
-        // 要排除的请求头KEY列表
-        List<String> excludeHeader = getExcludeHeader();
+        // 要移除的请求头KEY列表
+        List<String> removeHeaders = getRemoveHeaders();
         // 数据包自带的请求头
         List<String> headers = info.getHeaders();
         // 构建请求头
@@ -644,24 +641,24 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
             request.append(reqLine).append("\r\n");
         }
-        // 请求头的参数处理（顺带处理排除的请求头）
+        // 请求头的参数处理（顺带处理移除的请求头）
         for (int i = 1; i < headers.size(); i++) {
             String item = headers.get(i);
             String key = item.split(": ")[0];
-            // 是否需要排除当前KEY（优先级最高）
-            if (excludeHeader.contains(key)) {
+            // 是否需要移除当前请求头字段（优先级最高）
+            if (removeHeaders.contains(key)) {
                 continue;
             }
-            // 如果是扫描的请求（只有 GET 请求），将 Content-Length 排除
+            // 如果是扫描的请求（只有 GET 请求），将 Content-Length 移除
             if (from.equals("Scan") && "Content-Length".equalsIgnoreCase(key)) {
                 continue;
             }
-            // 检测配置中是否存在当前请求头KEY
+            // 检测配置中是否存在当前请求头字段
             List<String> matchList = configHeader.stream().filter(configHeaderItem -> {
                 if (StringUtils.isNotEmpty(configHeaderItem) && configHeaderItem.contains(": ")) {
                     String configHeaderKey = configHeaderItem.split(": ")[0];
-                    // 检测是否需要排除当前KEY
-                    if (excludeHeader.contains(key)) {
+                    // 检测是否需要移除当前请求头字段
+                    if (removeHeaders.contains(key)) {
                         return false;
                     }
                     return configHeaderKey.equals(key);
@@ -683,8 +680,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 将配置里剩下的值全部填充到请求头中
         for (String item : configHeader) {
             String key = item.split(": ")[0];
-            // 检测是否需要排除当前KEY
-            if (excludeHeader.contains(key)) {
+            // 检测是否需要移除当前KEY
+            if (removeHeaders.contains(key)) {
                 continue;
             }
             request.append(item).append("\r\n");
@@ -713,11 +710,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return WordlistManager.getHeader();
     }
 
-    private List<String> getExcludeHeader() {
-        if (!mDataBoardTab.hasExcludeHeader()) {
+    private List<String> getRemoveHeaders() {
+        if (!mDataBoardTab.hasRemoveHeader()) {
             return new ArrayList<>();
         }
-        return WordlistManager.getExcludeHeader();
+        return WordlistManager.getRemoveHeaders();
     }
 
     private List<ProcessingItem> getPayloadProcess() {
@@ -1180,13 +1177,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (hosts == null || hosts.isEmpty()) {
             return;
         }
-        List<String> list = WordlistManager.getList(WordlistManager.KEY_BLACK_HOST);
+        List<String> list = WordlistManager.getList(WordlistManager.KEY_HOST_BLOCKLIST);
         for (String host : hosts) {
             if (!list.contains(host)) {
                 list.add(host);
             }
         }
-        WordlistManager.putList(WordlistManager.KEY_BLACK_HOST, list);
+        WordlistManager.putList(WordlistManager.KEY_HOST_BLOCKLIST, list);
         mOneScan.getConfigPanel().refreshHostTab();
     }
 

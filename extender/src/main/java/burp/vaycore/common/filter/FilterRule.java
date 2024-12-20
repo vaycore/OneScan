@@ -1,5 +1,7 @@
 package burp.vaycore.common.filter;
 
+import burp.vaycore.onescan.common.L;
+
 import java.util.ArrayList;
 
 /**
@@ -82,9 +84,21 @@ public class FilterRule {
     /**
      * 操作符文本字符串
      */
-    public static final String[] OPERATE_ITEMS = {"请选择",
-            "等于", "不等于", "大于", "大于等于", "小于", "小于等于",
-            "开头是", "开头不是", "结尾是", "结尾不是", "包含", "不包含"};
+    public static final String[] OPERATE_ITEMS = {
+            L.get("table_filter_rule.please_select"),
+            L.get("table_filter_rule.equal_to"),
+            L.get("table_filter_rule.not_equal_to"),
+            L.get("table_filter_rule.greater_than"),
+            L.get("table_filter_rule.greater_than_or_equal_to"),
+            L.get("table_filter_rule.less_than"),
+            L.get("table_filter_rule.less_than_or_equal_to"),
+            L.get("table_filter_rule.starts_with"),
+            L.get("table_filter_rule.not_starts_with"),
+            L.get("table_filter_rule.ends_with"),
+            L.get("table_filter_rule.not_ends_with"),
+            L.get("table_filter_rule.contains"),
+            L.get("table_filter_rule.not_contains"),
+    };
 
     /**
      * 操作符

@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.widget.HintTextField;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -35,9 +36,9 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         // URL前缀
         JPanel prefixPanel = new JPanel(new HLayout(0, true));
         add(prefixPanel);
-        prefixPanel.add(new JLabel("URL前缀（非必选）："));
+        prefixPanel.add(new JLabel(L.get("url_prefix_label")));
         mTextField = new HintTextField();
-        mTextField.setHintText("URL前缀与列表的每一项进行拼接");
+        mTextField.setHintText(L.get("url_prefix_input_hint"));
         prefixPanel.add(mTextField, "1w");
         // URL字典列表
         mWordlist = new SimpleWordlist();
@@ -45,12 +46,12 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         // 底部按钮布局
         JPanel bottomPanel = new JPanel(new HLayout(5, true));
         bottomPanel.setBorder(new EmptyBorder(10, 0, 5, 0));
-        mKeepData = new JCheckBox("保留数据");
+        mKeepData = new JCheckBox(L.get("retain_data"));
         bottomPanel.add(mKeepData);
         bottomPanel.add(new JPanel(), "1w");
-        JButton scanBtn = newButton("开始扫描", "scan-action");
+        JButton scanBtn = newButton(L.get("start_scan"), "scan-action");
         bottomPanel.add(scanBtn);
-        JButton scanOnExitBtn = newButton("扫描并关闭窗口", "scan-on-exit-action");
+        JButton scanOnExitBtn = newButton(L.get("scan_on_exit"), "scan-on-exit-action");
         bottomPanel.add(scanOnExitBtn);
         add(bottomPanel);
     }
@@ -65,7 +66,7 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (mWordlist.isEmptyListData()) {
-            UIHelper.showTipsDialog("data is empty", this);
+            UIHelper.showTipsDialog(L.get("data_is_empty_hint"), this);
             return;
         }
         String action = e.getActionCommand();
@@ -113,7 +114,7 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
             mTextField.setText("");
             mWordlist.setListData(new ArrayList<>());
         }
-        mFrame = new JFrame("Import Url");
+        mFrame = new JFrame(L.get("import_url_title"));
         // 窗口大小
         mFrame.setSize(460, 480);
         // 设置布局内容

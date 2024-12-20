@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.widget.payloadlist.rule;
 
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 
 /**
@@ -11,7 +12,7 @@ public class MatchReplace extends PayloadRule {
 
     @Override
     public String ruleName() {
-        return "Match/replace";
+        return L.get("payload_rule.match_replace.name");
     }
 
     @Override
@@ -23,9 +24,9 @@ public class MatchReplace extends PayloadRule {
     public String paramName(int index) {
         switch (index) {
             case 0:
-                return "Match regex";
+                return L.get("payload_rule.match_replace.param.match_regex");
             case 1:
-                return "Replace with";
+                return L.get("payload_rule.match_replace.param.replace_with");
         }
         return "";
     }
@@ -33,7 +34,7 @@ public class MatchReplace extends PayloadRule {
     @Override
     public String toDescribe() {
         String[] values = getParamValues();
-        return String.format("Match [%s] replace with [%s]",
+        return L.get("payload_rule.match_replace.describe",
                 handleParamValue(values[0]), handleParamValue(values[1]));
     }
 

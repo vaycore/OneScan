@@ -1,6 +1,7 @@
 package burp.vaycore.onescan.ui.tab.config;
 
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnDataChangeListener;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
@@ -21,18 +22,18 @@ public class PayloadTab extends BaseConfigTab implements OnDataChangeListener {
     @Override
     protected void initView() {
         // payload 列表配置
-        addWordListPanel("Payload", "Set payload list", WordlistManager.KEY_PAYLOAD);
+        addWordListPanel(L.get("payload"), L.get("payload_sub_title"), WordlistManager.KEY_PAYLOAD);
 
         // payload process 列表配置
         mProcessList = new SimpleProcessingList(Config.getPayloadProcessList());
         mProcessList.setActionCommand("payload-process-list-view");
         mProcessList.setOnDataChangeListener(this);
-        addConfigItem("Payload Processing", "Set payload processing list", mProcessList);
+        addConfigItem(L.get("payload_processing"), L.get("payload_processing_sub_title"), mProcessList);
     }
 
     @Override
     public String getTitleName() {
-        return "Payload";
+        return L.get("tab_name.payload");
     }
 
     @Override

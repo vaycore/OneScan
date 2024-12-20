@@ -5,6 +5,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.common.CollectFilter;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.ui.widget.CollectTable;
 
 import javax.swing.*;
@@ -42,7 +43,7 @@ public abstract class BaseCollectTab<T> extends BaseTab {
         panel.setBorder(new EmptyBorder(5, 5, 0, 5));
         mSearchInputUI = new HintTextField(35);
         panel.add(mSearchInputUI, "35%");
-        mSearchInputUI.setHintText("Regex filter.");
+        mSearchInputUI.setHintText(L.get("regex_filter"));
         mSearchInputUI.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -59,7 +60,7 @@ public abstract class BaseCollectTab<T> extends BaseTab {
                 }
             }
         });
-        JButton search = new JButton("Search");
+        JButton search = new JButton(L.get("search"));
         search.addActionListener((e) -> doSearch());
         panel.add(search);
         add(panel);
@@ -68,9 +69,9 @@ public abstract class BaseCollectTab<T> extends BaseTab {
     private void initOptionsPanel() {
         JPanel panel = new JPanel(new HLayout(5, true));
         panel.setBorder(new EmptyBorder(0, 5, 0, 5));
-        mReverseUI = new JCheckBox("Reverse");
+        mReverseUI = new JCheckBox(L.get("reverse"));
         panel.add(mReverseUI);
-        mIgnoreCaseUI = new JCheckBox("Ignore Case");
+        mIgnoreCaseUI = new JCheckBox(L.get("ignore_case"));
         panel.add(mIgnoreCaseUI);
         add(panel);
     }

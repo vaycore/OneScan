@@ -6,6 +6,7 @@ import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.CollectData;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.CollectFilter;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -72,7 +73,7 @@ public class CollectTable<T> extends JTable implements ActionListener {
         // 根据列名，动态构建复制选中项的菜单
         for (int i = 1; i < mTableModel.getColumnCount(); i++) {
             String columnName = mTableModel.getColumnName(i);
-            addPopupMenuItem(menu, "复制选中的" + columnName, "copy-column-" + i);
+            addPopupMenuItem(menu, L.get("copy_selected_hint", columnName), "copy-column-" + i);
         }
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
@@ -147,8 +148,8 @@ public class CollectTable<T> extends JTable implements ActionListener {
         }
 
         private void initColumnNames() {
-            mColumnNames.add("#");
-            mColumnNames.add("Domain");
+            mColumnNames.add(L.get("collect_table_columns.id"));
+            mColumnNames.add(L.get("collect_table_columns.domain"));
             String[] columnNames = buildColumnNames();
             if (columnNames == null || columnNames.length <= 0) {
                 return;

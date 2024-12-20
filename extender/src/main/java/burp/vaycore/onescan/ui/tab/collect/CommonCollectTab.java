@@ -2,6 +2,7 @@ package burp.vaycore.onescan.ui.tab.collect;
 
 import burp.vaycore.onescan.bean.CollectData;
 import burp.vaycore.onescan.bean.CollectNode;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.ui.base.BaseCollectTab;
 import burp.vaycore.onescan.ui.widget.CollectTable;
@@ -29,7 +30,7 @@ public class CommonCollectTab extends BaseCollectTab<String> {
         mTableModel = new CollectTable.CollectTableModel<String>() {
             @Override
             protected String[] buildColumnNames() {
-                return new String[]{"Info"};
+                return new String[]{L.get("info")};
             }
 
             @Override

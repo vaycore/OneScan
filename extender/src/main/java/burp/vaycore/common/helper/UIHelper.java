@@ -1,6 +1,7 @@
 package burp.vaycore.common.helper;
 
 import burp.vaycore.common.log.Logger;
+import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
@@ -153,11 +154,11 @@ public class UIHelper {
     }
 
     public static void showTipsDialog(String message) {
-        showTipsDialog("提示", message);
+        showTipsDialog(L.get("hint"), message);
     }
 
     public static void showTipsDialog(String message, Component parentComponent) {
-        showTipsDialog("提示", message, parentComponent);
+        showTipsDialog(L.get("hint"), message, parentComponent);
     }
 
     public static void showTipsDialog(String title, String message) {
@@ -175,7 +176,7 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showOkCancelDialog(String message) {
-        return showOkCancelDialog("提示", message);
+        return showOkCancelDialog(L.get("hint"), message);
     }
 
     /**
@@ -186,7 +187,7 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showOkCancelDialog(String message, Component parentComponent) {
-        return showOkCancelDialog("提示", message, parentComponent);
+        return showOkCancelDialog(L.get("hint"), message, parentComponent);
     }
 
     /**

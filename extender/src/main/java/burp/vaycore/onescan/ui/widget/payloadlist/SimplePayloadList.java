@@ -6,6 +6,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddPrefix;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.AddSuffix;
 import burp.vaycore.onescan.ui.widget.payloadlist.rule.ConditionCheck;
@@ -86,12 +87,12 @@ public class SimplePayloadList extends JPanel implements ActionListener {
     private JPanel newLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new VLayout(3));
-        panel.add(newButton("Add", "add-item"));
-        panel.add(newButton("Edit", "edit-item"));
-        panel.add(newButton("Remove", "remove-item"));
-        panel.add(newButton("Clear", "clear-item"));
-        panel.add(newButton("Up", "up-item"));
-        panel.add(newButton("Down", "down-item"));
+        panel.add(newButton(L.get("add"), "add-item"));
+        panel.add(newButton(L.get("edit"), "edit-item"));
+        panel.add(newButton(L.get("remove"), "remove-item"));
+        panel.add(newButton(L.get("clear"), "clear-item"));
+        panel.add(newButton(L.get("up"), "up-item"));
+        panel.add(newButton(L.get("down"), "down-item"));
         return panel;
     }
 
@@ -123,7 +124,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
                 mListModel.add(newItem);
                 break;
             case "clear-item":
-                int state = UIHelper.showOkCancelDialog("确认清空列表？", this);
+                int state = UIHelper.showOkCancelDialog(L.get("confirm_clear_the_list_hint"), this);
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.clearAll();
                 }
@@ -176,10 +177,10 @@ public class SimplePayloadList extends JPanel implements ActionListener {
     }
 
     private PayloadItem showItemOptionPane(boolean hasCreate, PayloadItem item) {
-        String title = "Add payload rule";
-        String message = "Enter the details of the payload rule.";
+        String title = L.get("add_payload_rule_title");
+        String message = L.get("add_payload_rule_message");
         if (!hasCreate) {
-            title = "Edit payload rule";
+            title = L.get("edit_payload_rule_title");
         }
         // 布局
         JPanel panel = new JPanel();
@@ -190,7 +191,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         panel.add(label);
         // 类型
         JComboBox<String> ruleTypeBox = new JComboBox<>();
-        ruleTypeBox.addItem("Select rule type");
+        ruleTypeBox.addItem(L.get("select_rule_type"));
         for (Class<?> clz : sRuleModules) {
             Object rule = ClassUtils.newObjectByClass(clz);
             if (!(rule instanceof PayloadRule)) {
@@ -220,11 +221,11 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         panel.add(ruleTypeBox);
         // 范围
         JComboBox<String> ruleScopeBox = new JComboBox<>();
-        ruleScopeBox.addItem("Select rule scope");
-        ruleScopeBox.addItem("URL");
-        ruleScopeBox.addItem("Header");
-        ruleScopeBox.addItem("Body");
-        ruleScopeBox.addItem("Request");
+        ruleScopeBox.addItem(L.get("rule_scope_box_item.hint"));
+        ruleScopeBox.addItem(L.get("rule_scope_box_item.url"));
+        ruleScopeBox.addItem(L.get("rule_scope_box_item.header"));
+        ruleScopeBox.addItem(L.get("rule_scope_box_item.body"));
+        ruleScopeBox.addItem(L.get("rule_scope_box_item.request"));
         panel.add(ruleScopeBox);
         // 数据填充
         if (item != null) {
@@ -262,7 +263,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         int ruleType = ruleTypeBox.getSelectedIndex() - 1;
         PayloadRule rule = getPayloadRuleByIndex(ruleType);
         if (rule == null) {
-            UIHelper.showTipsDialog("Please select rule type.", this);
+            UIHelper.showTipsDialog(L.get("please_select_rule_type"), this);
             return showItemOptionPane(hasCreate, item);
         }
         item.setRule(rule);
@@ -271,17 +272,15 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         // 范围
         int ruleScope = ruleScopeBox.getSelectedIndex() - 1;
         if (ruleScope < 0) {
-            errorTips.append("Please select rule scope.\n");
+            errorTips.append(L.get("please_select_rule_scope")).append("\n");
         } else {
             item.setScope(ruleScope);
         }
         // 参数填充
         for (int i = 0; i < rule.paramCount(); i++) {
-            String paramName = rule.paramName(i).toLowerCase();
             String paramsValue = mParamInputViews.get(i).getText();
-            if (StringUtils.isEmpty(paramsValue)) {
-                errorTips.append("Please input ").append(paramName).append(" param value.\n");
-                continue;
+            if (paramsValue == null) {
+                paramsValue = "";
             }
             // 特殊处理 '\r'、'\n' 字符
             if (paramsValue.contains("\\r")) {
@@ -309,7 +308,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         panel.add(label);
 
         HintTextField textField = new HintTextField();
-        textField.setHintText("Please enter the " + paramName.toLowerCase() + " value");
+        textField.setHintText(L.get("please_enter_the_value", paramName.toLowerCase()));
         panel.add(textField, "1w");
         return panel;
     }

@@ -1,5 +1,7 @@
 package burp.vaycore.onescan.ui.widget.payloadlist;
 
+import burp.vaycore.onescan.common.L;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,9 @@ import java.util.Vector;
  */
 public class PayloadListModel extends AbstractTableModel {
 
-    private final String[] COLUMN_NAMES = new String[]{"Rule"};
+    private final String[] COLUMN_NAMES = new String[]{
+            L.get("payload_table_columns.rule"),
+    };
     private final Vector<PayloadItem> mData;
 
     public PayloadListModel() {

@@ -2,6 +2,7 @@ package burp.vaycore.onescan.ui.widget;
 
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.onescan.bean.CollectNode;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.CollectManager;
 
 import javax.swing.*;
@@ -55,9 +56,9 @@ public class CollectTree extends JTree implements TreeSelectionListener, Collect
     private void initTreeMenu() {
         JPopupMenu popupMenu = new JPopupMenu();
         setComponentPopupMenu(popupMenu);
-        addMenuItem(popupMenu, "折叠所有", "collapse-all");
-        addMenuItem(popupMenu, "展开所有", "expand-all");
-        addMenuItem(popupMenu, "删除选中节点", "delete-selected");
+        addMenuItem(popupMenu, L.get("collapse_all"), "collapse-all");
+        addMenuItem(popupMenu, L.get("expand_all"), "expand-all");
+        addMenuItem(popupMenu, L.get("delete_selected_node"), "delete-selected");
     }
 
     private void addMenuItem(JPopupMenu menu, String text, String action) {
@@ -171,11 +172,11 @@ public class CollectTree extends JTree implements TreeSelectionListener, Collect
     private void doDeleteNode() {
         TreePath treePath = getSelectionPath();
         if (treePath == null) {
-            UIHelper.showTipsDialog("请选择要删除的节点");
+            UIHelper.showTipsDialog(L.get("delete_node_is_empty_hint"));
             return;
         }
         DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) treePath.getLastPathComponent();
-        int opt = UIHelper.showOkCancelDialog("确认删除 '" + treeNode.toString() + "' 节点？");
+        int opt = UIHelper.showOkCancelDialog(L.get("confirm_delete_node_hint", treeNode.toString()));
         if (opt == JOptionPane.OK_OPTION) {
             String nodePath = getPath(treePath);
             CollectManager.delNodeByPath(nodePath);

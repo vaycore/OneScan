@@ -7,6 +7,7 @@ import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.common.Config;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.WordlistManager;
@@ -84,11 +85,11 @@ public abstract class BaseConfigTab extends BaseTab {
         panel.setLayout(new HLayout(3));
         JTextField textField = new JTextField(Config.get(configKey), columns);
         panel.add(textField);
-        JButton button = new JButton("Save");
+        JButton button = new JButton(L.get("save"));
         button.addActionListener(e -> {
             boolean state = onTextConfigSave(configKey, textField.getText());
             if (state) {
-                UIHelper.showTipsDialog("Save success!");
+                UIHelper.showTipsDialog(L.get("save_success"));
             }
         });
         panel.add(button);
@@ -110,14 +111,14 @@ public abstract class BaseConfigTab extends BaseTab {
         JTextField textField = new JTextField(filePath, 35);
         textField.setEditable(false);
         panel.add(textField);
-        JButton button = new JButton("Select file...");
+        JButton button = new JButton(L.get("select_file"));
         button.addActionListener((e) -> {
             String oldPath = Config.getFilePath(configKey);
-            String newPath = UIHelper.selectFileDialog("Select a file", oldPath);
+            String newPath = UIHelper.selectFileDialog(L.get("select_a_file"), oldPath);
             if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
                 textField.setText(newPath);
                 Config.put(configKey, newPath);
-                UIHelper.showTipsDialog("Save success!");
+                UIHelper.showTipsDialog(L.get("save_success"));
             }
         });
         panel.add(button);
@@ -138,10 +139,10 @@ public abstract class BaseConfigTab extends BaseTab {
         JTextField textField = new JTextField(dirPath, 35);
         textField.setEditable(false);
         panel.add(textField);
-        JButton button = new JButton("Select directory...");
+        JButton button = new JButton(L.get("select_directory"));
         button.addActionListener((e) -> {
             String oldPath = Config.getFilePath(configKey, true);
-            String newPath = UIHelper.selectDirDialog("Select a directory", oldPath);
+            String newPath = UIHelper.selectDirDialog(L.get("select_a_directory"), oldPath);
             if (!StringUtils.isEmpty(newPath) && !oldPath.equals(newPath)) {
                 textField.setText(newPath);
                 Config.put(configKey, newPath);
@@ -149,13 +150,13 @@ public abstract class BaseConfigTab extends BaseTab {
                 try {
                     if (configKey.equals(Config.KEY_WORDLIST_PATH)) {
                         WordlistManager.init(newPath, true);
-                        UIHelper.showTipsDialog("保存成功，需要重新加载插件");
+                        UIHelper.showTipsDialog(L.get("wordlist_directory_save_success"));
                         sendTabEvent(OtherTab.EVENT_UNLOAD_PLUGIN);
                         return;
                     } else if (configKey.equals(Config.KEY_COLLECT_PATH)) {
                         CollectManager.init(newPath);
                     }
-                    UIHelper.showTipsDialog("Save success!");
+                    UIHelper.showTipsDialog(L.get("save_success"));
                 } catch (Exception ex) {
                     UIHelper.showTipsDialog(ex.getMessage());
                 }
@@ -207,10 +208,10 @@ public abstract class BaseConfigTab extends BaseTab {
             wordlist.setListData(list);
         });
         panel.add(cb, "290px");
-        JButton newBtn = new JButton("New");
+        JButton newBtn = new JButton(L.get("new"));
         newBtn.addActionListener((e) -> newWordlist(cb, configKey, null));
         panel.add(newBtn, "65px");
-        JButton deleteBtn = new JButton("Delete");
+        JButton deleteBtn = new JButton(L.get("delete"));
         deleteBtn.addActionListener((e) -> deleteWordlist(cb, wordlist, configKey));
         panel.add(deleteBtn, "75px");
         this.addConfigItem(title, subTitle, wordlist, panel);
@@ -222,10 +223,10 @@ public abstract class BaseConfigTab extends BaseTab {
     private void newWordlist(JComboBox<String> cb, String configKey, String name) {
         JPanel panel = new JPanel(new VLayout(5));
         panel.setPreferredSize(new Dimension(300, 50));
-        panel.add(new JLabel("Please enter a name："));
+        panel.add(new JLabel(L.get("please_enter_a_name")));
         JTextField textField = new JTextField(name);
         panel.add(textField);
-        int ret = UIHelper.showCustomDialog("New wordlist", panel);
+        int ret = UIHelper.showCustomDialog(L.get("new_wordlist"), panel);
         if (ret != JOptionPane.OK_OPTION) {
             return;
         }
@@ -233,14 +234,14 @@ public abstract class BaseConfigTab extends BaseTab {
             name = textField.getText();
             boolean check = NAME_REGEX.matcher(name).matches();
             if (!check) {
-                throw new IllegalArgumentException("invalid Value（Range：0-9,a-z,A-Z,_）");
+                throw new IllegalArgumentException(L.get("new_wordlist_value_invalid"));
             }
             WordlistManager.createList(configKey, name);
             // 切换到新创建的字典
             cb.addItem(name);
             cb.setSelectedItem(name);
         } catch (Exception e) {
-            UIHelper.showTipsDialog("Error：" + e.getMessage());
+            UIHelper.showTipsDialog(L.get("error_hint", e.getMessage()));
             newWordlist(cb, configKey, name);
         }
     }
@@ -250,7 +251,8 @@ public abstract class BaseConfigTab extends BaseTab {
      */
     private void deleteWordlist(JComboBox<String> cb, SimpleWordlist wordlist, String configKey) {
         String name = String.valueOf(cb.getSelectedItem());
-        int ret = UIHelper.showOkCancelDialog("Delete wordlist", "确认删除 '" + name + "' 字典？");
+        int ret = UIHelper.showOkCancelDialog(L.get("delete_wordlist_dialog_title"),
+                L.get("delete_wordlist_dialog_hint", name));
         if (ret != JOptionPane.OK_OPTION) {
             return;
         }
@@ -269,7 +271,7 @@ public abstract class BaseConfigTab extends BaseTab {
                 WordlistManager.putItem(configKey, "default");
             }
         } catch (Exception e) {
-            UIHelper.showTipsDialog("Error：" + e.getMessage());
+            UIHelper.showTipsDialog(L.get("error_hint", e.getMessage()));
         }
     }
 

@@ -1,6 +1,7 @@
 package burp.vaycore.onescan.ui.tab;
 
 import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.ui.base.BaseCollectTab;
 import burp.vaycore.onescan.ui.base.BaseTab;
@@ -65,7 +66,7 @@ public class CollectPanel extends BaseTab implements CollectTree.OnSelectPathLis
 
     @Override
     public String getTitleName() {
-        return "Collect";
+        return L.get("tab_name.collect");
     }
 
     @Override

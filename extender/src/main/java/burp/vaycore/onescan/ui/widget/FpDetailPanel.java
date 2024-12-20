@@ -7,6 +7,7 @@ import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.FpRule;
+import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.NumberFilter;
 
 import javax.swing.*;
@@ -78,14 +79,14 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     }
 
     private void addInputPanel() {
-        mName = this.addInputItem("Name");
-        mCompany = this.addInputItem("Company");
-        mLang = this.addInputItem("Lang");
-        mSoftHard = this.addInputItem("SoftHard");
+        mName = this.addInputItem(L.get("fingerprint_table_columns.name"));
+        mCompany = this.addInputItem(L.get("fingerprint_table_columns.company"));
+        mLang = this.addInputItem(L.get("fingerprint_table_columns.lang"));
+        mSoftHard = this.addInputItem(L.get("fingerprint_table_columns.soft_hard"));
         mSoftHard.addKeyListener(new NumberFilter());
-        mFrame = this.addInputItem("Frame");
-        mParentCategory = this.addInputItem("ParentCategory");
-        mCategory = this.addInputItem("Category");
+        mFrame = this.addInputItem(L.get("fingerprint_table_columns.frame"));
+        mParentCategory = this.addInputItem(L.get("fingerprint_table_columns.parent_category"));
+        mCategory = this.addInputItem(L.get("fingerprint_table_columns.category"));
     }
 
     private JTextField addInputItem(String label) {
@@ -101,7 +102,7 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     private void addRulesPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new HLayout(5));
-        panel.setBorder(new TitledBorder("Rules："));
+        panel.setBorder(new TitledBorder(L.get("fingerprint_detail.rules_border_title")));
         panel.add(this.addLeftPanel(), "75px");
         mRulesListModel = new DefaultListModel<>();
         mRulesListView = new JList<>(mRulesListModel);
@@ -114,11 +115,11 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     private JPanel addLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new VLayout(5));
-        this.addButton(panel, "Add", "add-item");
-        this.addButton(panel, "Edit", "edit-item");
-        this.addButton(panel, "Delete", "delete-item");
-        this.addButton(panel, "Up", "up-item");
-        this.addButton(panel, "Down", "down-item");
+        this.addButton(panel, L.get("add"), "add-item");
+        this.addButton(panel, L.get("edit"), "edit-item");
+        this.addButton(panel, L.get("delete"), "delete-item");
+        this.addButton(panel, L.get("up"), "up-item");
+        this.addButton(panel, L.get("down"), "down-item");
         return panel;
     }
 
@@ -161,7 +162,7 @@ public class FpDetailPanel extends JPanel implements ActionListener {
                 }
                 break;
             case "delete-item":
-                int ret = UIHelper.showOkCancelDialog("是否确认删除该规则？", this);
+                int ret = UIHelper.showOkCancelDialog(L.get("fingerprint_detail.confirm_delete_rule_hint"), this);
                 if (ret == 0) {
                     mRulesListModel.removeElementAt(index);
                     rules.remove(index);
@@ -208,7 +209,7 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     }
 
     public FpData showDialog() {
-        int state = UIHelper.showCustomDialog("Setup Fingerprint", this);
+        int state = UIHelper.showCustomDialog(L.get("fingerprint_detail.dialog_title"), this);
         if (state != JOptionPane.OK_OPTION) {
             return null;
         }
@@ -220,11 +221,11 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         String parentCategory = mParentCategory.getText();
         String category = mCategory.getText();
         if (StringUtils.isEmpty(name)) {
-            UIHelper.showTipsDialog("Name is empty");
+            UIHelper.showTipsDialog(L.get("fingerprint_detail.name_empty_hint"));
             return this.showDialog();
         }
         if (mData.getRules() == null || mData.getRules().isEmpty()) {
-            UIHelper.showTipsDialog("Rules is empty.");
+            UIHelper.showTipsDialog(L.get("fingerprint_detail.rules_empty_hint"));
             return this.showDialog();
         }
         if (StringUtils.isEmpty(company)) {
