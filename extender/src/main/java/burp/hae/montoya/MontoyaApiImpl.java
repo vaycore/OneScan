@@ -23,6 +23,7 @@ import burp.api.montoya.websocket.WebSockets;
 import burp.hae.montoya.extension.ExtensionImpl;
 import burp.hae.montoya.http.HttpImpl;
 import burp.hae.montoya.logging.LoggingImpl;
+import burp.hae.montoya.persistence.PersistenceImpl;
 import burp.hae.montoya.proxy.ProxyImpl;
 import burp.hae.montoya.scanner.ScannerImpl;
 import burp.hae.montoya.ui.UserInterfaceImpl;
@@ -41,7 +42,8 @@ public class MontoyaApiImpl implements MontoyaApi {
     private final Proxy proxy;
     private final UserInterface userInterface;
     private final UtilitiesImpl utilities;
-    private final ScannerImpl scanner;
+    private final Scanner scanner;
+    private final Persistence persistence;
 
     public MontoyaApiImpl(IBurpExtenderCallbacks callbacks) {
         this.extension = new ExtensionImpl(callbacks);
@@ -51,6 +53,7 @@ public class MontoyaApiImpl implements MontoyaApi {
         this.userInterface = new UserInterfaceImpl(callbacks);
         this.utilities = new UtilitiesImpl(callbacks);
         this.scanner = new ScannerImpl(callbacks);
+        this.persistence = new PersistenceImpl(callbacks);
     }
 
     @Override
@@ -100,7 +103,7 @@ public class MontoyaApiImpl implements MontoyaApi {
 
     @Override
     public Persistence persistence() {
-        return null;
+        return this.persistence;
     }
 
     @Override
