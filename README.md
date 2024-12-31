@@ -4,7 +4,6 @@
 <div align="center">
 
 [![Repo stars](https://img.shields.io/github/stars/vaycore/OneScan)](https://github.com/vaycore/OneScan/stargazers)
-[![Commit activity](https://img.shields.io/github/commit-activity/m/vaycore/OneScan?label=Commit)](https://github.com/vaycore/OneScan/commits/)
 [![Downloads total](https://img.shields.io/github/downloads/vaycore/OneScan/total?label=Downloads)](https://github.com/vaycore/OneScan/releases)
 [![Repo tags](https://img.shields.io/github/v/tag/vaycore/OneScan?label=Latest)](https://github.com/vaycore/OneScan/tags)
 [![Downloads latest total](https://img.shields.io/github/downloads/vaycore/OneScan/latest/total?label=Downloads@latest)](https://github.com/vaycore/OneScan/releases)
@@ -121,11 +120,11 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/main_panel.png)
 
-- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过 OneScan（建议配置白名单后启用）
+- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过 OneScan 插件（建议配置白名单后启用）
 - `Remove Header` 开关移除请求头（默认禁用），根据 `Request -> Remove header` 里的配置，移除请求头中对应的值
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
-- `Payload Processing` 开关 Payload Processing 功能（默认启用）
+- `Payload Processing` 开关请求包处理功能（默认启用）
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 URL 目标扫描
 - `Stop` 停止正在扫描的任务
@@ -189,8 +188,8 @@ Host配置界面如下
 
 ![](imgs/config_host.png)
 
-- `Host Allowlist` 配置白名单列表，如果该列表不为空，插件则只能请求该列表中的 Host
-- `Host Blocklist` 配置黑名单列表，插件不对该列表配置的 Host 进行请求
+- `Allowlist` 配置白名单列表，如果该列表不为空，插件只对匹配的 Host 进行请求
+- `Blocklist` 配置黑名单列表，如果该列表不为空，插件不会向匹配的 Host 发起请求
 
 #### Other（其它配置）
 
@@ -201,7 +200,7 @@ Other配置界面如下
 - `Maximum display length` 限制请求、响应包的最大显示长度（插件 `1.6.11` 版本新增）
 - `Collect directory` 数据收集存放目录
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
-- `HaE` 配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径，与 [HaE](https://github.com/gh0stkey/HaE) 联动，实现主面板数据高亮
+- `HaE` 配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径，与 [HaE](https://github.com/gh0stkey/HaE) 联动，使数据看板里的敏感信息高亮
 - `Clear cache` 清除指纹识别缓存（缓存用于加快指纹识别的速度）
 
 ### Fingerprint指纹
@@ -301,7 +300,7 @@ Connection: close
 
 ## 项目热度
 
-非常感谢各位师傅关注此项目
+非常感谢各位师傅的关注和支持（如果觉得项目还不错，请给项目一个 `Star` 吧）
 
 [![Stargazers over time](https://starchart.cc/vaycore/OneScan.svg?variant=adaptive)](https://starchart.cc/vaycore/OneScan)
 
