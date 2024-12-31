@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>extender</artifactId>
-    <version>1.6.20</version>
+    <version>1.7.0</version>
 
     <properties>
         <plugin.name>OneScan</plugin.name>
