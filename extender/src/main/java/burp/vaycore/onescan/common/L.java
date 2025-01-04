@@ -16,8 +16,13 @@ public class L {
     static {
         // 初始化语言包
         Locale locale = Locale.getDefault();
-        ResourceBundle language = ResourceBundle.getBundle("i18n/messages", locale);
-        if (!language.containsKey("plugin_name")) {
+        ResourceBundle language;
+        try {
+            language = ResourceBundle.getBundle("i18n/messages", locale);
+            if (!language.containsKey("plugin_name")) {
+                throw new IllegalStateException("Unable to identify language resource package");
+            }
+        } catch (Exception e) {
             language = ResourceBundle.getBundle("i18n/messages", sDefaultLocale);
         }
         sLanguage = language;
