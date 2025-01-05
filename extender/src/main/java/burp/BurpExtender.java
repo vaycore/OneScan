@@ -30,10 +30,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -56,6 +54,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 指纹识别线程数量
      */
     private static final int FP_THREAD_COUNT = 10;
+    /**
+     * 去重过滤集合
+     */
+    private static final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
+    /**
+     * 等待任务集合
+     */
+    private static final Set<String> sWaitTasks = Collections.synchronizedSet(new HashSet<>(500000));
 
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
@@ -68,8 +74,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private ExecutorService mFpThreadPool;
     private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
-    private static final Vector<String> sRepeatFilter = new Vector<>();
-    private static final Vector<String> sWaitTasks = new Vector<>();
     private QpsLimiter mQpsLimit;
 
     @Override
@@ -455,8 +459,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
         String url = getHostByIHttpService(service) + newInfo.getUrl().getPath();
+        // 如果当前 URL 已经扫描，中止任务
         if (sRepeatFilter.contains(url)) {
-            Logger.debug("doBurpRequest intercept url: %s", url);
             return;
         }
         // 对扫描的任务发起请求
@@ -529,13 +533,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             Logger.info("Thread pool is shutdown, intercept url: %s", url);
             return;
         }
-        // 将 URL 添加到去重列表（如果列表不存在当前的 URL 值）
-        if (!sRepeatFilter.contains(url)) {
-            sRepeatFilter.addElement(url);
-        }
-        if (!sWaitTasks.contains(url)) {
-            sWaitTasks.addElement(url);
-        }
+        // 将 URL 添加到去重过滤集合
+        sRepeatFilter.add(url);
+        // 将 URL 添加到等待任务集合
+        sWaitTasks.add(url);
         // 给每个任务创建线程
         mThreadPool.execute(() -> {
             // 限制QPS
@@ -543,9 +544,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 try {
                     mQpsLimit.limit();
                 } catch (InterruptedException e) {
-                    // 将等待的任务从过滤列表删除，并清空等待任务列表
+                    // 线程强制停止时，执行如下代码
                     if (!sWaitTasks.isEmpty()) {
+                        // 将等待的任务从过滤集合删除
                         sRepeatFilter.removeAll(sWaitTasks);
+                        // 清空等待任务集合
                         sWaitTasks.clear();
                     }
                     return;
@@ -553,9 +556,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
             Logger.debug("Do Send Request url: %s", url);
             // 开始发送请求前，移除等待列表中的 URL 链接
-            if (sWaitTasks.contains(url)) {
-                sWaitTasks.removeElement(url);
-            }
+            sWaitTasks.remove(url);
             // 发起请求
             int retryCount = getReqRetryCount();
             IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
@@ -958,9 +959,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (bodyOffset == -1) {
             Logger.error("Handle payload process error: bodyOffset is -1");
             return null;
-        } else {
-            bodyOffset += 4;
         }
+        bodyOffset += 4;
         int bodySize = rawBytes.length - bodyOffset;
         if (bodySize < 0) {
             Logger.error("Handle payload process error: bodySize < 0");
@@ -1091,21 +1091,30 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public void onChangeSelection(TaskData data) {
-        if (data != null) {
-            mCurrentReqResp = (IHttpRequestResponse) data.getReqResp();
-        } else {
-            mCurrentReqResp = null;
-            // 清空记录时，同时也清空去重过滤列表
-            sRepeatFilter.clear();
-            // 清空显示的请求、响应数据包
-            mRequestTextEditor.setMessage("".getBytes(), true);
-            mResponseTextEditor.setMessage("".getBytes(), false);
+        // 如果 data 为空，表示执行了清空历史记录操作
+        if (data == null) {
+            onClearHistory();
             return;
         }
+        mCurrentReqResp = (IHttpRequestResponse) data.getReqResp();
         // 加载请求、响应数据包
         mRequestTextEditor.setMessage("Loading...".getBytes(), true);
         mResponseTextEditor.setMessage("Loading...".getBytes(), false);
         mRefreshMsgTask.execute(this::refreshReqRespMessage);
+    }
+
+    /**
+     * 清空历史记录
+     */
+    private void onClearHistory() {
+        mCurrentReqResp = null;
+        // 清空去重过滤集合
+        sRepeatFilter.clear();
+        // 清空等待任务集合
+        sWaitTasks.clear();
+        // 清空显示的请求、响应数据包
+        mRequestTextEditor.setMessage("".getBytes(), true);
+        mResponseTextEditor.setMessage("".getBytes(), false);
     }
 
     /**
