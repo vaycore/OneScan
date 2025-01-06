@@ -111,14 +111,14 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                 }
                 break;
             case "clear-fingerprint-check-cache":
-                String count = FpManager.getTempCount();
+                String count = FpManager.getCacheCount();
                 if ("0".equals(count)) {
                     UIHelper.showTipsDialog(L.get("cache_is_empty"));
                     return;
                 }
                 int ret = UIHelper.showOkCancelDialog(L.get("clear_cache_dialog_message", count));
                 if (ret == 0) {
-                    FpManager.clearTemp();
+                    FpManager.clearCache();
                     UIHelper.showTipsDialog(L.get("clear_success"));
                 }
                 break;

@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public class FpManager {
     private static final Pattern sServerRegex = Pattern.compile("Server: (.*)");
     private static String sFilePath;
     private static final ArrayList<FpData> sFpList = new ArrayList<>();
-    private static final HashMap<String, List<FpData>> sFpTemp = new HashMap<>();
+    private static final ConcurrentHashMap<String, List<FpData>> sFpCache = new ConcurrentHashMap<>();
 
     private FpManager() {
         throw new IllegalAccessError("manager class not support create instance.");
@@ -93,14 +94,17 @@ public class FpManager {
         }
     }
 
-    public static void clearTemp() {
-        if (!sFpTemp.isEmpty()) {
-            sFpTemp.clear();
+    /**
+     * 清除指纹识别缓存
+     */
+    public static void clearCache() {
+        if (!sFpCache.isEmpty()) {
+            sFpCache.clear();
         }
     }
 
-    public static String getTempCount() {
-        return String.valueOf(sFpTemp.size());
+    public static String getCacheCount() {
+        return String.valueOf(sFpCache.size());
     }
 
     public static List<FpData> check(byte[] dataBytes) {
@@ -128,8 +132,8 @@ public class FpManager {
         // 判断是否启用缓存
         if (useCache) {
             tempKey = Utils.md5(dataBytes);
-            if (sFpTemp.containsKey(tempKey)) {
-                return sFpTemp.get(tempKey);
+            if (sFpCache.containsKey(tempKey)) {
+                return sFpCache.get(tempKey);
             }
         }
         // 数据解析
@@ -189,7 +193,7 @@ public class FpManager {
         }).collect(Collectors.toList());
         // 如果启用缓存，将指纹识别结果存放在缓存
         if (useCache) {
-            sFpTemp.put(tempKey, result);
+            sFpCache.put(tempKey, result);
         }
         return result;
     }
