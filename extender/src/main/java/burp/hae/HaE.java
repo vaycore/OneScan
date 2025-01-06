@@ -25,6 +25,7 @@ import burp.vaycore.onescan.OneScan;
 
 import java.awt.*;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -93,8 +94,6 @@ public class HaE {
             return;
         }
         try {
-            URL u = new File(pluginPath).toURI().toURL();
-            ClassLoader loader = new URLClassLoader(new URL[]{u});
             sAdapter = new BurpCallbacksAdapter(sCallbacks);
             sAdapter.setExtensionFilename(pluginPath);
             // 监听 UI 组件设置（等 UI 设置之后，再对各项参数进行检测和初始化）
@@ -115,28 +114,44 @@ public class HaE {
                 Logger.info("HaE load success! info: %s", name);
                 callback.onLoadSuccess();
             });
-            Class<?> c;
-            try {
-                c = loader.loadClass("burp.BurpExtender");
-                IBurpExtender extender = (IBurpExtender) ClassUtils.newObjectByClass(c);
-                if (extender != null) {
-                    extender.registerExtenderCallbacks(sAdapter);
-                } else {
-                    throw new IllegalStateException("BurpExtender load failed.");
-                }
-            } catch (ClassNotFoundException e) {
-                // 尝试加载 HaE 3.0 版本入口
-                c = loader.loadClass("hae.HaE");
-                BurpExtension extension = (BurpExtension) ClassUtils.newObjectByClass(c);
-                if (extension != null) {
-                    sMontoyaApi = new MontoyaApiImpl(sAdapter);
-                    extension.initialize(sMontoyaApi);
-                } else {
-                    throw new IllegalStateException("BurpExtension load failed.");
-                }
-            }
+            // 监听主动卸载插件事件（直接调用 HaE.unloadPlugin 方法即可）
+            sAdapter.setOnUnloadExtensionListener(HaE::unloadPlugin);
+            // 初始化 HaE 插件
+            initHaE(pluginPath);
         } catch (Exception e) {
             callback.onLoadError("HaE load exception: " + e);
+        }
+    }
+
+    /**
+     * 初始化 HaE 插件
+     *
+     * @param pluginPath 插件路径
+     * @throws MalformedURLException  插件路径异常
+     * @throws ClassNotFoundException 插件不包含要加载的类
+     */
+    private static void initHaE(String pluginPath) throws MalformedURLException, ClassNotFoundException {
+        URL u = new File(pluginPath).toURI().toURL();
+        ClassLoader loader = new URLClassLoader(new URL[]{u});
+        Class<?> c;
+        try {
+            c = loader.loadClass("burp.BurpExtender");
+            IBurpExtender extender = (IBurpExtender) ClassUtils.newObjectByClass(c);
+            if (extender != null) {
+                extender.registerExtenderCallbacks(sAdapter);
+            } else {
+                throw new IllegalStateException("BurpExtender load failed.");
+            }
+        } catch (ClassNotFoundException e) {
+            // 尝试加载 HaE 3.0 版本入口
+            c = loader.loadClass("hae.HaE");
+            BurpExtension extension = (BurpExtension) ClassUtils.newObjectByClass(c);
+            if (extension != null) {
+                sMontoyaApi = new MontoyaApiImpl(sAdapter);
+                extension.initialize(sMontoyaApi);
+            } else {
+                throw new IllegalStateException("BurpExtension load failed.");
+            }
         }
     }
 
@@ -157,6 +172,7 @@ public class HaE {
             }
             oneScan.remove(sMainUI);
             UIHelper.refreshUI(oneScan);
+            sAdapter.invokeExtensionStateListeners();
             sHttpListener = null;
             sMainUI = null;
             sMontoyaApi = null;
@@ -182,6 +198,11 @@ public class HaE {
                 sMainUI != null;
     }
 
+    /**
+     * 处理 HTTP 请求、响应信息
+     *
+     * @param messageInfo 请求、响应信息实例
+     */
     public static void processHttpMessage(IHttpRequestResponse messageInfo) {
         byte[] respRaw = messageInfo.getResponse();
         boolean messageIsRequest = respRaw == null || respRaw.length == 0;

@@ -1,6 +1,7 @@
 package burp.hae.montoya.extension;
 
 import burp.IBurpExtenderCallbacks;
+import burp.IExtensionStateListener;
 import burp.api.montoya.core.Registration;
 import burp.api.montoya.extension.Extension;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
@@ -9,36 +10,60 @@ import burp.api.montoya.extension.ExtensionUnloadingHandler;
  * <p>
  * Created by vaycore on 2024-05-06.
  */
-public class ExtensionImpl implements Extension {
+public class ExtensionImpl implements Extension, IExtensionStateListener {
 
-    private final IBurpExtenderCallbacks callbacks;
+    private final IBurpExtenderCallbacks mCallbacks;
+    private ExtensionUnloadingHandler mExtensionUnloadingHandler;
 
     public ExtensionImpl(IBurpExtenderCallbacks callbacks) {
-        this.callbacks = callbacks;
+        this.mCallbacks = callbacks;
     }
 
     @Override
     public void setName(String extensionName) {
-        this.callbacks.setExtensionName(extensionName);
+        mCallbacks.setExtensionName(extensionName);
     }
 
     @Override
     public String filename() {
-        return this.callbacks.getExtensionFilename();
+        return mCallbacks.getExtensionFilename();
     }
 
     @Override
     public boolean isBapp() {
-        return this.callbacks.isExtensionBapp();
+        return mCallbacks.isExtensionBapp();
     }
 
     @Override
     public void unload() {
-        this.callbacks.unloadExtension();
+        mCallbacks.unloadExtension();
     }
 
     @Override
     public Registration registerUnloadingHandler(ExtensionUnloadingHandler extensionUnloadingHandler) {
-        return null;
+        if (extensionUnloadingHandler == null) {
+            return null;
+        }
+        this.mExtensionUnloadingHandler = extensionUnloadingHandler;
+        this.mCallbacks.registerExtensionStateListener(this);
+        return new Registration() {
+            @Override
+            public boolean isRegistered() {
+                return mExtensionUnloadingHandler != null;
+            }
+
+            @Override
+            public void deregister() {
+                mCallbacks.removeExtensionStateListener(ExtensionImpl.this);
+                mExtensionUnloadingHandler = null;
+            }
+        };
+    }
+
+    @Override
+    public void extensionUnloaded() {
+        if (mExtensionUnloadingHandler != null) {
+            mExtensionUnloadingHandler.extensionUnloaded();
+        }
     }
 }

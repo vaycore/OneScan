@@ -6,6 +6,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,9 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
     private String extensionName;
     private IHttpListener httpListener;
     private BurpUiComponentCallback mBurpUiComponentCallback;
-    private String mExtensionFilename;
+    private String extensionFilename;
+    private final List<IExtensionStateListener> mExtensionStateListeners = new ArrayList<>();
+    private OnUnloadExtensionListener mOnUnloadExtensionListener;
 
     public BurpCallbacksAdapter(IBurpExtenderCallbacks callbacks) {
         this.callbacks = callbacks;
@@ -42,42 +45,59 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public IExtensionHelpers getHelpers() {
-        return helpers;
+        return this.helpers;
     }
 
     @Override
     public OutputStream getStdout() {
-        return callbacks.getStdout();
+        return this.callbacks.getStdout();
     }
 
     @Override
     public OutputStream getStderr() {
-        return callbacks.getStderr();
+        return this.callbacks.getStderr();
     }
 
     @Override
     public void printOutput(String s) {
-        callbacks.printOutput(s);
+        this.callbacks.printOutput(s);
     }
 
     @Override
     public void printError(String s) {
-        callbacks.printError(s);
+        this.callbacks.printError(s);
     }
 
     @Override
     public void registerExtensionStateListener(IExtensionStateListener iExtensionStateListener) {
-
+        if (iExtensionStateListener == null) {
+            return;
+        }
+        if (!mExtensionStateListeners.contains(iExtensionStateListener)) {
+            mExtensionStateListeners.add(iExtensionStateListener);
+        }
     }
 
     @Override
     public List<IExtensionStateListener> getExtensionStateListeners() {
-        return null;
+        return mExtensionStateListeners;
     }
 
     @Override
     public void removeExtensionStateListener(IExtensionStateListener iExtensionStateListener) {
+        if (iExtensionStateListener == null) {
+            return;
+        }
+        mExtensionStateListeners.remove(iExtensionStateListener);
+    }
 
+    /**
+     * 调用插件状态监听器
+     */
+    protected void invokeExtensionStateListeners() {
+        for (IExtensionStateListener l : mExtensionStateListeners) {
+            l.extensionUnloaded();
+        }
     }
 
     @Override
@@ -247,7 +267,18 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public void unloadExtension() {
+        if (mOnUnloadExtensionListener != null) {
+            mOnUnloadExtensionListener.onUnloadExtension();
+        }
+    }
 
+    /**
+     * 设置卸载插件监听器
+     *
+     * @param l 监听器接口实例
+     */
+    public void setOnUnloadExtensionListener(OnUnloadExtensionListener l) {
+        mOnUnloadExtensionListener = l;
     }
 
     @Override
@@ -262,8 +293,8 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public void customizeUiComponent(Component component) {
-        if (this.mBurpUiComponentCallback != null) {
-            this.mBurpUiComponentCallback.onUiComponentSetupEvent(component);
+        if (mBurpUiComponentCallback != null) {
+            mBurpUiComponentCallback.onUiComponentSetupEvent(component);
         }
     }
 
@@ -273,12 +304,12 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
      * @param callback 监听器接口实例
      */
     public void setBurpUiComponentCallback(BurpUiComponentCallback callback) {
-        this.mBurpUiComponentCallback = callback;
+        mBurpUiComponentCallback = callback;
     }
 
     @Override
     public IMessageEditor createMessageEditor(IMessageEditorController iMessageEditorController, boolean b) {
-        return callbacks.createMessageEditor(iMessageEditorController, b);
+        return this.callbacks.createMessageEditor(iMessageEditorController, b);
     }
 
     @Override
@@ -471,13 +502,18 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
         return this.callbacks.getBurpVersion();
     }
 
+    /**
+     * 设置插件安装的文件路径
+     *
+     * @param filename 文件路径
+     */
     public void setExtensionFilename(String filename) {
-        this.mExtensionFilename = filename;
+        this.extensionFilename = filename;
     }
 
     @Override
     public String getExtensionFilename() {
-        return mExtensionFilename;
+        return extensionFilename;
     }
 
     @Override
@@ -497,7 +533,7 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
 
     @Override
     public IHttpRequestResponsePersisted saveBuffersToTempFiles(IHttpRequestResponse iHttpRequestResponse) {
-        return callbacks.saveBuffersToTempFiles(iHttpRequestResponse);
+        return this.callbacks.saveBuffersToTempFiles(iHttpRequestResponse);
     }
 
     @Override
@@ -546,5 +582,16 @@ public class BurpCallbacksAdapter implements IBurpExtenderCallbacks {
          * @param component 组件实例
          */
         void onUiComponentSetupEvent(Component component);
+    }
+
+    /**
+     * 卸载插件监听器
+     */
+    public interface OnUnloadExtensionListener {
+
+        /**
+         * 卸载插件事件
+         */
+        void onUnloadExtension();
     }
 }
