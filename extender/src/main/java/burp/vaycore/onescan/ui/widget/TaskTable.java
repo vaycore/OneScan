@@ -37,8 +37,8 @@ public class TaskTable extends JTable implements ActionListener {
 
     private final TaskTableModel mTaskTableModel;
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
-    private ArrayList<TableFilter<AbstractTableModel>> mLastFilters;
-    private final ArrayList<TableFilter<AbstractTableModel>> mTempFilters;
+    private ArrayList<TableFilter<AbstractTableModel>> mTableFilters = new ArrayList<>();
+    private final ArrayList<TableFilter<AbstractTableModel>> mTempFilters = new ArrayList<>();
     private OnTaskTableEventListener mOnTaskTableEventListener;
     private int mLastSelectedRow;
 
@@ -93,7 +93,6 @@ public class TaskTable extends JTable implements ActionListener {
         mLastSelectedRow = -1;
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        mTempFilters = new ArrayList<>();
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
         // 颜色字段等级排序
         mTableRowSorter.setComparator(11, (Comparator<String>) (left, right) -> {
@@ -290,12 +289,24 @@ public class TaskTable extends JTable implements ActionListener {
         if (filters == null) {
             filters = new ArrayList<>();
         }
-        mLastFilters = filters;
-        ArrayList<TableFilter<AbstractTableModel>> localFilter = new ArrayList<>(filters);
-        if (mTempFilters != null && !mTempFilters.isEmpty()) {
-            localFilter.addAll(mTempFilters);
+        mTableFilters = filters;
+        updateRowFilter();
+    }
+
+    /**
+     * 更新过滤器
+     */
+    public void updateRowFilter() {
+        ArrayList<TableFilter<AbstractTableModel>> groupFilter = new ArrayList<>();
+        // 过滤规则
+        if (mTableFilters != null && !mTableFilters.isEmpty()) {
+            groupFilter.addAll(mTableFilters);
         }
-        mTableRowSorter.setRowFilter(RowFilter.andFilter(localFilter));
+        // 临时过滤规则
+        if (mTempFilters != null && !mTempFilters.isEmpty()) {
+            groupFilter.addAll(mTempFilters);
+        }
+        mTableRowSorter.setRowFilter(RowFilter.andFilter(groupFilter));
     }
 
     /**
@@ -465,10 +476,16 @@ public class TaskTable extends JTable implements ActionListener {
         }
         // 检测规则表是否为空
         if (!rule.getItems().isEmpty()) {
-            mTempFilters.add(new TableFilter<>(rule));
+            // 如果存在对应列的规则实例，直接设置；如果不存在，添加
+            int index = getTempFilterIndexByColumn(columnIndex);
+            if (index >= 0) {
+                mTempFilters.set(index, new TableFilter<>(rule));
+            } else {
+                mTempFilters.add(new TableFilter<>(rule));
+            }
         }
         // 更新过滤规则
-        setRowFilter(mLastFilters);
+        updateRowFilter();
     }
 
     /**
@@ -494,17 +511,33 @@ public class TaskTable extends JTable implements ActionListener {
      * @return 未找到返回一个新创建的 FilterRule 实例
      */
     private FilterRule getTempFilterRuleByColumn(int columnIndex) {
-        FilterRule result = new FilterRule(columnIndex);
-        if (mTempFilters == null || mTempFilters.isEmpty()) {
-            return result;
-        }
-        for (TableFilter<AbstractTableModel> item : mTempFilters) {
-            FilterRule rule = item.getRule();
-            if (rule.getColumnIndex() == columnIndex) {
-                return rule;
+        if (mTempFilters != null && !mTempFilters.isEmpty()) {
+            for (TableFilter<AbstractTableModel> item : mTempFilters) {
+                FilterRule rule = item.getRule();
+                if (rule.getColumnIndex() == columnIndex) {
+                    return rule;
+                }
             }
         }
-        return result;
+        return new FilterRule(columnIndex);
+    }
+
+    /**
+     * 根据列下标，查找临时过滤的 FilterRule 实例的下标
+     *
+     * @param columnIndex 对应的列下标
+     * @return 未找到返回一个新创建的 FilterRule 实例
+     */
+    private int getTempFilterIndexByColumn(int columnIndex) {
+        if (mTempFilters != null && !mTempFilters.isEmpty()) {
+            for (int i = 0; i < mTempFilters.size(); i++) {
+                FilterRule rule = mTempFilters.get(i).getRule();
+                if (rule.getColumnIndex() == columnIndex) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -543,7 +576,7 @@ public class TaskTable extends JTable implements ActionListener {
      */
     private void clearTempFilter() {
         mTempFilters.clear();
-        setRowFilter(mLastFilters);
+        updateRowFilter();
     }
 
     private static void showTextAreaDialog(String title, String text) {
