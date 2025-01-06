@@ -563,12 +563,19 @@ public class TaskTable extends JTable implements ActionListener {
     /**
      * 清空所有记录
      */
-    private void clearAll() {
+    public void clearAll() {
         mTaskTableModel.clearAll();
         if (mOnTaskTableEventListener != null) {
             mOnTaskTableEventListener.onChangeSelection(null);
         }
         mLastSelectedRow = -1;
+    }
+
+    /**
+     * 获取扫描任务的数量
+     */
+    public int getTaskCount() {
+        return mTaskTableModel.getRowCount();
     }
 
     /**

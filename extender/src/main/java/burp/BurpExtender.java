@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  * Created by vaycore on 2022-08-07.
  */
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
-        TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory {
+        TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory, IExtensionStateListener {
 
     /**
      * 任务线程数量
@@ -106,6 +106,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         initQpsLimiter();
         // 注册 OneScan 信息辅助面板
         this.mCallbacks.registerMessageEditorTabFactory(this);
+        // 注册插件卸载监听器
+        this.mCallbacks.registerExtensionStateListener(this);
     }
 
     /**
@@ -1265,5 +1267,42 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     @Override
     public IMessageEditorTab createNewInstance(IMessageEditorController iMessageEditorController, boolean editable) {
         return new OneScanInfoTab(mCallbacks);
+    }
+
+    @Override
+    public void extensionUnloaded() {
+        // 卸载 HaE 插件
+        HaE.unloadPlugin();
+        // 移除插件卸载监听器
+        mCallbacks.removeExtensionStateListener(this);
+        // 移除信息辅助面板
+        mCallbacks.removeMessageEditorTabFactory(this);
+        // 关闭任务线程池
+        mThreadPool.shutdownNow();
+        Logger.info("Close the task thread pool completed.");
+        // 关闭指纹识别线程池
+        mFpThreadPool.shutdownNow();
+        Logger.info("Close fingerprint recognition thread pool completed.");
+        // 清除去重过滤集合
+        int count = sRepeatFilter.size();
+        sRepeatFilter.clear();
+        Logger.info("Clear repeat filter list completed. Total %d records.", count);
+        // 清除等待任务集合
+        count = sWaitTasks.size();
+        sWaitTasks.clear();
+        Logger.info("Clear waiting task list completed. Total %d records", count);
+        // 清除任务列表
+        count = 0;
+        if (mDataBoardTab != null && mDataBoardTab.getTaskTable() != null) {
+            count = mDataBoardTab.getTaskTable().getTaskCount();
+            mDataBoardTab.getTaskTable().clearAll();
+        }
+        Logger.info("Clear task list completed. Total %d records", count);
+        // 清除指纹识别缓存
+        String fpCacheCount = FpManager.getCacheCount();
+        FpManager.clearCache();
+        Logger.info("Clear fingerprint recognition cache completed. Total %s records", fpCacheCount);
+        // 卸载完成
+        Logger.info(Constants.UNLOAD_BANNER);
     }
 }
