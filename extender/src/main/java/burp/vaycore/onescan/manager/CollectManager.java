@@ -370,6 +370,14 @@ public class CollectManager {
         return sRepeatFilter.size();
     }
 
+    /**
+     * 关闭线程池
+     *
+     * @return 未执行的任务数量
+     */
+    public static int closeThreadPool() {
+        return sThreadPool.shutdownNow().size();
+    }
 
     /**
      * 数据收集模块接口
