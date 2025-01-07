@@ -1282,29 +1282,33 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mCallbacks.removeMessageEditorTabFactory(this);
         // 关闭任务线程池
         mThreadPool.shutdownNow();
-        Logger.info("Close the task thread pool completed.");
+        Logger.info("Close: task thread pool completed.");
         // 关闭指纹识别线程池
         mFpThreadPool.shutdownNow();
-        Logger.info("Close fingerprint recognition thread pool completed.");
+        Logger.info("Close: fingerprint recognition thread pool completed.");
         // 清除去重过滤集合
         int count = sRepeatFilter.size();
         sRepeatFilter.clear();
-        Logger.info("Clear repeat filter list completed. Total %d records.", count);
+        Logger.info("Clear: repeat filter list completed. Total %d records.", count);
         // 清除等待任务集合
         count = sWaitTasks.size();
         sWaitTasks.clear();
-        Logger.info("Clear waiting task list completed. Total %d records", count);
+        Logger.info("Clear: waiting task list completed. Total %d records.", count);
         // 清除任务列表
         count = 0;
         if (mDataBoardTab != null && mDataBoardTab.getTaskTable() != null) {
             count = mDataBoardTab.getTaskTable().getTaskCount();
             mDataBoardTab.getTaskTable().clearAll();
         }
-        Logger.info("Clear task list completed. Total %d records", count);
+        Logger.info("Clear: task list completed. Total %d records.", count);
         // 清除指纹识别缓存
         count = FpManager.getCacheCount();
         FpManager.clearCache();
-        Logger.info("Clear fingerprint recognition cache completed. Total %d records", count);
+        Logger.info("Clear: fingerprint recognition cache completed. Total %d records.", count);
+        // 清除数据收集的去重过滤集合
+        count = CollectManager.getRepeatFilterCount();
+        CollectManager.clearRepeatFilter();
+        Logger.info("Clear: data collection repeat filter list completed. Total %d records.", count);
         // 卸载完成
         Logger.info(Constants.UNLOAD_BANNER);
     }

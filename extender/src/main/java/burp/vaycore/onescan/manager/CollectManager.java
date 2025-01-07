@@ -5,6 +5,7 @@ import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.FileUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.CollectNode;
 import burp.vaycore.onescan.bean.CollectReqResp;
 import burp.vaycore.onescan.collect.JsonFieldCollect;
@@ -12,10 +13,7 @@ import burp.vaycore.onescan.collect.WebNameCollect;
 
 import javax.swing.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,15 +24,25 @@ import java.util.concurrent.Executors;
  */
 public class CollectManager {
 
+    /**
+     * 数据收集子模块
+     */
     private static final Class<?>[] sModules = {
             JsonFieldCollect.class,
             WebNameCollect.class,
     };
-    private static String sDirPath;
+
     /**
-     * 收集的数据内存映射
+     * 收集数据的内存映射
      */
     private static Map<String, CollectNode> sCollectData;
+
+    /**
+     * 去重过滤集合
+     */
+    private static final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>());
+
+    private static String sDirPath;
     private static ExecutorService sThreadPool;
     private static CollectNodeListener sCollectNodeListener;
     private static Map<String, ICollectModule> sModuleMap;
@@ -119,6 +127,11 @@ public class CollectManager {
         }
         // 线程处理数据
         sThreadPool.execute(() -> {
+            // 检测此数据是否已经收集
+            String tempKey = Utils.md5(rawBytes);
+            if (sRepeatFilter.contains(tempKey)) {
+                return;
+            }
             // 解析数据包，方便调取数据
             CollectReqResp reqResp = new CollectReqResp(isRequest, rawBytes);
             forEachModule(module -> {
@@ -130,6 +143,8 @@ public class CollectManager {
                 // 保存数据
                 doSaveData(host, module.getName(), data);
             });
+            // 添加到去重过滤集合
+            sRepeatFilter.add(tempKey);
         });
     }
 
@@ -137,7 +152,7 @@ public class CollectManager {
      * 保存收集的数据
      *
      * @param host       主机地址（不含端口）
-     * @param moduleName 收集数据的模块名
+     * @param moduleName 数据收集的子模块名
      * @param data       收集的数据
      */
     private static void doSaveData(String host, String moduleName, List<String> data) {
@@ -176,7 +191,7 @@ public class CollectManager {
     }
 
     /**
-     * 遍历数据收集模块
+     * 遍历数据收集子模块
      *
      * @param callback 回调接口
      */
@@ -338,6 +353,23 @@ public class CollectManager {
         }
         return module;
     }
+
+    /**
+     * 清除去重过滤集合
+     */
+    public static void clearRepeatFilter() {
+        if (!sRepeatFilter.isEmpty()) {
+            sRepeatFilter.clear();
+        }
+    }
+
+    /**
+     * 获取去重过滤的数量
+     */
+    public static int getRepeatFilterCount() {
+        return sRepeatFilter.size();
+    }
+
 
     /**
      * 数据收集模块接口
