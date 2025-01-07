@@ -5,6 +5,7 @@ import burp.IHttpService;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.UrlUtils;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -14,11 +15,11 @@ import java.net.URL;
  */
 public class HttpReqRespAdapter implements IHttpRequestResponse {
 
+    private IHttpService httpServer;
     private byte[] requestBytes;
     private byte[] responseBytes;
     private String comment;
     private String highlight;
-    private IHttpService httpServer;
 
     public HttpReqRespAdapter(String url) throws IllegalArgumentException {
         if (StringUtils.isEmpty(url)) {
@@ -29,13 +30,13 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
         }
         try {
             URL u = new URL(url);
+            this.httpServer = buildHttpServer(u);
             this.requestBytes = buildRequest(u).toString().getBytes();
             this.responseBytes = new byte[0];
             this.comment = "";
             this.highlight = "";
-            this.httpServer = buildHttpServer(u);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Url: " + url + " format error.");
         }
     }
 

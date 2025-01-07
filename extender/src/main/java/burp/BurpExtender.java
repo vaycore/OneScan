@@ -3,6 +3,7 @@ package burp;
 import burp.hae.HaE;
 import burp.vaycore.common.helper.DomainHelper;
 import burp.vaycore.common.helper.QpsLimiter;
+import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.*;
 import burp.vaycore.onescan.OneScan;
@@ -59,12 +60,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 去重过滤集合
      */
-    private static final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
-
-    /**
-     * 等待任务集合
-     */
-    private static final Set<String> sWaitTasks = Collections.synchronizedSet(new HashSet<>(500000));
+    private final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
 
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
@@ -73,7 +69,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private IMessageEditor mRequestTextEditor;
     private IMessageEditor mResponseTextEditor;
     private ExecutorService mThreadPool;
-    private ExecutorService mLastThreadPool;
     private ExecutorService mFpThreadPool;
     private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
@@ -93,7 +88,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         this.mCallbacks = callbacks;
         this.mHelpers = callbacks.getHelpers();
         this.mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
-        this.mLastThreadPool = mThreadPool;
         this.mFpThreadPool = Executors.newFixedThreadPool(FP_THREAD_COUNT);
         this.mRefreshMsgTask = Executors.newSingleThreadExecutor();
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
@@ -125,6 +119,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return null;
     }
 
+    /**
+     * 初始化 QPS 限制器
+     */
     private void initQpsLimiter() {
         // 检测范围，如果不符合条件，不创建限制器
         int limit = StringUtils.parseInt(Config.get(Config.KEY_QPS_LIMIT));
@@ -162,6 +159,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
                     doScan(httpReqResp, "Send");
+                    // 线程池关闭后，停止发送扫描任务
+                    if (mThreadPool.isShutdown()) {
+                        Logger.debug("sendToPlugin: thread pool is shutdown, stop sending scan task");
+                        return;
+                    }
                 }
             }).start());
             // 选择 Payload 扫描
@@ -174,6 +176,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                     for (IHttpRequestResponse httpReqResp : messages) {
                         doScan(httpReqResp, "Send", action);
+                        // 线程池关闭后，停止发送扫描任务
+                        if (mThreadPool.isShutdown()) {
+                            Logger.debug("usePayloadScan: thread pool is shutdown, stop sending scan task");
+                            return;
+                        }
                     }
                 }).start();
                 for (String itemName : payloadList) {
@@ -246,8 +253,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             CollectManager.collect(true, host, httpReqResp.getRequest());
             CollectManager.collect(false, host, httpReqResp.getResponse());
         }
-        // 记录当前线程池的引用
-        mLastThreadPool = mThreadPool;
         // 生成任务
         URL url = info.getUrl();
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
@@ -534,47 +539,47 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void doBurpRequest(IHttpService service, String url, byte[] reqRawBytes, String from) {
         // 线程池关闭后，不接收任何任务
-        if (mLastThreadPool.isShutdown()) {
-            Logger.info("Thread pool is shutdown, intercept url: %s", url);
+        if (mThreadPool.isShutdown()) {
+            Logger.debug("doBurpRequest: thread pool is shutdown, intercept url: %s", url);
             return;
         }
         // 将 URL 添加到去重过滤集合
         sRepeatFilter.add(url);
-        // 将 URL 添加到等待任务集合
-        sWaitTasks.add(url);
-        // 给每个任务创建线程
-        mThreadPool.execute(() -> {
-            // 限制QPS
-            if (mQpsLimit != null) {
-                try {
-                    mQpsLimit.limit();
-                } catch (InterruptedException e) {
-                    // 线程强制停止时，执行如下代码
-                    if (!sWaitTasks.isEmpty()) {
-                        // 将等待的任务从过滤集合删除
-                        sRepeatFilter.removeAll(sWaitTasks);
-                        // 清空等待任务集合
-                        sWaitTasks.clear();
+        // 创建任务运行实例
+        TaskRunnable task = new TaskRunnable(url) {
+            @Override
+            public void run() {
+                // 限制QPS
+                if (mQpsLimit != null) {
+                    try {
+                        mQpsLimit.limit();
+                    } catch (InterruptedException e) {
+                        // 线程强制停止时，将未执行的任务从去重过滤集合中移除
+                        sRepeatFilter.remove(url);
+                        return;
                     }
-                    return;
                 }
+                Logger.debug("Do Send Request url: %s", url);
+                // 发起请求
+                int retryCount = getReqRetryCount();
+                IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
+                // HaE提取信息
+                HaE.processHttpMessage(newReqResp);
+                // 构建展示的数据包
+                TaskData data = buildTaskData(newReqResp);
+                // 用于过滤代理数据包
+                data.setFrom(from);
+                mDataBoardTab.getTaskTable().addTaskData(data);
+                // 收集数据
+                CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
             }
-            Logger.debug("Do Send Request url: %s", url);
-            // 开始发送请求前，移除等待列表中的 URL 链接
-            sWaitTasks.remove(url);
-            // 发起请求
-            int retryCount = getReqRetryCount();
-            IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
-            // HaE提取信息
-            HaE.processHttpMessage(newReqResp);
-            // 构建展示的数据包
-            TaskData data = buildTaskData(newReqResp);
-            // 用于过滤代理数据包
-            data.setFrom(from);
-            mDataBoardTab.getTaskTable().addTaskData(data);
-            // 收集数据
-            CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
-        });
+        };
+        // 将任务添加线程池
+        try {
+            mThreadPool.execute(task);
+        } catch (Exception e) {
+            Logger.error("doBurpRequest thread execute error: %s", e.getMessage());
+        }
     }
 
     /**
@@ -1115,8 +1120,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mCurrentReqResp = null;
         // 清空去重过滤集合
         sRepeatFilter.clear();
-        // 清空等待任务集合
-        sWaitTasks.clear();
         // 清空显示的请求、响应数据包
         mRequestTextEditor.setMessage("".getBytes(), true);
         mResponseTextEditor.setMessage("".getBytes(), false);
@@ -1222,11 +1225,21 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
     }
 
+    /**
+     * 修改 QPS 限制
+     *
+     * @param limit QPS 限制值（数字）
+     */
     private void changeQpsLimit(String limit) {
         initQpsLimiter();
         Logger.debug("Event: change qps limit: %s", limit);
     }
 
+    /**
+     * 修改请求延迟
+     *
+     * @param delay 延迟的值（数字）
+     */
     private void changeRequestDelay(String delay) {
         initQpsLimiter();
         Logger.debug("Event: change request delay: %s", delay);
@@ -1250,17 +1263,32 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 } catch (IllegalArgumentException e) {
                     Logger.error("Import error: " + e.getMessage());
                 }
-                // 线程池关闭后，不继续导入Url
-                if (mLastThreadPool.isShutdown()) {
-                    Logger.info("Thread pool is shutdown, stop import Url");
+                // 线程池关闭后，停止导入 Url 数据
+                if (mThreadPool.isShutdown()) {
+                    Logger.debug("importUrl: thread pool is shutdown, stop import url");
                     return;
                 }
             }
         }).start();
     }
 
+    /**
+     * 停止扫描中的所有任务
+     */
     private void stopAllTask() {
-        mThreadPool.shutdownNow();
+        // 关闭线程池，处理未执行的任务
+        List<Runnable> taskList = mThreadPool.shutdownNow();
+        for (Runnable run : taskList) {
+            if (run instanceof TaskRunnable) {
+                TaskRunnable task = (TaskRunnable) run;
+                String taskUrl = task.getTaskUrl();
+                // 将未执行的任务从去重过滤集合中移除
+                sRepeatFilter.remove(taskUrl);
+            }
+        }
+        // 提示信息
+        String message = mDataBoardTab.hasListenProxyMessage() ? L.get("stop_task_tips") : L.get("stop_ok_tips");
+        UIHelper.showTipsDialog(message);
         // 停止后，重新初始化线程池
         mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
         // 重新初始化 QPS 限制器
@@ -1281,24 +1309,25 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 移除信息辅助面板
         mCallbacks.removeMessageEditorTabFactory(this);
         // 关闭任务线程池
-        mThreadPool.shutdownNow();
-        Logger.info("Close: task thread pool completed.");
+        int count = mThreadPool.shutdownNow().size();
+        Logger.info("Close: task thread pool completed. Task %d records.", count);
         // 关闭指纹识别线程池
-        mFpThreadPool.shutdownNow();
-        Logger.info("Close: fingerprint recognition thread pool completed.");
+        count = mFpThreadPool.shutdownNow().size();
+        Logger.info("Close: fingerprint recognition thread pool completed. Task %d records.", count);
+        // 关闭数据收集线程池
+        count = CollectManager.closeThreadPool();
+        Logger.info("Close: data collection thread pool completed. Task %d records.", count);
         // 清除去重过滤集合
-        int count = sRepeatFilter.size();
+        count = sRepeatFilter.size();
         sRepeatFilter.clear();
         Logger.info("Clear: repeat filter list completed. Total %d records.", count);
-        // 清除等待任务集合
-        count = sWaitTasks.size();
-        sWaitTasks.clear();
-        Logger.info("Clear: waiting task list completed. Total %d records.", count);
         // 清除任务列表
         count = 0;
         if (mDataBoardTab != null && mDataBoardTab.getTaskTable() != null) {
             count = mDataBoardTab.getTaskTable().getTaskCount();
             mDataBoardTab.getTaskTable().clearAll();
+            // 关闭导入 URL 窗口
+            mDataBoardTab.closeImportUrlWindow();
         }
         Logger.info("Clear: task list completed. Total %d records.", count);
         // 清除指纹识别缓存

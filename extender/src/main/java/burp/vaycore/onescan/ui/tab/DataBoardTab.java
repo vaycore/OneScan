@@ -3,7 +3,6 @@ package burp.vaycore.onescan.ui.tab;
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.filter.TableFilter;
 import burp.vaycore.common.filter.TableFilterPanel;
-import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
@@ -226,12 +225,10 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
      * 停止扫描任务
      */
     private void stopTask() {
-        sendTabEvent(EVENT_STOP_TASK);
-        // 提示信息
-        String message = hasListenProxyMessage() ? L.get("stop_task_tips") : L.get("stop_ok_tips");
-        // 停止后，将代理监听关闭
+        // 停止任务前，优先将代理监听开关关闭
         mListenProxyMessage.setSelected(false);
-        UIHelper.showTipsDialog(message);
+        // 发送事件消息
+        sendTabEvent(EVENT_STOP_TASK);
     }
 
     public TaskTable getTaskTable() {
