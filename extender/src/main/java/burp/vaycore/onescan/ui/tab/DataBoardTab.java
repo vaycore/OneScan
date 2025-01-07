@@ -190,12 +190,24 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         return checkBox;
     }
 
+    /**
+     * 显示导入 URL 窗口
+     */
     private void importUrl() {
         if (mImportUrlWindow == null) {
             mImportUrlWindow = new ImportUrlWindow();
             mImportUrlWindow.setOnImportUrlListener(this);
         }
         mImportUrlWindow.showWindow();
+    }
+
+    /**
+     * 关闭导入 URL 窗口
+     */
+    public void closeImportUrlWindow() {
+        if (mImportUrlWindow != null) {
+            mImportUrlWindow.closeWindow();
+        }
     }
 
     @Override
@@ -210,6 +222,9 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         sendTabEvent(EVENT_IMPORT_URL, data);
     }
 
+    /**
+     * 停止扫描任务
+     */
     private void stopTask() {
         sendTabEvent(EVENT_STOP_TASK);
         // 提示信息
