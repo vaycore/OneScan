@@ -59,7 +59,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
         panel.add(reload);
         panel.add(new JLabel(L.get("count")));
         // 指纹数量展示
-        mCountLabel = new JLabel(FpManager.getCount());
+        mCountLabel = new JLabel(String.valueOf(FpManager.getCount()));
         panel.add(mCountLabel);
         panel.add(new JPanel(), "1w");
         // 指纹过滤功能
@@ -89,7 +89,8 @@ public class FingerprintTab extends BaseTab implements ActionListener {
     }
 
     private void refreshCount() {
-        mCountLabel.setText(FpManager.getCount());
+        String count = String.valueOf(FpManager.getCount());
+        mCountLabel.setText(count);
     }
 
     private void addTablePanel() {

@@ -43,7 +43,8 @@ import java.util.stream.Collectors;
  * Created by vaycore on 2022-08-07.
  */
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
-        TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory, IExtensionStateListener {
+        TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory,
+        IExtensionStateListener {
 
     /**
      * 任务线程数量
@@ -54,10 +55,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 指纹识别线程数量
      */
     private static final int FP_THREAD_COUNT = 10;
+
     /**
      * 去重过滤集合
      */
     private static final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
+
     /**
      * 等待任务集合
      */
@@ -1299,9 +1302,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         Logger.info("Clear task list completed. Total %d records", count);
         // 清除指纹识别缓存
-        String fpCacheCount = FpManager.getCacheCount();
+        count = FpManager.getCacheCount();
         FpManager.clearCache();
-        Logger.info("Clear fingerprint recognition cache completed. Total %s records", fpCacheCount);
+        Logger.info("Clear fingerprint recognition cache completed. Total %d records", count);
         // 卸载完成
         Logger.info(Constants.UNLOAD_BANNER);
     }

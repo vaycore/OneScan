@@ -78,10 +78,12 @@ public class Utils {
         return list.get(r);
     }
 
-    public static String md5(String data) {
-        return md5(data.getBytes());
-    }
-
+    /**
+     * 计算 MD5 值
+     *
+     * @param bytes 字节数据
+     * @return 失败返回空字符串
+     */
     public static String md5(byte[] bytes) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -94,6 +96,12 @@ public class Utils {
         return "";
     }
 
+    /**
+     * 字节转换为16进制字符串
+     *
+     * @param data 字节数据
+     * @return 失败返回空字符串
+     */
     public static String bytesToHex(byte[] data) {
         if (data == null || data.length == 0) {
             return "";
