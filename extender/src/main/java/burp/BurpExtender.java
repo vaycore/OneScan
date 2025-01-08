@@ -254,7 +254,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             CollectManager.collect(false, host, httpReqResp.getResponse());
         }
         // 生成任务
-        URL url = info.getUrl();
+        URL url = getUrlByRequestInfo(info);
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
             runScanTask(httpReqResp, info, null, from);
@@ -758,6 +758,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (service.getPort() == 80 || service.getPort() == 443) {
             host = service.getHost();
         }
+        URL url = getUrlByRequestInfo(info);
         String domain = service.getHost();
         String timestamp = String.valueOf(DateUtils.getTimestamp());
         String randomIP = IPUtils.randomIPv4();
@@ -766,7 +767,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String domainMain = DomainHelper.getDomain(domain, null);
         String domainName = DomainHelper.getDomainName(domain, null);
         String subdomain = getSubdomain(domain);
-        String webroot = getWebrootByURL(info.getUrl());
+        String webroot = getWebrootByURL(url);
         // 替换变量
         try {
             request = fillVariable(request, "host", host);
@@ -1002,7 +1003,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String method = request.getMethod();
         URL url = request.getUrl();
         String host = getHostByUrl(url);
-        String reqUrl = getReqUrl(url);
+        String reqUrl = url.getFile();
         String title = HtmlUtils.findTitleByHtmlBody(respBytes);
         String ip = findIpByHost(url.getHost());
         int status = -1;
@@ -1036,43 +1037,81 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return data;
     }
 
+    /**
+     * 根据 IHttpService 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
+     *
+     * @param service IHttpService 实例
+     * @return 返回请求的 Host 地址
+     */
     private String getHostByIHttpService(IHttpService service) {
         String protocol = service.getProtocol();
         String host = service.getHost();
         int port = service.getPort();
-        return concatUrl(protocol, host, port);
+        return concatHost(protocol, host, port);
     }
 
+    /**
+     * 根据 URL 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
+     *
+     * @param url URL 实例
+     * @return 返回请求的 Host 地址
+     */
     private String getHostByUrl(URL url) {
         String protocol = url.getProtocol();
         String host = url.getHost();
         int port = url.getPort();
-        return concatUrl(protocol, host, port);
+        return concatHost(protocol, host, port);
     }
 
-    private String concatUrl(String protocol, String host, int port) {
+    /**
+     * 拼接 Host 地址（示例：http://xxxxxx.com、http://xxxxxx.com:8080）
+     *
+     * @param protocol 协议
+     * @param host     主机
+     * @param port     端口号
+     * @return 返回拼接完成的 Host 地址
+     */
+    private String concatHost(String protocol, String host, int port) {
         if (port == 80 || port == 443) {
             return protocol + "://" + host;
         }
         return protocol + "://" + host + ":" + port;
     }
 
-    private String getReqUrl(URL url) {
-        String path = url.getPath();
-        String query = url.getQuery();
-        if (StringUtils.isEmpty(query)) {
-            return path;
-        }
-        return path + "?" + query;
-    }
-
+    /**
+     * 根据 Host 查询 IP 地址
+     *
+     * @param host Host 值
+     * @return 失败返回空字符串
+     */
     private String findIpByHost(String host) {
+        if (IPUtils.hasIPv4(host)) {
+            return host;
+        }
         try {
             InetAddress ip = InetAddress.getByName(host);
             return ip.getHostAddress();
         } catch (UnknownHostException e) {
             return "";
         }
+    }
+
+    /**
+     * 获取 IRequestInfo 实例的请求 URL 实例
+     *
+     * @param info IRequestInfo 实例
+     * @return 返回请求的 URL 实例
+     */
+    private URL getUrlByRequestInfo(IRequestInfo info) {
+        URL url = info.getUrl();
+        try {
+            // IRequestInfo.getUrl 方法有时候获取的值不准确，重新解析一下
+            url = new URL(url.toString());
+            return url;
+        } catch (Exception e) {
+            Logger.error("getUrlByRequestInfo: convert url error: %s", e.getMessage());
+        }
+        return url;
     }
 
     @Override
