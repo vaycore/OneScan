@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  */
 public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEditorController,
         TaskTable.OnTaskTableEventListener, ITab, OnTabEventListener, IMessageEditorTabFactory,
-        IExtensionStateListener {
+        IExtensionStateListener, IContextMenuFactory {
 
     /**
      * 任务线程数量
@@ -150,48 +150,51 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 监听代理的包
         mCallbacks.registerProxyListener(this);
         // 注册菜单
-        mCallbacks.registerContextMenuFactory((invocation) -> {
-            ArrayList<JMenuItem> items = new ArrayList<>();
-            // 扫描选定目标
-            JMenuItem sendToOneScanItem = new JMenuItem(L.get("send_to_plugin"));
-            items.add(sendToOneScanItem);
-            sendToOneScanItem.addActionListener((event) -> new Thread(() -> {
+        mCallbacks.registerContextMenuFactory(this);
+    }
+
+    @Override
+    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+        ArrayList<JMenuItem> items = new ArrayList<>();
+        // 扫描选定目标
+        JMenuItem sendToOneScanItem = new JMenuItem(L.get("send_to_plugin"));
+        items.add(sendToOneScanItem);
+        sendToOneScanItem.addActionListener((event) -> new Thread(() -> {
+            IHttpRequestResponse[] messages = invocation.getSelectedMessages();
+            for (IHttpRequestResponse httpReqResp : messages) {
+                doScan(httpReqResp, "Send");
+                // 线程池关闭后，停止发送扫描任务
+                if (mThreadPool.isShutdown()) {
+                    Logger.debug("sendToPlugin: thread pool is shutdown, stop sending scan task");
+                    return;
+                }
+            }
+        }).start());
+        // 选择 Payload 扫描
+        List<String> payloadList = WordlistManager.getItemList(WordlistManager.KEY_PAYLOAD);
+        if (!payloadList.isEmpty() && payloadList.size() > 1) {
+            JMenu menu = new JMenu(L.get("use_payload_scan"));
+            items.add(menu);
+            ActionListener listener = (event) -> new Thread(() -> {
+                String action = event.getActionCommand();
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
-                    doScan(httpReqResp, "Send");
+                    doScan(httpReqResp, "Send", action);
                     // 线程池关闭后，停止发送扫描任务
                     if (mThreadPool.isShutdown()) {
-                        Logger.debug("sendToPlugin: thread pool is shutdown, stop sending scan task");
+                        Logger.debug("usePayloadScan: thread pool is shutdown, stop sending scan task");
                         return;
                     }
                 }
-            }).start());
-            // 选择 Payload 扫描
-            List<String> payloadList = WordlistManager.getItemList(WordlistManager.KEY_PAYLOAD);
-            if (!payloadList.isEmpty() && payloadList.size() > 1) {
-                JMenu menu = new JMenu(L.get("use_payload_scan"));
-                items.add(menu);
-                ActionListener listener = (event) -> new Thread(() -> {
-                    String action = event.getActionCommand();
-                    IHttpRequestResponse[] messages = invocation.getSelectedMessages();
-                    for (IHttpRequestResponse httpReqResp : messages) {
-                        doScan(httpReqResp, "Send", action);
-                        // 线程池关闭后，停止发送扫描任务
-                        if (mThreadPool.isShutdown()) {
-                            Logger.debug("usePayloadScan: thread pool is shutdown, stop sending scan task");
-                            return;
-                        }
-                    }
-                }).start();
-                for (String itemName : payloadList) {
-                    JMenuItem item = new JMenuItem(itemName);
-                    item.setActionCommand(itemName);
-                    item.addActionListener(listener);
-                    menu.add(item);
-                }
+            }).start();
+            for (String itemName : payloadList) {
+                JMenuItem item = new JMenuItem(itemName);
+                item.setActionCommand(itemName);
+                item.addActionListener(listener);
+                menu.add(item);
             }
-            return items;
-        });
+        }
+        return items;
     }
 
     @Override
@@ -1343,10 +1346,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     public void extensionUnloaded() {
         // 卸载 HaE 插件
         HaE.unloadPlugin();
+        // 移除代理监听器
+        mCallbacks.removeProxyListener(this);
         // 移除插件卸载监听器
         mCallbacks.removeExtensionStateListener(this);
         // 移除信息辅助面板
         mCallbacks.removeMessageEditorTabFactory(this);
+        // 移除注册的菜单
+        mCallbacks.removeContextMenuFactory(this);
         // 关闭任务线程池
         int count = mThreadPool.shutdownNow().size();
         Logger.info("Close: task thread pool completed. Task %d records.", count);
