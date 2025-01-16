@@ -27,6 +27,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -256,7 +257,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             CollectManager.collect(true, host, httpReqResp.getRequest());
             CollectManager.collect(false, host, httpReqResp.getResponse());
         }
-        // 生成任务
+        // 准备生成任务
         URL url = getUrlByRequestInfo(info);
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
         if (!proxyExcludeSuffixFilter(url)) {
@@ -268,7 +269,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (!mDataBoardTab.hasDirScan()) {
             return;
         }
-        Logger.debug("doScan receive: %s%s", getHostByUrl(url), url.getPath());
+        // 获取一下请求数据包中的请求路径
+        String reqPath = getReqPathByRequestInfo(info);
+        // 从请求路径中，尝试获取请求主机地址
+        String reqHost = getReqHostByReqPath(reqPath);
+        Logger.debug("doScan receive: %s%s", getReqHostByUrl(url), url.getPath());
         ArrayList<String> pathDict = getUrlPathDict(url.getPath());
         List<String> payloads = WordlistManager.getPayload(payloadItem);
         // 一级目录一级目录递减访问
@@ -280,8 +285,52 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     path = path.substring(0, path.length() - 1);
                 }
                 String urlPath = path + item;
+                // 检测一下是否携带完整的 Host 地址（兼容一下携带了完整的 Host 地址的情况）
+                if (reqPath.startsWith("http")) {
+                    urlPath = reqHost + urlPath;
+                }
                 runScanTask(httpReqResp, info, urlPath, "Scan");
             }
+        }
+    }
+
+    /**
+     * 从 IRequestInfo 实例中读取请求行中的请求路径
+     *
+     * @param info IRequestInfo 实例
+     * @return 不存在返回空字符串
+     */
+    private String getReqPathByRequestInfo(IRequestInfo info) {
+        if (info == null) {
+            return "";
+        }
+        // 获取请求行
+        List<String> headers = info.getHeaders();
+        if (!headers.isEmpty()) {
+            String reqLine = headers.get(0);
+            Matcher matcher = Constants.REGEX_REQ_LINE_URL.matcher(reqLine);
+            if (matcher.find() && matcher.groupCount() >= 1) {
+                return matcher.group(1);
+            }
+        }
+        return "";
+    }
+
+    /**
+     * 从请求路径中（有些站点请求路径中包含完整的 Host 地址）获取请求的 Host 地址
+     *
+     * @param reqPath 请求路径
+     * @return 不包含 Host 地址，返回空字符串
+     */
+    private String getReqHostByReqPath(String reqPath) {
+        if (StringUtils.isEmpty(reqPath)) {
+            return "";
+        }
+        try {
+            URL url = new URL(reqPath);
+            return getReqHostByUrl(url);
+        } catch (MalformedURLException e) {
+            return "";
         }
     }
 
@@ -410,6 +459,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return false;
     }
 
+    /**
+     * 使用 '/' 分割 URL 实例的 path 数据，通过组合第一层级目录，生成字典列表
+     *
+     * @param urlPath URL 实例的 path 数据
+     * @return 失败返回空列表
+     */
     private ArrayList<String> getUrlPathDict(String urlPath) {
         String direct = Config.get(Config.KEY_SCAN_LEVEL_DIRECT);
         int scanLevel = StringUtils.parseInt(Config.get(Config.KEY_SCAN_LEVEL));
@@ -471,7 +526,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
-        String url = getHostByIHttpService(service) + newInfo.getUrl().getPath();
+        String url = getReqHostByHttpService(service) + newInfo.getUrl().getPath();
         // 如果当前 URL 已经扫描，中止任务
         if (sRepeatFilter.contains(url)) {
             return;
@@ -733,6 +788,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return reqRawStr.getBytes();
     }
 
+    /**
+     * 获取请求头配置
+     */
     private List<String> getHeader() {
         if (!mDataBoardTab.hasReplaceHeader()) {
             return new ArrayList<>();
@@ -740,6 +798,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return WordlistManager.getHeader();
     }
 
+    /**
+     * 获取移除请求头列表配置
+     */
     private List<String> getRemoveHeaders() {
         if (!mDataBoardTab.hasRemoveHeader()) {
             return new ArrayList<>();
@@ -747,6 +808,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return WordlistManager.getRemoveHeaders();
     }
 
+    /**
+     * 获取配置的 Payload Processing 规则
+     */
     private List<ProcessingItem> getPayloadProcess() {
         ArrayList<ProcessingItem> list = Config.getPayloadProcessList();
         if (list == null) {
@@ -1021,7 +1085,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 获取所需要的参数
         String method = request.getMethod();
         URL url = request.getUrl();
-        String host = getHostByUrl(url);
+        String reqHost = getReqHostByUrl(url);
         String reqUrl = url.getFile();
         String title = HtmlUtils.findTitleByHtmlBody(respBytes);
         String ip = findIpByHost(url.getHost());
@@ -1043,7 +1107,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 构建表格对象
         TaskData data = new TaskData();
         data.setMethod(method);
-        data.setHost(host);
+        data.setHost(reqHost);
         data.setUrl(reqUrl);
         data.setTitle(title);
         data.setIp(ip);
@@ -1057,41 +1121,41 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * 根据 IHttpService 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
+     * 通过 IHttpService 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
      *
      * @param service IHttpService 实例
      * @return 返回请求的 Host 地址
      */
-    private String getHostByIHttpService(IHttpService service) {
+    private String getReqHostByHttpService(IHttpService service) {
         String protocol = service.getProtocol();
         String host = service.getHost();
         int port = service.getPort();
-        return concatHost(protocol, host, port);
+        return concatReqHost(protocol, host, port);
     }
 
     /**
-     * 根据 URL 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
+     * 通过 URL 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
      *
      * @param url URL 实例
      * @return 返回请求的 Host 地址
      */
-    private String getHostByUrl(URL url) {
+    private String getReqHostByUrl(URL url) {
         String protocol = url.getProtocol();
         String host = url.getHost();
         int port = url.getPort();
-        return concatHost(protocol, host, port);
+        return concatReqHost(protocol, host, port);
     }
 
     /**
-     * 拼接 Host 地址（示例：http://xxxxxx.com、http://xxxxxx.com:8080）
+     * 拼接请求的 Host 地址（示例：http://xxxxxx.com、http://xxxxxx.com:8080）
      *
      * @param protocol 协议
      * @param host     主机
      * @param port     端口号
      * @return 返回拼接完成的 Host 地址
      */
-    private String concatHost(String protocol, String host, int port) {
-        if (port == 80 || port == 443) {
+    private String concatReqHost(String protocol, String host, int port) {
+        if (port < 0 || port == 80 || port == 443 || port > 65535) {
             return protocol + "://" + host;
         }
         return protocol + "://" + host + ":" + port;
