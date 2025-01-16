@@ -476,60 +476,76 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (sRepeatFilter.contains(url)) {
             return;
         }
-        // 对扫描的任务发起请求
+        // 如果未启用“请求包处理”功能，直接对扫描的任务发起请求
         if (!mDataBoardTab.hasPayloadProcessing()) {
             doBurpRequest(service, url, request, from);
             return;
         }
-        // 先检测规则是否为空
-        List<ProcessingItem> processList = getPayloadProcess()
-                .stream().filter(ProcessingItem::isEnabledAndMerge).collect(Collectors.toList());
-        if (processList.isEmpty()) {
-            doBurpRequest(service, url, request, from);
-        } else {
-            byte[] requestBytes = request;
-            for (ProcessingItem item : processList) {
-                ArrayList<PayloadItem> items = item.getItems();
-                requestBytes = handlePayloadProcess(service, requestBytes, items);
-            }
-            if (requestBytes != null) {
-                // 检测是否未进行任何处理
-                boolean equals = Arrays.equals(request, requestBytes);
-                // 未进行任何处理时，不变更 from 值
-                String newFrom = equals ? from : from + "（Process）";
-                doBurpRequest(service, url, requestBytes, newFrom);
-            }
-        }
-        // 运行 Payload Processing 任务
-        runPayloadProcessingTask(service, url, request);
+        // 运行已经启用并且需要合并的任务
+        runEnableAndMergeTask(service, url, request, from);
+        // 运行已经启用并且不需要合并的任务
+        runEnabledWithoutMergeProcessingTask(service, url, request);
     }
 
     /**
-     * 运行 Payload Processing 任务
+     * 运行已经启用并且需要合并的任务
+     *
+     * @param service     请求目标服务实例
+     * @param url         请求URL
+     * @param reqRawBytes 请求数据包
+     * @param from        请求来源
+     */
+    private void runEnableAndMergeTask(IHttpService service, String url, byte[] reqRawBytes, String from) {
+        // 获取已经启用并且需要合并的“请求包处理”规则
+        List<ProcessingItem> processList = getPayloadProcess()
+                .stream().filter(ProcessingItem::isEnabledAndMerge)
+                .collect(Collectors.toList());
+        // 先检测规则是否为空
+        if (processList.isEmpty()) {
+            doBurpRequest(service, url, reqRawBytes, from);
+            return;
+        }
+        byte[] resultBytes = reqRawBytes;
+        for (ProcessingItem item : processList) {
+            ArrayList<PayloadItem> items = item.getItems();
+            resultBytes = handlePayloadProcess(service, resultBytes, items);
+        }
+        if (resultBytes != null) {
+            // 检测是否未进行任何处理
+            boolean equals = Arrays.equals(reqRawBytes, resultBytes);
+            // 未进行任何处理时，不变更 from 值
+            String newFrom = equals ? from : from + "（Process）";
+            doBurpRequest(service, url, resultBytes, newFrom);
+        } else {
+            // 如果规则处理异常导致数据返回为空，则发送原来的请求
+            doBurpRequest(service, url, reqRawBytes, from);
+        }
+    }
+
+    /**
+     * 运行已经启用并且不需要合并的任务
      *
      * @param service     请求目标服务实例
      * @param url         请求URL
      * @param reqRawBytes 请求数据包
      */
-    private void runPayloadProcessingTask(IHttpService service, String url, byte[] reqRawBytes) {
-        // 检测是否启用 Payload Processing 请求
-        if (mDataBoardTab.hasPayloadProcessing()) {
-            // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
-            getPayloadProcess().parallelStream()
-                    .filter(ProcessingItem::isEnabledWithoutMerge).forEach((item) -> {
-                        ArrayList<PayloadItem> items = item.getItems();
-                        byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
-                        if (requestBytes == null) {
-                            return;
-                        }
-                        // 检测是否未进行任何处理
-                        boolean equals = Arrays.equals(reqRawBytes, requestBytes);
-                        if (equals) {
-                            return;
-                        }
-                        doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
-                    });
-        }
+    private void runEnabledWithoutMergeProcessingTask(IHttpService service, String url, byte[] reqRawBytes) {
+        // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
+        getPayloadProcess().parallelStream().filter(ProcessingItem::isEnabledWithoutMerge)
+                .forEach((item) -> {
+                    ArrayList<PayloadItem> items = item.getItems();
+                    byte[] requestBytes = handlePayloadProcess(service, reqRawBytes, items);
+                    // 因为不需要合并的规则是将每条处理完成的数据包都发送请求，所以规则处理异常的请求包，不需要发送请求
+                    if (requestBytes == null) {
+                        return;
+                    }
+                    // 检测是否未进行任何处理（如上所述的原因，未进行任何处理的请求包，也不需要发送请求）
+                    boolean equals = Arrays.equals(reqRawBytes, requestBytes);
+                    if (equals) {
+                        return;
+                    }
+                    doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
+                });
     }
 
     /**
@@ -680,7 +696,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return false;
             }).collect(Collectors.toList());
             // 配置中存在匹配项，替换为配置中的数据
-            if (matchList.size() > 0) {
+            if (!matchList.isEmpty()) {
                 for (String matchItem : matchList) {
                     request.append(matchItem).append("\r\n");
                 }
@@ -914,7 +930,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String url = UrlUtils.toURI(info.getUrl());
         String header = new String(requestBytes, 0, bodyOffset - 4);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
-        String request = new String(requestBytes, 0, requestBytes.length);
+        String request = new String(requestBytes);
         for (PayloadItem item : list) {
             // 只调用启用的规则
             PayloadRule rule = item.getRule();
@@ -1223,7 +1239,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         mCurrentReqResp = (IHttpRequestResponse) data.getReqResp();
         byte[] respBytes = mCurrentReqResp.getResponse();
-        if (respBytes == null || respBytes.length <= 0) {
+        if (respBytes == null || respBytes.length == 0) {
             return new byte[]{};
         }
         IResponseInfo info = mCallbacks.getHelpers().analyzeResponse(respBytes);
