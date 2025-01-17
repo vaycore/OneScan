@@ -59,6 +59,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private static final int FP_THREAD_COUNT = 10;
 
     /**
+     * 空字节数组常量（防止频繁创建）
+     */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
+    /**
      * 去重过滤集合
      */
     private final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
@@ -634,9 +639,18 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     }
                 }
                 Logger.debug("Do Send Request url: %s", url);
-                // 发起请求
+                // 动态变量赋值
+                String reqRaw = mHelpers.bytesToString(reqRawBytes);
+                reqRaw = setupVariable(service, url, reqRaw);
+                if (reqRaw == null) {
+                    // 动态变量处理异常，丢弃当前请求
+                    return;
+                }
+                // 请求配置的请求重试次数
                 int retryCount = getReqRetryCount();
-                IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
+                // 发起请求
+                byte[] newReqRawBytes = mHelpers.stringToBytes(reqRaw);
+                IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, newReqRawBytes, retryCount);
                 // HaE提取信息
                 HaE.processHttpMessage(newReqResp);
                 // 构建展示的数据包
@@ -670,8 +684,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         IHttpRequestResponse reqResp;
         try {
             reqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
-            byte[] respBytes = reqResp.getResponse();
-            if (respBytes != null && respBytes.length > 0) {
+            byte[] respRawBytes = reqResp.getResponse();
+            if (respRawBytes != null && respRawBytes.length > 0) {
                 return reqResp;
             }
         } catch (Exception e) {
@@ -713,10 +727,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 数据包自带的请求头
         List<String> headers = info.getHeaders();
         // 构建请求头
-        StringBuilder request = new StringBuilder();
+        StringBuilder requestRaw = new StringBuilder();
         // 根据数据来源区分两种请求头
         if (from.equals("Scan")) {
-            request.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
+            requestRaw.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
         } else {
             String reqLine = headers.get(0);
             // 先检测一下是否包含 ' HTTP/' 字符串，再继续处理（可能有些畸形数据包不存在该内容）
@@ -724,7 +738,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 int start = reqLine.lastIndexOf(" HTTP/");
                 reqLine = reqLine.substring(0, start) + " HTTP/1.1";
             }
-            request.append(reqLine).append("\r\n");
+            requestRaw.append(reqLine).append("\r\n");
         }
         // 请求头的参数处理（顺带处理移除的请求头）
         for (int i = 1; i < headers.size(); i++) {
@@ -753,13 +767,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 配置中存在匹配项，替换为配置中的数据
             if (!matchList.isEmpty()) {
                 for (String matchItem : matchList) {
-                    request.append(matchItem).append("\r\n");
+                    requestRaw.append(matchItem).append("\r\n");
                 }
                 // 将已经添加的数据从列表中移除
                 configHeader.removeAll(matchList);
             } else {
                 // 不存在匹配项，填充原数据
-                request.append(item).append("\r\n");
+                requestRaw.append(item).append("\r\n");
             }
         }
         // 将配置里剩下的值全部填充到请求头中
@@ -769,23 +783,24 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             if (removeHeaders.contains(key)) {
                 continue;
             }
-            request.append(item).append("\r\n");
+            requestRaw.append(item).append("\r\n");
         }
-        request.append("\r\n");
+        requestRaw.append("\r\n");
         // 如果当前数据来源不是 Scan，可能会包含 POST 请求，判断是否存在 body 数据
         if (!from.equals("Scan")) {
             byte[] httpRequest = httpReqResp.getRequest();
-            int bodySize = httpRequest.length - info.getBodyOffset();
+            int bodyOffset = info.getBodyOffset();
+            int bodySize = httpRequest.length - bodyOffset;
             if (bodySize > 0) {
-                request.append(new String(httpRequest, info.getBodyOffset(), bodySize));
+                requestRaw.append(new String(httpRequest, bodyOffset, bodySize));
             }
         }
-        // 请求头构建完成后，设置里面包含的变量
-        String reqRawStr = setupVariable(service, info, request.toString());
-        if (reqRawStr == null) {
+        // 请求头构建完成后，对里面包含的动态变量进行赋值
+        String newRequestRaw = setupVariable(service, info.getUrl(), requestRaw.toString());
+        if (newRequestRaw == null) {
             return null;
         }
-        return reqRawStr.getBytes();
+        return mHelpers.stringToBytes(newRequestRaw);
     }
 
     /**
@@ -830,18 +845,33 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 给数据包填充动态变量
      *
-     * @param service 请求目标实例
-     * @param info    请求信息实例
-     * @param request 请求数据包实例
+     * @param service    请求目标实例
+     * @param url        请求 url 字符串
+     * @param requestRaw 请求数据包字符串
      * @return 处理失败返回null
      */
-    private String setupVariable(IHttpService service, IRequestInfo info, String request) {
+    private String setupVariable(IHttpService service, String url, String requestRaw) {
+        URL u = UrlUtils.parseURL(url);
+        if (u == null) {
+            return null;
+        }
+        return setupVariable(service, u, requestRaw);
+    }
+
+    /**
+     * 给数据包填充动态变量
+     *
+     * @param service    请求目标实例
+     * @param url        请求 URL 实例
+     * @param requestRaw 请求数据包字符串
+     * @return 处理失败返回null
+     */
+    private String setupVariable(IHttpService service, URL url, String requestRaw) {
         String protocol = service.getProtocol();
         String host = service.getHost() + ":" + service.getPort();
         if (service.getPort() == 80 || service.getPort() == 443) {
             host = service.getHost();
         }
-        URL url = getUrlByRequestInfo(info);
         String domain = service.getHost();
         String timestamp = String.valueOf(DateUtils.getTimestamp());
         String randomIP = IPUtils.randomIPv4();
@@ -853,37 +883,37 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String webroot = getWebrootByURL(url);
         // 替换变量
         try {
-            request = fillVariable(request, "host", host);
-            request = fillVariable(request, "domain", domain);
-            request = fillVariable(request, "domain.main", domainMain);
-            request = fillVariable(request, "domain.name", domainName);
-            request = fillVariable(request, "subdomain", subdomain);
-            request = fillVariable(request, "protocol", protocol);
-            request = fillVariable(request, "timestamp", timestamp);
-            request = fillVariable(request, "random.ip", randomIP);
-            request = fillVariable(request, "random.local-ip", randomLocalIP);
-            request = fillVariable(request, "random.ua", randomUA);
-            request = fillVariable(request, "webroot", webroot);
+            requestRaw = fillVariable(requestRaw, "host", host);
+            requestRaw = fillVariable(requestRaw, "domain", domain);
+            requestRaw = fillVariable(requestRaw, "domain.main", domainMain);
+            requestRaw = fillVariable(requestRaw, "domain.name", domainName);
+            requestRaw = fillVariable(requestRaw, "subdomain", subdomain);
+            requestRaw = fillVariable(requestRaw, "protocol", protocol);
+            requestRaw = fillVariable(requestRaw, "timestamp", timestamp);
+            requestRaw = fillVariable(requestRaw, "random.ip", randomIP);
+            requestRaw = fillVariable(requestRaw, "random.local-ip", randomLocalIP);
+            requestRaw = fillVariable(requestRaw, "random.ua", randomUA);
+            requestRaw = fillVariable(requestRaw, "webroot", webroot);
             // 填充日期、时间相关的动态变量
-            if (request.contains("{{date.") || request.contains("{{time.")) {
+            if (requestRaw.contains("{{date.") || requestRaw.contains("{{time.")) {
                 String currentDate = DateUtils.getCurrentDate("yyyy-MM-dd HH:mm:ss;yy-M-d H:m:s");
                 String[] split = currentDate.split(";");
                 String[] leftDateTime = parseDateTime(split[0]);
-                request = fillVariable(request, "date.yyyy", leftDateTime[0]);
-                request = fillVariable(request, "date.MM", leftDateTime[1]);
-                request = fillVariable(request, "date.dd", leftDateTime[2]);
-                request = fillVariable(request, "time.HH", leftDateTime[3]);
-                request = fillVariable(request, "time.mm", leftDateTime[4]);
-                request = fillVariable(request, "time.ss", leftDateTime[5]);
+                requestRaw = fillVariable(requestRaw, "date.yyyy", leftDateTime[0]);
+                requestRaw = fillVariable(requestRaw, "date.MM", leftDateTime[1]);
+                requestRaw = fillVariable(requestRaw, "date.dd", leftDateTime[2]);
+                requestRaw = fillVariable(requestRaw, "time.HH", leftDateTime[3]);
+                requestRaw = fillVariable(requestRaw, "time.mm", leftDateTime[4]);
+                requestRaw = fillVariable(requestRaw, "time.ss", leftDateTime[5]);
                 String[] rightDateTime = parseDateTime(split[1]);
-                request = fillVariable(request, "date.yy", rightDateTime[0]);
-                request = fillVariable(request, "date.M", rightDateTime[1]);
-                request = fillVariable(request, "date.d", rightDateTime[2]);
-                request = fillVariable(request, "time.H", rightDateTime[3]);
-                request = fillVariable(request, "time.m", rightDateTime[4]);
-                request = fillVariable(request, "time.s", rightDateTime[5]);
+                requestRaw = fillVariable(requestRaw, "date.yy", rightDateTime[0]);
+                requestRaw = fillVariable(requestRaw, "date.M", rightDateTime[1]);
+                requestRaw = fillVariable(requestRaw, "date.d", rightDateTime[2]);
+                requestRaw = fillVariable(requestRaw, "time.H", rightDateTime[3]);
+                requestRaw = fillVariable(requestRaw, "time.m", rightDateTime[4]);
+                requestRaw = fillVariable(requestRaw, "time.s", rightDateTime[5]);
             }
-            return request;
+            return requestRaw;
         } catch (IllegalArgumentException e) {
             Logger.debug(e.getMessage());
             return null;
@@ -994,7 +1024,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String url = UrlUtils.toURI(info.getUrl());
         String header = new String(requestBytes, 0, bodyOffset - 4);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
-        String request = new String(requestBytes);
+        String request = mHelpers.bytesToString(requestBytes);
         for (PayloadItem item : list) {
             // 只调用启用的规则
             PayloadRule rule = item.getRule();
@@ -1011,7 +1041,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                             // 分隔要插入数据的位置
                             String left = header.substring(0, start);
                             String right = header.substring(end);
-                            System.out.println(left + newUrl + right);
                             // 拼接处理好的数据
                             header = left + newUrl + right;
                             request = header + "\r\n\r\n" + body;
@@ -1038,7 +1067,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 更新 Content-Length
-        return updateContentLength(request.getBytes());
+        return updateContentLength(mHelpers.stringToBytes(request));
     }
 
     /**
@@ -1230,8 +1259,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         mCurrentReqResp = (IHttpRequestResponse) data.getReqResp();
         // 加载请求、响应数据包
-        mRequestTextEditor.setMessage("Loading...".getBytes(), true);
-        mResponseTextEditor.setMessage("Loading...".getBytes(), false);
+        byte[] hintBytes = mHelpers.stringToBytes(L.get("message_editor_loading"));
+        mRequestTextEditor.setMessage(hintBytes, true);
+        mResponseTextEditor.setMessage(hintBytes, false);
         mRefreshMsgTask.execute(this::refreshReqRespMessage);
     }
 
@@ -1243,8 +1273,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 清空去重过滤集合
         sRepeatFilter.clear();
         // 清空显示的请求、响应数据包
-        mRequestTextEditor.setMessage("".getBytes(), true);
-        mResponseTextEditor.setMessage("".getBytes(), false);
+        mRequestTextEditor.setMessage(EMPTY_BYTES, true);
+        mResponseTextEditor.setMessage(EMPTY_BYTES, false);
     }
 
     /**
@@ -1254,18 +1284,20 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         byte[] request = getRequest();
         byte[] response = getResponse();
         if (request == null || request.length == 0) {
-            request = "".getBytes();
+            request = EMPTY_BYTES;
         }
         if (response == null || response.length == 0) {
-            response = "".getBytes();
+            response = EMPTY_BYTES;
         }
         // 检测是否超过配置的显示长度限制
         int maxLength = StringUtils.parseInt(Config.get(Config.KEY_MAX_DISPLAY_LENGTH));
         if (maxLength >= 100000 && request.length >= maxLength) {
-            request = "Request length exceeds configured limit".getBytes();
+            String hint = L.get("message_editor_request_length_limit_hint");
+            request = mHelpers.stringToBytes(hint);
         }
         if (maxLength >= 100000 && response.length >= maxLength) {
-            response = "Response length exceeds configured limit".getBytes();
+            String hint = L.get("message_editor_response_length_limit_hint");
+            response = mHelpers.stringToBytes(hint);
         }
         mRequestTextEditor.setMessage(request, true);
         mResponseTextEditor.setMessage(response, false);

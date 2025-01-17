@@ -1,5 +1,6 @@
 package burp.vaycore.common.utils;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -51,5 +52,30 @@ public class UrlUtils {
             result += "#" + fragment;
         }
         return result;
+    }
+
+    /**
+     * 将 url 字符串解析为 URL 实例
+     *
+     * @param url url 字符串
+     * @return 解析异常返回null
+     */
+    public static URL parseURL(String url) {
+        return parseURL(url, null);
+    }
+
+    /**
+     * 将 url 字符串解析为 URL 实例
+     *
+     * @param url url 字符串
+     * @param defValue 解析异常返回的默认值
+     * @return 解析异常，返回指定的 defValue 参数值
+     */
+    public static URL parseURL(String url, URL defValue) {
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            return defValue;
+        }
     }
 }
