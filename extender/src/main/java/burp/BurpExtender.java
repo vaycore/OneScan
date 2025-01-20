@@ -1441,8 +1441,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 提示信息
-        String message = mDataBoardTab.hasListenProxyMessage() ? L.get("stop_task_tips") : L.get("stop_ok_tips");
-        UIHelper.showTipsDialog(message);
+        UIHelper.showTipsDialog(L.get("stop_task_tips"));
         // 停止后，重新初始化线程池
         mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
         // 重新初始化 QPS 限制器
