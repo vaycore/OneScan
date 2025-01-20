@@ -11,6 +11,7 @@ import java.util.ResourceBundle;
 public class L {
 
     private static final Locale sDefaultLocale = new Locale("en", "US");
+    private static final String sBaseName = "i18n/messages";
     private static final ResourceBundle sLanguage;
 
     static {
@@ -18,12 +19,12 @@ public class L {
         Locale locale = Locale.getDefault();
         ResourceBundle language;
         try {
-            language = ResourceBundle.getBundle("i18n/messages", locale);
+            language = ResourceBundle.getBundle(sBaseName, locale);
             if (!language.containsKey("plugin_name")) {
                 throw new IllegalStateException("Unable to identify language resource package");
             }
         } catch (Exception e) {
-            language = ResourceBundle.getBundle("i18n/messages", sDefaultLocale);
+            language = ResourceBundle.getBundle(sBaseName, sDefaultLocale);
         }
         sLanguage = language;
     }
@@ -52,22 +53,15 @@ public class L {
      * @throws IllegalArgumentException key 不存在时抛出该异常
      */
     public static String get(String key, Object... args) {
-        checkKey(key);
+        // 如果当前语言资源包找不到对应的值，到默认语言资源包里找
+        if (!sLanguage.containsKey(key)) {
+            ResourceBundle defaultLanguage = ResourceBundle.getBundle(sBaseName, sDefaultLocale);
+            if (!defaultLanguage.containsKey(key)) {
+                return "Null";
+            }
+            return defaultLanguage.getString(key);
+        }
         String value = sLanguage.getString(key);
         return String.format(value, args);
-    }
-
-    /**
-     * 检测语言包中 key 是否存在
-     *
-     * @param key key
-     * @throws IllegalArgumentException key 不存在时抛出该异常
-     */
-    private static void checkKey(String key) {
-        if (!sLanguage.containsKey(key)) {
-            Locale l = sLanguage.getLocale();
-            String localeStr = l.getLanguage() + "_" + l.getCountry();
-            throw new IllegalArgumentException(localeStr + " language '" + key + "' not found!");
-        }
     }
 }
