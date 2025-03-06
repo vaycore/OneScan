@@ -302,7 +302,13 @@ Connection: close
 
 非常感谢各位师傅的关注和支持（如果觉得项目还不错，请给项目一个 `Star` 吧）
 
-[![Stargazers over time](https://starchart.cc/vaycore/OneScan.svg?variant=adaptive)](https://starchart.cc/vaycore/OneScan)
+<a href="https://star-history.com/#vaycore/OneScan&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=vaycore/OneScan&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=vaycore/OneScan&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=vaycore/OneScan&type=Date" />
+ </picture>
+</a>
 
 ## END
 
