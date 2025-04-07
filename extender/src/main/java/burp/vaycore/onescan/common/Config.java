@@ -3,10 +3,7 @@ package burp.vaycore.onescan.common;
 import burp.vaycore.common.config.ConfigManager;
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.log.Logger;
-import burp.vaycore.common.utils.FileUtils;
-import burp.vaycore.common.utils.GsonUtils;
-import burp.vaycore.common.utils.PathUtils;
-import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.*;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
@@ -18,7 +15,9 @@ import com.google.gson.internal.LinkedTreeMap;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 配置类
@@ -109,6 +108,7 @@ public class Config {
             backupConfig(version);
             upgradeConfigKey();
             upgradeDomain();
+            upgradeHeaders();
             upgradeRemoveHeaderList();
             upgradeWordlist();
             upgradePayloadProcessing(version);
@@ -168,6 +168,25 @@ public class Config {
         }
     }
 
+    private static void upgradeHeaders() {
+        List<String> defaultHeaders = WordlistManager.getList(WordlistManager.KEY_HEADERS, "default");
+        // 默认配置已删除的情况
+        if (defaultHeaders.isEmpty()) {
+            return;
+        }
+        String joinResult = StringUtils.join(defaultHeaders, ",");
+        // 新 headers 配置的 MD5 值
+        String headersMd5 = Utils.md5(joinResult.getBytes(StandardCharsets.UTF_8));
+        // 旧 headers 配置的 MD5 值
+        String matchMd5 = "6eb466e03eda48b29275da941bfed84c";
+        // 默认配置的 headers 如果无变更，将旧配置替换为新的配置
+        if (headersMd5.equals(matchMd5)) {
+            InputStream is = Config.class.getClassLoader().getResourceAsStream("header.txt");
+            ArrayList<String> list = FileUtils.readStreamToList(is);
+            WordlistManager.putList(WordlistManager.KEY_HEADERS, "default", list);
+        }
+    }
+
     private static void upgradeRemoveHeaderList() {
         // 将remove-header-list配置项迁移到新字段
         if (hasKey("remove-header-list")) {
@@ -224,9 +243,9 @@ public class Config {
         }
     }
 
-    private static void upgradePayloadProcessing(String version) {
+    private static void upgradePayloadProcessing(String oldVersion) {
         // 版本检测（从 OneScan <= 1.3.7 版本升级时需要变更配置）
-        version = version.replace(".", "");
+        String version = oldVersion.replace(".", "");
         int versionInt = StringUtils.parseInt(version);
         if (versionInt == 0 || versionInt > 137) {
             return;
@@ -332,6 +351,11 @@ public class Config {
     public static boolean hasKey(String key) {
         checkInit();
         return sConfigManager.hasKey(key);
+    }
+
+    public static void removeKey(String key) {
+        checkInit();
+        sConfigManager.remove(key);
     }
 
     private static void preparePayloadProcessList() {

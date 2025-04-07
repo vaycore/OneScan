@@ -3,6 +3,7 @@ package burp.vaycore.onescan.manager;
 import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.FileUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.common.Config;
 
 import java.io.File;
@@ -46,6 +47,7 @@ public class WordlistManager {
         sWordlistDir = path;
         onVersionUpgrade();
         initDirs();
+        onCheckInvalidConfig();
         initDefaultWordlist(WordlistManager.KEY_PAYLOAD, "payload.txt", reInitFile);
         initDefaultWordlist(WordlistManager.KEY_HEADERS, "header.txt", reInitFile);
         initDefaultWordlist(WordlistManager.KEY_USER_AGENT, "user_agent.txt", reInitFile);
@@ -84,6 +86,9 @@ public class WordlistManager {
         }
     }
 
+    /**
+     * 初始化字典存放目录
+     */
     private static void initDirs() {
         Field[] fields = WordlistManager.class.getDeclaredFields();
         for (Field field : fields) {
@@ -105,6 +110,13 @@ public class WordlistManager {
         }
     }
 
+    /**
+     * 初始化默认字典配置
+     *
+     * @param key        配置 key
+     * @param resName    资源名
+     * @param reInitFile 是否重新初始化文件
+     */
     private static void initDefaultWordlist(String key, String resName, boolean reInitFile) {
         if (!reInitFile && Config.hasKey(key)) {
             return;
@@ -123,6 +135,46 @@ public class WordlistManager {
         }
     }
 
+    /**
+     * 检查无效配置
+     */
+    private static void onCheckInvalidConfig() {
+        Field[] fields = WordlistManager.class.getDeclaredFields();
+        for (Field field : fields) {
+            String name = field.getName();
+            if (!name.startsWith("KEY_")) {
+                continue;
+            }
+            try {
+                String key = (String) field.get(null);
+                boolean exists = wordlistFileExists(key);
+                // 配置的字典文件存在，判定配置有效
+                if (exists) {
+                    continue;
+                }
+                // 配置无效，切换一个配置。先列出当前配置的字典列表
+                List<String> itemList = WordlistManager.getItemList(key);
+                // 如果字典列表为空，删除当前配置 key（删除配置 key 后，会重新初始化）
+                if (itemList.isEmpty()) {
+                    Config.removeKey(key);
+                    continue;
+                }
+                // 随机取一个配置的字典
+                String item = Utils.getRandomItem(itemList);
+                // 设置这个字典
+                WordlistManager.putItem(key, item);
+            } catch (IllegalAccessException e) {
+                // ignored
+            }
+        }
+    }
+
+    /**
+     * 获取当前使用的字典名
+     *
+     * @param key 配置 key
+     * @return 返回字典名；失败返回：default
+     */
     public static String getItem(String key) {
         String item = Config.get(key);
         if (StringUtils.isEmpty(item)) {
@@ -131,15 +183,34 @@ public class WordlistManager {
         return item;
     }
 
+    /**
+     * 修改当前使用的字典名
+     *
+     * @param key  配置 key
+     * @param item 字典名
+     */
     public static void putItem(String key, String item) {
         Config.put(key, item);
     }
 
+    /**
+     * 获取字典
+     *
+     * @param key 配置 key
+     * @return 字典数据；失败返回空列表
+     */
     public static List<String> getList(String key) {
         String item = getItem(key);
         return getList(key, item);
     }
 
+    /**
+     * 获取字典
+     *
+     * @param key  配置 key
+     * @param item 字典名
+     * @return 字典数据；失败返回空列表
+     */
     public static List<String> getList(String key, String item) {
         checkInit();
         String path = sWordlistDir + File.separator + key + File.separator + item + ".txt";
@@ -150,17 +221,43 @@ public class WordlistManager {
         return list;
     }
 
+    /**
+     * 修改字典
+     *
+     * @param key  配置 key
+     * @param list 修改后的内容
+     */
     public static void putList(String key, List<String> list) {
+        String item = getItem(key);
+        putList(key, item, list);
+    }
+
+    /**
+     * 修改字典
+     *
+     * @param key  配置 key
+     * @param item 字典名
+     * @param list 修改后的内容
+     */
+    public static void putList(String key, String item, List<String> list) {
         checkInit();
         if (list == null) {
             return;
         }
-        String item = getItem(key);
+        if (StringUtils.isEmpty(item)) {
+            item = "default";
+        }
         String path = sWordlistDir + File.separator + key + File.separator + item + ".txt";
         String content = StringUtils.join(list, "\n");
         FileUtils.writeFile(path, content);
     }
 
+    /**
+     * 创建字典
+     *
+     * @param key  配置 key
+     * @param name 字典名
+     */
     public static void createList(String key, String name) {
         checkInit();
         String path = sWordlistDir + File.separator + key + File.separator + name + ".txt";
@@ -174,6 +271,12 @@ public class WordlistManager {
         }
     }
 
+    /**
+     * 删除字典
+     *
+     * @param key  配置 key
+     * @param name 字典名
+     */
     public static void deleteList(String key, String name) {
         checkInit();
         String path = sWordlistDir + File.separator + key + File.separator + name + ".txt";
@@ -187,6 +290,12 @@ public class WordlistManager {
         }
     }
 
+    /**
+     * 列出配置 key 的所有字典名
+     *
+     * @param key 配置 key
+     * @return 所有字典名
+     */
     public static List<String> getItemList(String key) {
         checkInit();
         String path = sWordlistDir + File.separator + key;
@@ -203,20 +312,25 @@ public class WordlistManager {
         return result;
     }
 
+    /**
+     * 字典文件是否存在
+     *
+     * @param key 配置 key
+     * @return true=存在；false=不存在
+     */
     public static boolean wordlistFileExists(String key) {
         String item = getItem(key);
         String path = sWordlistDir + File.separator + key + File.separator + item + ".txt";
         return FileUtils.isFile(path);
     }
 
+    /**
+     * 检测字典管理器初始化状态
+     */
     private static void checkInit() {
         if (StringUtils.isEmpty(sWordlistDir) || !FileUtils.isDir(sWordlistDir)) {
             throw new IllegalArgumentException("WordlistManager no init.");
         }
-    }
-
-    public static List<String> getPayload() {
-        return getList(WordlistManager.KEY_PAYLOAD);
     }
 
     public static List<String> getPayload(String item) {
