@@ -112,6 +112,11 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         stopBtn.setToolTipText(L.get("stop_all_task"));
         stopBtn.addActionListener((e) -> stopTask());
         controlPanel.add(stopBtn);
+        // 清空历史记录按钮
+        JButton clearBtn = new JButton(L.get("clear_record"));
+        clearBtn.setToolTipText(L.get("clear_history"));
+        clearBtn.addActionListener((e) -> clearHistory());
+        controlPanel.add(clearBtn);
         // 操作菜单按钮
         JButton actionsBtn = new JButton(L.get("actions"));
         actionsBtn.setToolTipText(L.get("actions_menu"));
@@ -213,10 +218,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     public void onImportUrl(String prefix, List<String> data) {
         // 如果存在前缀，对每一项进行拼接
         if (StringUtils.isNotEmpty(prefix)) {
-            for (int i = 0; i < data.size(); i++) {
-                String newItem = prefix + data.get(i);
-                data.set(i, newItem);
-            }
+            data.replaceAll(s -> prefix + s);
         }
         sendTabEvent(EVENT_IMPORT_URL, data);
     }
@@ -229,6 +231,16 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         mListenProxyMessage.setSelected(false);
         // 发送事件消息
         sendTabEvent(EVENT_STOP_TASK);
+    }
+
+    /**
+     * 清空历史记录
+     */
+    private void clearHistory() {
+        if (mTaskTable == null) {
+            return;
+        }
+        mTaskTable.clearAll();
     }
 
     public TaskTable getTaskTable() {
