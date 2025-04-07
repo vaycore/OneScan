@@ -881,6 +881,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String domainName = DomainHelper.getDomainName(domain, null);
         String subdomain = getSubdomain(domain);
         String webroot = getWebrootByURL(url);
+        String ip = findIpByHost(domain);
         // 替换变量
         try {
             requestRaw = fillVariable(requestRaw, "host", host);
@@ -894,6 +895,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             requestRaw = fillVariable(requestRaw, "random.local-ip", randomLocalIP);
             requestRaw = fillVariable(requestRaw, "random.ua", randomUA);
             requestRaw = fillVariable(requestRaw, "webroot", webroot);
+            requestRaw = fillVariable(requestRaw, "ip", ip);
             // 填充日期、时间相关的动态变量
             if (requestRaw.contains("{{date.") || requestRaw.contains("{{time.")) {
                 String currentDate = DateUtils.getCurrentDate("yyyy-MM-dd HH:mm:ss;yy-M-d H:m:s");
