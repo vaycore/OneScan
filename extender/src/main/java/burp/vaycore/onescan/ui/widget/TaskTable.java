@@ -2,6 +2,7 @@ package burp.vaycore.onescan.ui.widget;
 
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.filter.TableFilter;
+import burp.vaycore.common.helper.DataTableItemLoader;
 import burp.vaycore.common.helper.IconHash;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
@@ -23,10 +24,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 任务列表
@@ -572,6 +573,13 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     /**
+     * 停止添加任务数据（任务停止时调用）
+     */
+    public void stopAddTaskData() {
+        mTaskTableModel.stopAddTaskData();
+    }
+
+    /**
      * 获取扫描任务的数量
      */
     public int getTaskCount() {
@@ -634,7 +642,8 @@ public class TaskTable extends JTable implements ActionListener {
     /**
      * 列表适配器
      */
-    public static class TaskTableModel extends AbstractTableModel {
+    public static class TaskTableModel extends AbstractTableModel
+            implements DataTableItemLoader.OnDataItemLoadEvent<TaskData> {
 
         public static final String[] COLUMN_NAMES = new String[]{
                 L.get("task_table_columns.id"),
@@ -650,43 +659,58 @@ public class TaskTable extends JTable implements ActionListener {
                 L.get("task_table_columns.comment"),
                 L.get("task_table_columns.color"),
         };
-        private final ArrayList<TaskData> mData;
+        private final List<TaskData> mData;
         private final AtomicInteger mCounter;
+        private final DataTableItemLoader<TaskData> mItemLoader;
 
         public TaskTableModel() {
-            mData = new ArrayList<>();
+            mData = Collections.synchronizedList(new ArrayList<>());
             mCounter = new AtomicInteger();
+            mItemLoader = new DataTableItemLoader<>(this, 500);
         }
 
         public void add(TaskData data) {
             if (data == null || data.getReqResp() == null) {
                 return;
             }
-            synchronized (this.mData) {
-                int index = mData.size();
-                int id = mCounter.getAndIncrement();
-                data.setId(id);
-                this.mData.add(data);
-                fireTableRowsInserted(index, index);
+            int id = mCounter.getAndIncrement();
+            data.setId(id);
+            mItemLoader.pushItem(data);
+        }
+
+        public void addAll(List<TaskData> items) {
+            if (items == null || items.isEmpty()) {
+                return;
             }
+            // 数据不允许为空
+            List<TaskData> validItems = items.stream().filter(Objects::nonNull).collect(Collectors.toList());
+            if (validItems.isEmpty()) {
+                return;
+            }
+            SwingUtilities.invokeLater(() -> {
+                int firstRow = getRowCount();
+                this.mData.addAll(validItems);
+                int lastRow = getRowCount() - 1;
+                fireTableRowsInserted(firstRow, lastRow);
+            });
         }
 
         public void removeItems(List<TaskData> list) {
             if (list == null || list.isEmpty()) {
                 return;
             }
-            synchronized (this.mData) {
+            SwingUtilities.invokeLater(() -> {
                 this.mData.removeAll(list);
                 fireTableDataChanged();
-            }
+            });
         }
 
         public void clearAll() {
-            synchronized (this.mData) {
+            SwingUtilities.invokeLater(() -> {
                 mData.clear();
                 mCounter.set(0);
                 fireTableDataChanged();
-            }
+            });
         }
 
         @Override
@@ -713,6 +737,16 @@ public class TaskTable extends JTable implements ActionListener {
         @Override
         public String getColumnName(int column) {
             return COLUMN_NAMES[column];
+        }
+
+        @Override
+        public void onDataItemLoaded(List<TaskData> items) {
+            addAll(items);
+        }
+
+        public void stopAddTaskData() {
+            // 任务停止后。取出所有队列数据，添加到列表
+            mItemLoader.flush();
         }
     }
 }

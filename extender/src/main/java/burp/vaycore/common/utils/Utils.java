@@ -65,6 +65,17 @@ public class Utils {
     }
 
     /**
+     * 生成 long 类型随机值
+     *
+     * @param minValue 最小值（包含）
+     * @param maxValue 最大值（包含）
+     * @return 随机值
+     */
+    public static long nextLong(long minValue, long maxValue) {
+        return (long) (minValue + Math.random() * (maxValue - minValue + 1));
+    }
+
+    /**
      * 从列表随机获取一个数据
      *
      * @param list 数据列表

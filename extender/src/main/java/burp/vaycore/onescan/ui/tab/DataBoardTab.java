@@ -231,6 +231,10 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         mListenProxyMessage.setSelected(false);
         // 发送事件消息
         sendTabEvent(EVENT_STOP_TASK);
+        // 通知停止添加任务数据
+        if (mTaskTable != null) {
+            mTaskTable.stopAddTaskData();
+        }
     }
 
     /**
