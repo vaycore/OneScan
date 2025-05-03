@@ -23,6 +23,10 @@ import java.util.stream.Collectors;
 public class FpManager {
 
     private static final Pattern sServerRegex = Pattern.compile("Server: (.*)");
+    private static final Pattern sDateRegex = Pattern.compile("(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s+" +
+            "(0[1-9]|[12]\\d|3[01])\\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+" +
+            "\\d{4}\\s+([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\s+GMT", Pattern.CASE_INSENSITIVE);
+
     private static String sFilePath;
     private static final ArrayList<FpData> sFpList = new ArrayList<>();
     private static final ConcurrentHashMap<String, List<FpData>> sFpCache = new ConcurrentHashMap<>();
@@ -169,12 +173,12 @@ public class FpManager {
         if (dataBytes == null || dataBytes.length == 0) {
             return new ArrayList<>();
         }
-        String tempKey = "";
+        String hashKey = "";
         // 判断是否启用缓存
         if (useCache) {
-            tempKey = Utils.md5(dataBytes);
-            if (sFpCache.containsKey(tempKey)) {
-                return sFpCache.get(tempKey);
+            hashKey = calculateHash(dataBytes, charset);
+            if (StringUtils.isNotEmpty(hashKey) && sFpCache.containsKey(hashKey)) {
+                return sFpCache.get(hashKey);
             }
         }
         // 解析数据源
@@ -206,10 +210,32 @@ public class FpManager {
             return !fpRulesResult.isEmpty();
         }).collect(Collectors.toList());
         // 如果启用缓存，将指纹识别结果存放在缓存
-        if (useCache) {
-            sFpCache.put(tempKey, result);
+        if (StringUtils.isNotEmpty(hashKey) && useCache) {
+            sFpCache.put(hashKey, result);
         }
         return result;
+    }
+
+    /**
+     * 计算数据的 Hash 值
+     *
+     * @param dataBytes 数据
+     * @param charset   数据的编码
+     * @return 失败返回null
+     */
+    private static String calculateHash(byte[] dataBytes, Charset charset) {
+        String request = new String(dataBytes, charset);
+        int bodyOffset = request.indexOf("\r\n\r\n");
+        if (bodyOffset >= 0) {
+            String header = request.substring(0, bodyOffset);
+            // 响应头包含 Set-Cookie，不计算 Hash 值（不缓存）
+            if (header.contains("Set-Cookie")) {
+                return null;
+            }
+        }
+        // 将日期相关的字符串都替换为空
+        request = sDateRegex.matcher(request).replaceAll("");
+        return Utils.md5(request.getBytes(charset));
     }
 
     /**
