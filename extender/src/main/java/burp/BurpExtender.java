@@ -511,7 +511,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 result.add(sb.toString());
             }
         }
-
         return result;
     }
 
@@ -880,23 +879,36 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String domainMain = DomainHelper.getDomain(domain, null);
         String domainName = DomainHelper.getDomainName(domain, null);
         String subdomain = getSubdomain(domain);
+        String subdomains = getSubdomains(domain);
         String webroot = getWebrootByURL(url);
         String ip = findIpByHost(domain);
         // 替换变量
         try {
+            requestRaw = fillVariable(requestRaw, "protocol", protocol);
             requestRaw = fillVariable(requestRaw, "host", host);
+            requestRaw = fillVariable(requestRaw, "webroot", webroot);
+            requestRaw = fillVariable(requestRaw, "ip", ip);
+            // 填充域名相关动态变量
             requestRaw = fillVariable(requestRaw, "domain", domain);
             requestRaw = fillVariable(requestRaw, "domain.main", domainMain);
             requestRaw = fillVariable(requestRaw, "domain.name", domainName);
+            // 填充子域名相关动态变量
             requestRaw = fillVariable(requestRaw, "subdomain", subdomain);
-            requestRaw = fillVariable(requestRaw, "protocol", protocol);
-            requestRaw = fillVariable(requestRaw, "timestamp", timestamp);
+            requestRaw = fillVariable(requestRaw, "subdomains", subdomains);
+            if (requestRaw.contains("{{subdomains.") &&
+                    StringUtils.isNotEmpty(subdomains) && subdomains.contains(".")) {
+                String[] subdomainsSplit = subdomains.split("\\.");
+                // 遍历填充 {{subdomains.%d}} 动态变量
+                for (int i = 0; i < subdomainsSplit.length; i++) {
+                    requestRaw = fillVariable(requestRaw, "subdomains." + i, subdomainsSplit[i]);
+                }
+            }
+            // 填充随机值相关动态变量
             requestRaw = fillVariable(requestRaw, "random.ip", randomIP);
             requestRaw = fillVariable(requestRaw, "random.local-ip", randomLocalIP);
             requestRaw = fillVariable(requestRaw, "random.ua", randomUA);
-            requestRaw = fillVariable(requestRaw, "webroot", webroot);
-            requestRaw = fillVariable(requestRaw, "ip", ip);
             // 填充日期、时间相关的动态变量
+            requestRaw = fillVariable(requestRaw, "timestamp", timestamp);
             if (requestRaw.contains("{{date.") || requestRaw.contains("{{time.")) {
                 String currentDate = DateUtils.getCurrentDate("yyyy-MM-dd HH:mm:ss;yy-M-d H:m:s");
                 String[] split = currentDate.split(";");
@@ -970,19 +982,41 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * 获取子域名（如果没有子域名，则返回主域名的名称）
+     * 获取子域名
      *
      * @param domain 域名（格式示例：www.xxx.com）
-     * @return 失败返回null值
+     * @return 格式：www；如果没有子域名，或者获取失败，返回null
      */
     private String getSubdomain(String domain) {
+        String subdomains = getSubdomains(domain);
+        if (StringUtils.isEmpty(subdomains)) {
+            return null;
+        }
+        if (subdomains.contains(".")) {
+            return subdomains.substring(0, subdomains.indexOf("."));
+        }
+        return subdomains;
+    }
+
+    /**
+     * 获取完整子域名
+     *
+     * @param domain 域名（格式示例：api.xxx.com、api.admin.xxx.com）
+     * @return 格式：api、api.admin；如果没有子域名，或者获取失败，返回null
+     */
+    private String getSubdomains(String domain) {
         if (IPUtils.hasIPv4(domain)) {
             return null;
         }
         if (!domain.contains(".")) {
             return null;
         }
-        return domain.split("\\.")[0];
+        String parseDomain = DomainHelper.getDomain(domain, null);
+        int endIndex = domain.lastIndexOf(parseDomain) - 1;
+        if (endIndex < 0) {
+            return null;
+        }
+        return domain.substring(0, endIndex);
     }
 
     /**
