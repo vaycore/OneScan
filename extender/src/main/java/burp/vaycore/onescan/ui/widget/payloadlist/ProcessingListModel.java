@@ -27,9 +27,10 @@ public class ProcessingListModel extends AbstractTableModel {
 
     public ProcessingListModel(List<ProcessingItem> data) {
         if (data == null) {
-            data = new ArrayList<>();
+            mData = new Vector<>();
+        } else {
+            mData = new Vector<>(data);
         }
-        mData = new Vector<>(data);
     }
 
     public void add(ProcessingItem item) {

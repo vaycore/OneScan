@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.onescan.bean.FpRule;
 import burp.vaycore.onescan.common.FpMethodHandler;
@@ -118,7 +119,7 @@ public class FpRulesPanel extends JPanel {
                     String value = (String) field.get(null);
                     result.add(value);
                 } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+                    Logger.error(e.getMessage());
                 }
             }
         }

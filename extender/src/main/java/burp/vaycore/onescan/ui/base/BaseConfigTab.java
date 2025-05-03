@@ -181,7 +181,8 @@ public abstract class BaseConfigTab extends BaseTab {
         });
         JPanel panel = new JPanel();
         panel.setLayout(new HLayout(5, true));
-        JComboBox<String> cb = new JComboBox<>(new Vector<>(WordlistManager.getItemList(configKey)));
+        Vector<String> items = new Vector<>(WordlistManager.getItemList(configKey));
+        JComboBox<String> cb = new JComboBox<>(items);
         cb.setSelectedItem(WordlistManager.getItem(configKey));
         cb.addPopupMenuListener(new PopupMenuListenerAdapter() {
             @Override

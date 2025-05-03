@@ -25,9 +25,10 @@ public class PayloadListModel extends AbstractTableModel {
 
     public PayloadListModel(List<PayloadItem> data) {
         if (data == null) {
-            data = new ArrayList<>();
+            mData = new Vector<>();
+        } else {
+            mData = new Vector<>(data);
         }
-        mData = new Vector<>(data);
     }
 
     public void add(PayloadItem item) {
