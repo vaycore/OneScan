@@ -86,17 +86,25 @@ C:\Users\<用户名>\.config\OneScan\
 
 ### 动态变量
 
-目前支持的动态变量如下（以目标：`http://www.xxxxxx.com:81/path/to/index.html` 为例，日期和时间以：`2030-08-09 07:08:09` 为例）：
+目前支持的动态变量如下（以目标：`http://api.admin.xxxxxx.com:81/path/to/index.html` 为例，日期和时间以：`2030-08-09 07:08:09` 为例）：
 
 ```text
 {{protocol}} - 请求头中的协议（格式：http）
-{{host}} - 请求头中的Host（格式：www.xxxxxx.com:81）
-{{domain}} - 请求头中不包含端口号的Host（格式：www.xxxxxx.com）
-{{domain.main}} - 主域名（格式：xxxxxx.com；如果是IP地址或无效格式，会自动跳过这条Payload）
-{{domain.name}} - 主域名的名称（格式：xxxxxx；如果是IP地址或无效格式，会自动跳过这条Payload）
-{{subdomain}} - 子域名动态变量（格式：www；只有主域名时：`xxxxxx.com` => `xxxxxx`）
-{{webroot}} - 一级目录动态变量（格式：path；不存在一级目录时，会自动跳过这条Payload）
-{{ip}} - 当前 {{domain}} 解析的IP地址（如果domain是IP地址，直接返回；解析失败时，会自动跳过这条Payload）
+{{host}} - 请求头中的Host（格式：api.admin.xxxxxx.com:81）
+{{webroot}} - 一级目录动态变量（格式：path；不存在一级目录时，忽略当前Payload）
+{{ip}} - 当前 {{domain}} 解析的IP地址（如果domain是IP地址，直接返回；解析失败时，忽略当前Payload）
+
+域名相关：
+{{domain}} - 请求头中不包含端口号的Host（格式：api.admin.xxxxxx.com）
+{{domain.main}} - 主域名（格式：xxxxxx.com；如果是IP地址或格式无效，忽略当前Payload）
+{{domain.name}} - 主域名的名称（格式：xxxxxx；如果是IP地址或格式无效，忽略当前Payload）
+
+子域名相关：
+{{subdomain}} - 子域名（格式：api；只有主域名时，忽略当前Payload）
+{{subdomains}} - 完整子域名（格式：api.admin；只有主域名时，忽略当前Payload）
+{{subdomains.%d}} - 完整子域名分段取值，其中 %d 表示数字类型（取值的下标），使用示例如下：
+    {{subdomains.0}}：取第一个子域名（格式：api；只有主域名时，忽略当前Payload）
+    {{subdomains.1}}：取第二个子域名（格式：admin；只有主域名或取值失败时，忽略当前Payload）
 
 随机值相关：
 {{random.ip}} - 随机IPv4值
