@@ -895,12 +895,18 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 填充子域名相关动态变量
             requestRaw = fillVariable(requestRaw, "subdomain", subdomain);
             requestRaw = fillVariable(requestRaw, "subdomains", subdomains);
-            if (requestRaw.contains("{{subdomains.") &&
-                    StringUtils.isNotEmpty(subdomains) && subdomains.contains(".")) {
+            if (requestRaw.contains("{{subdomains.")) {
+                if (StringUtils.isEmpty(subdomains)) {
+                    return null;
+                }
                 String[] subdomainsSplit = subdomains.split("\\.");
                 // 遍历填充 {{subdomains.%d}} 动态变量
                 for (int i = 0; i < subdomainsSplit.length; i++) {
                     requestRaw = fillVariable(requestRaw, "subdomains." + i, subdomainsSplit[i]);
+                }
+                // 检测是否存在未填充的 {{subdomains.%d}} 动态变量，如果存在，忽略当前 Payload
+                if (requestRaw.contains("{{subdomains.")) {
+                    return null;
                 }
             }
             // 填充随机值相关动态变量
