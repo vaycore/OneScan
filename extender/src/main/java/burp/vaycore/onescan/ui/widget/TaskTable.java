@@ -687,30 +687,30 @@ public class TaskTable extends JTable implements ActionListener {
             if (validItems.isEmpty()) {
                 return;
             }
-            SwingUtilities.invokeLater(() -> {
+            synchronized (this.mData) {
                 int firstRow = getRowCount();
                 this.mData.addAll(validItems);
                 int lastRow = getRowCount() - 1;
                 fireTableRowsInserted(firstRow, lastRow);
-            });
+            }
         }
 
         public void removeItems(List<TaskData> list) {
             if (list == null || list.isEmpty()) {
                 return;
             }
-            SwingUtilities.invokeLater(() -> {
+            synchronized (this.mData) {
                 this.mData.removeAll(list);
                 fireTableDataChanged();
-            });
+            }
         }
 
         public void clearAll() {
-            SwingUtilities.invokeLater(() -> {
+            synchronized (this.mData) {
                 mData.clear();
                 mCounter.set(0);
                 fireTableDataChanged();
-            });
+            }
         }
 
         @Override
