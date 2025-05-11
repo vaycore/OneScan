@@ -447,12 +447,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (url == null || StringUtils.isEmpty(url.getPath()) || "/".equals(url.getPath())) {
             return false;
         }
-        String suffix = Config.get(Config.KEY_EXCLUDE_SUFFIX);
-        String path = url.getPath();
+        // 统一转换为小写
+        String suffix = Config.get(Config.KEY_EXCLUDE_SUFFIX).toLowerCase();
+        String path = url.getPath().toLowerCase();
         if (StringUtils.isEmpty(suffix)) {
             return false;
         }
-        if (!suffix.contains("|") && path.endsWith(suffix)) {
+        // 配置中不存在多个过滤的后缀名，直接检测
+        if (!suffix.contains("|") && path.endsWith("." + suffix)) {
             return true;
         }
         String[] split = suffix.split("\\|");
