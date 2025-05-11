@@ -174,6 +174,7 @@ public class TaskTable extends JTable implements ActionListener {
         JPopupMenu menu = new JPopupMenu();
         addPopupMenuItem(menu, L.get("task_table_menu.get_body_md5"), "fetch-body-md5");
         addPopupMenuItem(menu, L.get("task_table_menu.get_body_hash"), "fetch-body-hash");
+        addPopupMenuItem(menu, L.get("task_table_menu.copy_url"), "copy-url");
         addPopupMenuItem(menu, L.get("task_table_menu.send_to_repeater"), "send-to-repeater");
         addPopupMenuItem(menu, L.get("task_table_menu.add_host_to_blocklist"), "add-to-black-host");
         addPopupMenuItem(menu, L.get("task_table_menu.delete_selected_items"), "remove-items");
@@ -347,36 +348,19 @@ public class TaskTable extends JTable implements ActionListener {
         switch (action) {
             case "fetch-body-md5":
             case "fetch-body-hash":
-                if (mOnTaskTableEventListener == null) {
-                    break;
-                }
-                String result = fetchDataByAction(action, selectedRows);
-                showTextAreaDialog(item.getText(), result);
+                doFetchBodyAction(action, selectedRows, item);
+                break;
+            case "copy-url":
+                doCopyUrl(selectedRows);
                 break;
             case "send-to-repeater":
-                ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
-                for (int index : selectedRows) {
-                    TaskData data = getTaskData(index);
-                    newData.add(data);
-                }
-                if (mOnTaskTableEventListener != null) {
-                    mOnTaskTableEventListener.onSendToRepeater(newData);
-                }
+                doSendToRepeater(selectedRows);
                 break;
             case "add-to-black-host":
-                if (mOnTaskTableEventListener == null) {
-                    break;
-                }
-                ArrayList<String> hosts = getSelectedHosts(selectedRows);
-                mOnTaskTableEventListener.addToBlackHost(hosts);
+                doAddToBlackHost(selectedRows);
                 break;
             case "remove-items":
-                ArrayList<TaskData> removeList = new ArrayList<>();
-                for (int index : selectedRows) {
-                    TaskData data = getTaskData(index);
-                    removeList.add(data);
-                }
-                mTaskTableModel.removeItems(removeList);
+                doRemoveItems(selectedRows);
                 break;
             case "clean-all":
                 clearAll();
@@ -392,13 +376,28 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     /**
+     * 处理菜单项 fetch-body- 事件
+     *
+     * @param action       事件名
+     * @param selectedRows 选中行
+     * @param item         菜单项组件实例（用于获取对话框标题）
+     */
+    private void doFetchBodyAction(String action, int[] selectedRows, JMenuItem item) {
+        if (mOnTaskTableEventListener == null) {
+            return;
+        }
+        String result = fetchBodyDataByAction(action, selectedRows);
+        showTextAreaDialog(item.getText(), result);
+    }
+
+    /**
      * 根据 action 获取数据
      *
-     * @param action       action
+     * @param action       事件名
      * @param selectedRows 选中行
      * @return 失败返回空字符串
      */
-    private String fetchDataByAction(String action, int[] selectedRows) {
+    private String fetchBodyDataByAction(String action, int[] selectedRows) {
         StringBuilder result = new StringBuilder();
         for (int index : selectedRows) {
             TaskData data = getTaskData(index);
@@ -419,6 +418,71 @@ public class TaskTable extends JTable implements ActionListener {
             result.append(String.format("#%d：\n%s", data.getId(), value));
         }
         return result.toString();
+    }
+
+    /**
+     * 将选中行的 URL，复制到剪切板
+     *
+     * @param selectedRows 选中行
+     */
+    private void doCopyUrl(int[] selectedRows) {
+        StringBuilder sb = new StringBuilder();
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            if (data == null) {
+                return;
+            }
+            // 以换行区分
+            if (StringUtils.isNotEmpty(sb)) {
+                sb.append("\n");
+            }
+            String url = data.getHost() + data.getUrl();
+            sb.append(url);
+        }
+        Utils.setSysClipboardText(sb.toString());
+    }
+
+    /**
+     * 将选中的数据发送到 BurpSuite 的 Repeater 模块
+     *
+     * @param selectedRows 选中行
+     */
+    private void doSendToRepeater(int[] selectedRows) {
+        ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            newData.add(data);
+        }
+        if (mOnTaskTableEventListener != null) {
+            mOnTaskTableEventListener.onSendToRepeater(newData);
+        }
+    }
+
+    /**
+     * 将选中行的 Host 添加到黑名单
+     *
+     * @param selectedRows 选中行
+     */
+    private void doAddToBlackHost(int[] selectedRows) {
+        if (mOnTaskTableEventListener == null) {
+            return;
+        }
+        ArrayList<String> hosts = getSelectedHosts(selectedRows);
+        mOnTaskTableEventListener.addToBlackHost(hosts);
+    }
+
+    /**
+     * 从列表中删除选中行的数据
+     *
+     * @param selectedRows 选中行
+     */
+    private void doRemoveItems(int[] selectedRows) {
+        ArrayList<TaskData> removeList = new ArrayList<>();
+        for (int index : selectedRows) {
+            TaskData data = getTaskData(index);
+            removeList.add(data);
+        }
+        mTaskTableModel.removeItems(removeList);
     }
 
     /**
