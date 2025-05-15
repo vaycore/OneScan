@@ -1,6 +1,5 @@
 package burp;
 
-import burp.hae.HaE;
 import burp.vaycore.common.helper.DomainHelper;
 import burp.vaycore.common.helper.QpsLimiter;
 import burp.vaycore.common.helper.UIHelper;
@@ -86,8 +85,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         initView();
         initEvent();
         Logger.debug("register Extender ok! Log: %b", Constants.DEBUG);
-        // 加载HaE插件
-        HaE.loadPlugin(Config.getFilePath(Config.KEY_HAE_PLUGIN_PATH));
     }
 
     private void initData(IBurpExtenderCallbacks callbacks) {
@@ -103,8 +100,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         Config.init(getWorkDir());
         // 初始化域名辅助类
         DomainHelper.init("public_suffix_list.json");
-        // 初始化HaE插件
-        HaE.init(this);
         // 初始化QPS限制器
         initQpsLimiter();
         // 注册 OneScan 信息辅助面板
@@ -652,8 +647,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 // 发起请求
                 byte[] newReqRawBytes = mHelpers.stringToBytes(reqRaw);
                 IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, newReqRawBytes, retryCount);
-                // HaE提取信息
-                HaE.processHttpMessage(newReqResp);
                 // 构建展示的数据包
                 TaskData data = buildTaskData(newReqResp);
                 // 用于过滤代理数据包
@@ -1174,7 +1167,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 length = 0;
             }
         }
-        String comment = httpReqResp.getComment();
         // 检测指纹数据
         List<FpData> fpDataList = FpManager.check(httpReqResp.getResponse());
         // 构建表格对象
@@ -1186,10 +1178,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         data.setIp(ip);
         data.setStatus(status);
         data.setLength(length);
-        data.setComment(comment);
         data.setFingerprint(FpManager.listToNames(fpDataList));
         data.setReqResp(httpReqResp);
-        data.setHighlight(httpReqResp.getHighlight());
         return data;
     }
 
@@ -1499,8 +1489,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public void extensionUnloaded() {
-        // 卸载 HaE 插件
-        HaE.unloadPlugin();
         // 移除代理监听器
         mCallbacks.removeProxyListener(this);
         // 移除插件卸载监听器

@@ -36,7 +36,6 @@ public class Config {
     public static final String KEY_MAX_DISPLAY_LENGTH = "max-display-length";
     public static final String KEY_COLLECT_PATH = "collect-path";
     public static final String KEY_EXCLUDE_SUFFIX = "exclude-suffix";
-    public static final String KEY_HAE_PLUGIN_PATH = "hae-plugin-path";
     public static final String KEY_INCLUDE_METHOD = "include-method";
     public static final String KEY_WORDLIST_PATH = "dict-path";
     public static final String KEY_DATABOARD_FILTER_RULES = "databoard-filter-rules";
@@ -153,6 +152,10 @@ public class Config {
             String enable = get("exclude-headers");
             sConfigManager.put(WordlistManager.KEY_REMOVE_HEADERS, enable);
             sConfigManager.remove("exclude-headers");
+        }
+        // 将 hae-plugin-path 配置项删除
+        if (hasKey("hae-plugin-path")) {
+            sConfigManager.remove("hae-plugin-path");
         }
     }
 
