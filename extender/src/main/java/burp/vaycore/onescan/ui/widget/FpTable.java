@@ -12,6 +12,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -28,6 +29,13 @@ public class FpTable extends JTable {
         this.setModel(this.mTableModel);
         this.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         this.mTableRowSorter = new TableRowSorter<>(this.mTableModel);
+        // 颜色字段等级排序（固定最后一列为颜色等级）
+        int comparatorColumn = FpTableModel.COLUMN_NAMES.length - 1;
+        this.mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
+            int leftLevel = getColorLevel(left);
+            int rightLevel = getColorLevel(right);
+            return Integer.compare(leftLevel, rightLevel);
+        });
         this.setRowSorter(this.mTableRowSorter);
         this.getTableHeader().setReorderingAllowed(false);
         this.initColumnWidth();
@@ -102,6 +110,17 @@ public class FpTable extends JTable {
         } else {
             return null;
         }
+    }
+
+    /**
+     * 根据颜色名，获取颜色等级
+     *
+     * @param colorName 颜色名
+     * @return 颜色等级
+     */
+    private static int getColorLevel(String colorName) {
+        int level = FpManager.findColorLevelByName(colorName);
+        return FpManager.sColorNames.length - level;
     }
 
     public static class FpTableModel extends AbstractTableModel {
