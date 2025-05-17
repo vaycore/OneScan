@@ -10,6 +10,7 @@ import burp.vaycore.common.utils.JsonUtils;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.manager.FpManager;
+import burp.vaycore.onescan.ui.widget.FpTestResultPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,107 +24,119 @@ import java.util.Vector;
  * Created by vaycore on 2023-04-21.
  */
 public class OneScanInfoTab implements IMessageEditorTab {
-   
-   private final IExtensionHelpers mHelpers;
-   private final JTabbedPane mTabPanel;
-   private JList<String> mJsonKeyList;
-   private JList<String> mFpNameList;
 
-   public OneScanInfoTab(IBurpExtenderCallbacks callbacks) {
-      mHelpers = callbacks.getHelpers();
-      mTabPanel = new JTabbedPane();
-   }
+    private final IExtensionHelpers mHelpers;
+    private final JTabbedPane mTabPanel;
+    private JList<String> mJsonKeyList;
+    private JList<String> mFpNameList;
 
-   public String getTabCaption() {
-      return "OneScan";
-   }
+    public OneScanInfoTab(IBurpExtenderCallbacks callbacks) {
+        mHelpers = callbacks.getHelpers();
+        mTabPanel = new JTabbedPane();
+    }
 
-   public Component getUiComponent() {
-      return mTabPanel;
-   }
+    public String getTabCaption() {
+        return "OneScan";
+    }
 
-   public boolean isEnabled(byte[] content, boolean isRequest) {
-      boolean hasJsonEnabled = hasBody(content) && JsonUtils.hasJson(getBody(content));
-      if (isRequest) {
-         return hasJsonEnabled;
-      }
-      List<FpData> fpData = FpManager.check(content);
-      return hasJsonEnabled || !fpData.isEmpty();
-   }
+    public Component getUiComponent() {
+        return mTabPanel;
+    }
 
-   public void setMessage(byte[] content, boolean isRequest) {
-      mTabPanel.removeAll();
-      if (!isRequest) {
-         List<FpData> fpData = FpManager.check(content);
-         if (!fpData.isEmpty()) {
-            mTabPanel.addTab("Fingerprint", newFpPanel(fpData));
-         }
-      }
-      String body = getBody(content);
-      boolean hasJsonEnabled = hasBody(content) && JsonUtils.hasJson(body);
-      if (hasJsonEnabled) {
-         ArrayList<String> keys = JsonUtils.findAllKeysByJson(body);
-         mTabPanel.addTab("Json", newJsonInfoPanel(keys));
-      }
-   }
+    public boolean isEnabled(byte[] content, boolean isRequest) {
+        boolean hasJsonEnabled = hasBody(content) && JsonUtils.hasJson(getBody(content));
+        boolean hasFingerprint = false;
+        if (isRequest && FpManager.getHistoryCount() > 0) {
+            String host = getRequestHost(content);
+            if (host != null) {
+                List<FpData> list = FpManager.findHistoryByHost(host);
+                hasFingerprint = list != null && !list.isEmpty();
+            }
+        }
+        if (isRequest && !hasFingerprint) {
+            List<FpData> results = FpManager.check(content, null);
+            hasFingerprint = results != null && !results.isEmpty();
+        }
+        return hasJsonEnabled || hasFingerprint;
+    }
 
-   private JPanel newJsonInfoPanel(ArrayList<String> keys) {
-      JPanel panel = new JPanel();
-      panel.setLayout(new VLayout());
-      mJsonKeyList = new JList<>(new Vector<>(keys));
-      UIHelper.setListCellRenderer(mJsonKeyList);
-      JScrollPane scrollPane = new JScrollPane(mJsonKeyList);
-      panel.add(scrollPane, "1w");
-      return panel;
-   }
+    public void setMessage(byte[] content, boolean isRequest) {
+        mTabPanel.removeAll();
+        if (isRequest) {
+            List<FpData> list = FpManager.check(content, null);
+            if (list != null && !list.isEmpty()) {
+                mTabPanel.addTab("Fingerprint", new FpTestResultPanel(list));
+            }
+        }
+        if (isRequest && FpManager.getHistoryCount() > 0) {
+            String host = getRequestHost(content);
+            List<FpData> list = FpManager.findHistoryByHost(host);
+            if (list != null && !list.isEmpty()) {
+                mTabPanel.addTab("Fingerprint-History", new FpTestResultPanel(list));
+            }
+        }
+        String body = getBody(content);
+        boolean hasJsonEnabled = hasBody(content) && JsonUtils.hasJson(body);
+        if (hasJsonEnabled) {
+            ArrayList<String> keys = JsonUtils.findAllKeysByJson(body);
+            mTabPanel.addTab("Json", newJsonInfoPanel(keys));
+        }
+    }
 
-   private JPanel newFpPanel(List<FpData> fpData) {
-      JPanel panel = new JPanel();
-      panel.setLayout(new VLayout());
-      String names = FpManager.listToNames(fpData);
-      if (StringUtils.isNotEmpty(names)) {
-         String[] data = names.split(",");
-         mFpNameList = new JList<>(data);
-         UIHelper.setListCellRenderer(mFpNameList);
-         JScrollPane scrollPane = new JScrollPane(mFpNameList);
-         panel.add(scrollPane, "1w");
-      }
-      return panel;
-   }
+    private JPanel newJsonInfoPanel(ArrayList<String> keys) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new VLayout());
+        mJsonKeyList = new JList<>(new Vector<>(keys));
+        UIHelper.setListCellRenderer(mJsonKeyList);
+        JScrollPane scrollPane = new JScrollPane(mJsonKeyList);
+        panel.add(scrollPane, "1w");
+        return panel;
+    }
 
-   public byte[] getMessage() {
-      return new byte[0];
-   }
+    public byte[] getMessage() {
+        return new byte[0];
+    }
 
-   public boolean isModified() {
-      return false;
-   }
+    public boolean isModified() {
+        return false;
+    }
 
-   public byte[] getSelectedData() {
-      int index = mTabPanel.getSelectedIndex();
-      String title = mTabPanel.getTitleAt(index);
-      List<String> keys;
-      if ("Fingerprint".equals(title)) {
-         keys = mFpNameList.getSelectedValuesList();
-         return mHelpers.stringToBytes(StringUtils.join(keys, "\n"));
-      } else if ("Json".equals(title)) {
-         keys = mJsonKeyList.getSelectedValuesList();
-         return mHelpers.stringToBytes(StringUtils.join(keys, "\n"));
-      }
-      return new byte[0];
-   }
+    public byte[] getSelectedData() {
+        int index = mTabPanel.getSelectedIndex();
+        String title = mTabPanel.getTitleAt(index);
+        List<String> keys;
+        if ("Fingerprint".equals(title)) {
+            keys = mFpNameList.getSelectedValuesList();
+            return mHelpers.stringToBytes(StringUtils.join(keys, "\n"));
+        } else if ("Json".equals(title)) {
+            keys = mJsonKeyList.getSelectedValuesList();
+            return mHelpers.stringToBytes(StringUtils.join(keys, "\n"));
+        }
+        return new byte[0];
+    }
 
-   private boolean hasBody(byte[] content) {
-      IRequestInfo info = mHelpers.analyzeRequest(content);
-      int bodyOffset = info.getBodyOffset();
-      int bodySize = content.length - bodyOffset;
-      return bodySize > 0;
-   }
+    private boolean hasBody(byte[] content) {
+        IRequestInfo info = mHelpers.analyzeRequest(content);
+        int bodyOffset = info.getBodyOffset();
+        int bodySize = content.length - bodyOffset;
+        return bodySize > 0;
+    }
 
-   private String getBody(byte[] content) {
-      IRequestInfo info = mHelpers.analyzeRequest(content);
-      int bodyOffset = info.getBodyOffset();
-      int bodySize = content.length - bodyOffset;
-      return new String(content, bodyOffset, bodySize);
-   }
+    private String getBody(byte[] content) {
+        IRequestInfo info = mHelpers.analyzeRequest(content);
+        int bodyOffset = info.getBodyOffset();
+        int bodySize = content.length - bodyOffset;
+        return new String(content, bodyOffset, bodySize);
+    }
+
+    private String getRequestHost(byte[] content) {
+        IRequestInfo info = mHelpers.analyzeRequest(content);
+        List<String> headers = info.getHeaders();
+        for (String header : headers) {
+            if (header.startsWith("Host: ")) {
+                return header.replace("Host: ", "");
+            }
+        }
+        return null;
+    }
 }

@@ -5,10 +5,11 @@ import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.bean.FpRule;
 import burp.vaycore.onescan.common.L;
-import burp.vaycore.onescan.common.NumberFilter;
+import burp.vaycore.onescan.manager.FpManager;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -26,13 +27,13 @@ public class FpDetailPanel extends JPanel implements ActionListener {
 
     private boolean hasCreate;
     private final FpData mData;
-    private JTextField mName;
-    private JTextField mCompany;
+    private JTextField mApplication;
+    private JTextField mWebServer;
+    private JTextField mOS;
     private JTextField mLang;
-    private JTextField mSoftHard;
-    private JTextField mFrame;
-    private JTextField mParentCategory;
-    private JTextField mCategory;
+    private JTextField mFramework;
+    private JTextField mDescription;
+    private JComboBox<String> mColor;
     private DefaultListModel<String> mRulesListModel;
     private JList<String> mRulesListView;
 
@@ -64,13 +65,13 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         if (this.hasCreate) {
             return;
         }
-        mName.setText(mData.getName());
-        mCompany.setText(mData.getCompany());
+        mApplication.setText(mData.getApplication());
+        mWebServer.setText(mData.getWebserver());
+        mOS.setText(mData.getOS());
         mLang.setText(mData.getLang());
-        mSoftHard.setText(mData.getSoftHard());
-        mFrame.setText(mData.getFrame());
-        mParentCategory.setText(mData.getParentCategory());
-        mCategory.setText(mData.getCategory());
+        mFramework.setText(mData.getFramework());
+        mDescription.setText(mData.getDescription());
+        mColor.setSelectedItem(mData.getColor());
         ArrayList<ArrayList<FpRule>> rules = mData.getRules();
         for (ArrayList<FpRule> fpRules : rules) {
             String ruleItem = this.parseFpRulesToStr(fpRules);
@@ -79,24 +80,34 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     }
 
     private void addInputPanel() {
-        mName = this.addInputItem(L.get("fingerprint_table_columns.name"));
-        mCompany = this.addInputItem(L.get("fingerprint_table_columns.company"));
+        mApplication = this.addInputItem(L.get("fingerprint_table_columns.application"));
+        mWebServer = this.addInputItem(L.get("fingerprint_table_columns.webserver"));
+        mOS = this.addInputItem(L.get("fingerprint_table_columns.os"));
         mLang = this.addInputItem(L.get("fingerprint_table_columns.lang"));
-        mSoftHard = this.addInputItem(L.get("fingerprint_table_columns.soft_hard"));
-        mSoftHard.addKeyListener(new NumberFilter());
-        mFrame = this.addInputItem(L.get("fingerprint_table_columns.frame"));
-        mParentCategory = this.addInputItem(L.get("fingerprint_table_columns.parent_category"));
-        mCategory = this.addInputItem(L.get("fingerprint_table_columns.category"));
+        mFramework = this.addInputItem(L.get("fingerprint_table_columns.framework"));
+        mDescription = this.addInputItem(L.get("fingerprint_table_columns.description"));
+        mColor = this.addComboBoxItem(L.get("fingerprint_table_columns.color"));
     }
 
     private JTextField addInputItem(String label) {
         JPanel panel = new JPanel();
         panel.setLayout(new HLayout(2, true));
-        panel.add(new JLabel(label + "："), "105px");
-        JTextField textField = new JTextField(25);
-        panel.add(textField);
+        panel.add(new JLabel(label + "："), "98px");
+        HintTextField textField = new HintTextField();
+        textField.setHintText(L.get("optional"));
+        panel.add(textField, "1w");
         this.add(panel);
         return textField;
+    }
+
+    private JComboBox<String> addComboBoxItem(String label) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new HLayout(2, true));
+        panel.add(new JLabel(label + "："), "98px");
+        JComboBox<String> comboBox = new JComboBox<>(FpManager.sColorNames);
+        panel.add(comboBox, "1w");
+        this.add(panel);
+        return comboBox;
     }
 
     private void addRulesPanel() {
@@ -202,7 +213,7 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         ArrayList<String> ruleItems = new ArrayList<>();
         for (FpRule rule : rules) {
             String content = rule.getContent().replace("\"", "\\\"");
-            String sb = rule.getMatch() + "." + rule.getMethod() + "(\"" + content + "\")";
+            String sb = rule.getDataSource() + "." + rule.getField() + "." + rule.getMethod() + "(\"" + content + "\")";
             ruleItems.add(sb);
         }
         return StringUtils.join(ruleItems, " && ");
@@ -213,40 +224,24 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         if (state != JOptionPane.OK_OPTION) {
             return null;
         }
-        String name = mName.getText();
-        String company = mCompany.getText();
+        String application = mApplication.getText();
+        String webserver = mWebServer.getText();
+        String os = mOS.getText();
         String lang = mLang.getText();
-        String softHard = mSoftHard.getText();
-        String frame = mFrame.getText();
-        String parentCategory = mParentCategory.getText();
-        String category = mCategory.getText();
-        if (StringUtils.isEmpty(name)) {
-            UIHelper.showTipsDialog(L.get("fingerprint_detail.name_empty_hint"));
-            return this.showDialog();
-        }
+        String framework = mFramework.getText();
+        String description = mDescription.getText();
+        String color = String.valueOf(mColor.getSelectedItem());
         if (mData.getRules() == null || mData.getRules().isEmpty()) {
             UIHelper.showTipsDialog(L.get("fingerprint_detail.rules_empty_hint"));
             return this.showDialog();
         }
-        if (StringUtils.isEmpty(company)) {
-            company = "Other";
-        }
-        if (StringUtils.isEmpty(softHard)) {
-            softHard = "0";
-        }
-        if (StringUtils.isEmpty(parentCategory)) {
-            parentCategory = "Other";
-        }
-        if (StringUtils.isEmpty(category)) {
-            category = "Other";
-        }
-        mData.setName(name);
-        mData.setCompany(company);
+        mData.setApplication(application);
+        mData.setWebserver(webserver);
+        mData.setOS(os);
         mData.setLang(lang);
-        mData.setSoftHard(softHard);
-        mData.setFrame(frame);
-        mData.setParentCategory(parentCategory);
-        mData.setCategory(category);
+        mData.setFramework(framework);
+        mData.setDescription(description);
+        mData.setColor(color);
         return mData;
     }
 }

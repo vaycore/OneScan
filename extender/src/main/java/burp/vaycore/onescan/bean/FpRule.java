@@ -1,6 +1,13 @@
 package burp.vaycore.onescan.bean;
 
+import burp.vaycore.onescan.common.FpMethodHandler;
+
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 指纹规则
@@ -10,44 +17,14 @@ import java.io.Serializable;
 public class FpRule implements Serializable {
 
     /**
-     * Header
+     * 数据源
      */
-    public static final String MATCH_HEADER = "header";
-
-    /**
-     * Header 中的 Server 值
-     */
-    public static final String MATCH_SERVER = "server";
-
-    /**
-     * Body 数据
-     */
-    public static final String MATCH_BODY = "body";
-
-    /**
-     * Html 标题
-     */
-    public static final String MATCH_TITLE = "title";
-
-    /**
-     * Body 数据的 MD5 值
-     */
-    public static final String MATCH_BODY_MD5 = "bodyMd5";
-
-    /**
-     * Body 数据的 Hash 值
-     */
-    public static final String MATCH_BODY_HASH = "bodyHash";
-
-    /**
-     * 其它协议的 Banner 值
-     */
-    public static final String MATCH_BANNER = "banner";
+    private String dataSource;
 
     /**
      * 匹配字段
      */
-    private String match;
+    private String field;
 
     /**
      * 匹配方法
@@ -59,16 +36,24 @@ public class FpRule implements Serializable {
      */
     private String content;
 
-    public String getMatch() {
-        return this.match;
+    public String getDataSource() {
+        return dataSource;
     }
 
-    public void setMatch(String match) {
-        this.match = match;
+    public void setDataSource(String dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public String getField() {
+        return field;
+    }
+
+    public void setField(String field) {
+        this.field = field;
     }
 
     public String getMethod() {
-        return this.method;
+        return method;
     }
 
     public void setMethod(String method) {
@@ -76,10 +61,47 @@ public class FpRule implements Serializable {
     }
 
     public String getContent() {
-        return this.content;
+        return content;
     }
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    /**
+     * 获取所有数据源
+     *
+     * @return 失败返回空列表
+     */
+    public static List<String> getDataSources() {
+        List<Field> fields = FpDSProvider.getClassFields(FpDSProvider.class);
+        return fields.stream().map(Field::getName).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取数据源下面的所有字段名
+     *
+     * @return 失败返回空列表
+     */
+    public static List<String> getFieldsByDataSource(String dataSource) {
+        List<String> result = new ArrayList<>();
+        List<Field> fields = FpDSProvider.getClassFields(FpDSProvider.class);
+        Field field = fields.stream().filter(f -> f.getName().equals(dataSource))
+                .findFirst().orElse(null);
+        if (field == null) {
+            return result;
+        }
+        List<Field> dataSourceClassFields = FpDSProvider.getClassFields(field.getType());
+        return dataSourceClassFields.stream().map(Field::getName).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取所有匹配方法
+     *
+     * @return 失败返回空列表
+     */
+    public static List<String> getMethods() {
+        String[] methods = FpMethodHandler.METHOD_ITEMS;
+        return Arrays.asList(methods);
     }
 }

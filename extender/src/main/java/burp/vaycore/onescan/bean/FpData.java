@@ -1,7 +1,10 @@
 package burp.vaycore.onescan.bean;
 
+import burp.vaycore.common.utils.StringUtils;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * 指纹数据
@@ -10,107 +13,155 @@ import java.util.ArrayList;
  */
 public class FpData implements Serializable {
 
-   /**
-    * 指纹名称（产品名）
-    */
-   private String name;
+    /**
+     * 应用程序
+     */
+    private String application;
 
-   /**
-    * 产品公司
-    */
-   private String company;
+    /**
+     * Web服务器
+     */
+    private String webserver;
 
-   /**
-    * 编程语言
-    */
-   private String lang;
+    /**
+     * 操作系统
+     */
+    private String os;
 
-   /**
-    * 软硬件（0=其它；1=硬件；2=软件）
-    */
-   private String softHard;
+    /**
+     * 编程语言
+     */
+    private String lang;
 
-   /**
-    * 产品使用的开发框架
-    */
-   private String frame;
+    /**
+     * 开发框架
+     */
+    private String framework;
 
-   /**
-    * 父类别
-    */
-   private String parentCategory;
+    /**
+     * 描述信息
+     */
+    private String description;
 
-   /**
-    * 类别
-    */
-   private String category;
+    /**
+     * 颜色
+     */
+    private String color;
 
-   /**
-    * 指纹规则
-    */
-   private ArrayList<ArrayList<FpRule>> rules;
+    /**
+     * 指纹规则
+     */
+    private ArrayList<ArrayList<FpRule>> rules;
 
-   public String getName() {
-      return this.name;
-   }
+    public String getApplication() {
+        return application;
+    }
 
-   public void setName(String name) {
-      this.name = name;
-   }
+    public void setApplication(String application) {
+        this.application = application;
+    }
 
-   public String getLang() {
-      return this.lang;
-   }
+    public String getWebserver() {
+        return webserver;
+    }
 
-   public void setLang(String lang) {
-      this.lang = lang;
-   }
+    public void setWebserver(String webserver) {
+        this.webserver = webserver;
+    }
 
-   public String getFrame() {
-      return this.frame;
-   }
+    public String getOS() {
+        return os;
+    }
 
-   public void setFrame(String frame) {
-      this.frame = frame;
-   }
+    public void setOS(String os) {
+        this.os = os;
+    }
 
-   public String getCompany() {
-      return this.company;
-   }
+    public String getLang() {
+        return lang;
+    }
 
-   public void setCompany(String company) {
-      this.company = company;
-   }
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
 
-   public String getSoftHard() {
-      return this.softHard;
-   }
+    public String getFramework() {
+        return framework;
+    }
 
-   public void setSoftHard(String softHard) {
-      this.softHard = softHard;
-   }
+    public void setFramework(String framework) {
+        this.framework = framework;
+    }
 
-   public String getCategory() {
-      return this.category;
-   }
+    public String getDescription() {
+        return description;
+    }
 
-   public void setCategory(String category) {
-      this.category = category;
-   }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-   public String getParentCategory() {
-      return this.parentCategory;
-   }
+    public String getColor() {
+        return color;
+    }
 
-   public void setParentCategory(String parentCategory) {
-      this.parentCategory = parentCategory;
-   }
+    public void setColor(String color) {
+        this.color = color;
+    }
 
-   public ArrayList<ArrayList<FpRule>> getRules() {
-      return this.rules;
-   }
+    public ArrayList<ArrayList<FpRule>> getRules() {
+        return this.rules;
+    }
 
-   public void setRules(ArrayList<ArrayList<FpRule>> rules) {
-      this.rules = rules;
-   }
+    public void setRules(ArrayList<ArrayList<FpRule>> rules) {
+        this.rules = rules;
+    }
+
+    public String toInfo() {
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.isNotEmpty(this.application)) {
+            sb.append("App=").append(this.application).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.webserver)) {
+            sb.append("WebServer=").append(this.webserver).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.os)) {
+            sb.append("OS=").append(this.os).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.lang)) {
+            sb.append("Lang=").append(this.lang).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.framework)) {
+            sb.append("Frame=").append(this.framework).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.description)) {
+            sb.append("Desc=").append(this.description).append(", ");
+        }
+        if (StringUtils.isNotEmpty(this.color)) {
+            sb.append("Color=").append(this.color).append(", ");
+        }
+        if (StringUtils.isEmpty(sb)) {
+            return "";
+        }
+        return sb.substring(0, sb.lastIndexOf(", "));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        FpData fpData = (FpData) o;
+        return Objects.equals(application, fpData.application) &&
+                Objects.equals(webserver, fpData.webserver) &&
+                Objects.equals(os, fpData.os) &&
+                Objects.equals(lang, fpData.lang) &&
+                Objects.equals(framework, fpData.framework) &&
+                Objects.equals(description, fpData.description) &&
+                Objects.equals(color, fpData.color) &&
+                Objects.equals(rules, fpData.rules);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(application, webserver, os, lang, framework, description, color, rules);
+    }
 }

@@ -35,25 +35,26 @@ public class FpTable extends JTable {
     }
 
     public void loadData() {
-        ArrayList<FpData> list = FpManager.getList();
+        List<FpData> list = FpManager.getList();
         this.mTableModel.setData(list);
     }
 
     public void reloadData() {
         String path = FpManager.getPath();
         FpManager.init(path);
-        ArrayList<FpData> list = FpManager.getList();
+        List<FpData> list = FpManager.getList();
         this.mTableModel.setData(list);
     }
 
     private void initColumnWidth() {
-        this.setColumnWidth(0, 125);
+        this.setColumnWidth(0, 70);
         this.setColumnWidth(1, 150);
-        this.setColumnWidth(2, 70);
-        this.setColumnWidth(3, 70);
+        this.setColumnWidth(2, 150);
+        this.setColumnWidth(3, 150);
         this.setColumnWidth(4, 150);
         this.setColumnWidth(5, 150);
         this.setColumnWidth(6, 150);
+        this.setColumnWidth(7, 70);
     }
 
     private void setColumnWidth(int columnIndex, int width) {
@@ -106,13 +107,14 @@ public class FpTable extends JTable {
     public static class FpTableModel extends AbstractTableModel {
 
         public static final String[] COLUMN_NAMES = new String[]{
-                L.get("fingerprint_table_columns.name"),
-                L.get("fingerprint_table_columns.company"),
+                L.get("fingerprint_table_columns.id"),
+                L.get("fingerprint_table_columns.application"),
+                L.get("fingerprint_table_columns.webserver"),
+                L.get("fingerprint_table_columns.os"),
                 L.get("fingerprint_table_columns.lang"),
-                L.get("fingerprint_table_columns.soft_hard"),
-                L.get("fingerprint_table_columns.frame"),
-                L.get("fingerprint_table_columns.parent_category"),
-                L.get("fingerprint_table_columns.category"),
+                L.get("fingerprint_table_columns.framework"),
+                L.get("fingerprint_table_columns.description"),
+                L.get("fingerprint_table_columns.color"),
         };
         private final ArrayList<FpData> mData = new ArrayList<>();
 
@@ -164,6 +166,11 @@ public class FpTable extends JTable {
         }
 
         public Object getValueAt(int rowIndex, int columnIndex) {
+            if (columnIndex == 0) {
+                return rowIndex;
+            } else {
+                columnIndex -= 1;
+            }
             FpData data = this.mData.get(rowIndex);
             return ClassUtils.getValueByFieldId(data, columnIndex);
         }

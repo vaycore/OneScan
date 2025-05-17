@@ -4,17 +4,15 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
-import burp.vaycore.common.log.Logger;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.onescan.bean.FpRule;
-import burp.vaycore.onescan.common.FpMethodHandler;
 import burp.vaycore.onescan.common.L;
 
 import javax.swing.*;
 import java.awt.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.awt.event.ItemEvent;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -76,54 +74,70 @@ public class FpRulesPanel extends JPanel {
     }
 
     private void addRuleItem(FpRule rule) {
-        String match = "";
+        String dataSource = "";
+        String field = "";
         String method = "";
         String content = "";
         if (rule != null) {
-            match = rule.getMatch();
+            dataSource = rule.getDataSource();
+            field = rule.getField();
             method = rule.getMethod();
             content = rule.getContent();
         }
-
+        // 布局
         JPanel panel = new JPanel();
         mRulesPanel.add(panel);
         panel.setLayout(new HLayout(5, true));
-        JComboBox<String> matchBox = new JComboBox<>(genMatchItems());
-        matchBox.setSelectedItem(match);
-        panel.add(matchBox);
+        // 数据源组件
+        JComboBox<String> dataSourceBox = new JComboBox<>(genDataSourceItems());
+        dataSourceBox.setSelectedItem(dataSource);
+        panel.add(dataSourceBox);
+        // 数据字段组件
+        JComboBox<String> fieldBox = new JComboBox<>(genDataFieldItems(dataSource));
+        fieldBox.setSelectedItem(field);
+        panel.add(fieldBox);
+        // 匹配方法组件
         JComboBox<String> methodBox = new JComboBox<>(genMethodItems());
         methodBox.setSelectedItem(method);
         panel.add(methodBox);
+        // 输入框组件
         JTextField input = new JTextField(content);
         panel.add(input, "1w");
+        // 删除按钮组件
         JButton delBtn = new JButton("X");
         panel.add(delBtn, "40px");
+        // 事件处理
         delBtn.addActionListener((e) -> {
             mRulesPanel.remove(panel);
             UIHelper.refreshUI(mRulesScrollPanel);
         });
+        dataSourceBox.addItemListener((e) -> {
+            if (e.getStateChange() == ItemEvent.DESELECTED) {
+                return;
+            }
+            String dataSourceItem = String.valueOf(e.getItem());
+            Vector<String> items = genDataFieldItems(dataSourceItem);
+            fieldBox.setModel(new DefaultComboBoxModel<>(items));
+        });
     }
 
-    private Vector<String> genMatchItems() {
+    private Vector<String> genDataSourceItems() {
         if (mMatchItems != null) {
             return mMatchItems;
         }
-        Field[] fields = FpRule.class.getDeclaredFields();
         Vector<String> result = new Vector<>();
         result.add(L.get("fingerprint_rules.data_source"));
-        for (Field field : fields) {
-            field.setAccessible(true);
-            String name = field.getName();
-            if (name.startsWith("MATCH_")) {
-                try {
-                    String value = (String) field.get(null);
-                    result.add(value);
-                } catch (IllegalAccessException e) {
-                    Logger.error(e.getMessage());
-                }
-            }
-        }
+        List<String> dataSources = FpRule.getDataSources();
+        result.addAll(dataSources);
         mMatchItems = result;
+        return result;
+    }
+
+    private Vector<String> genDataFieldItems(String dataSource) {
+        Vector<String> result = new Vector<>();
+        result.add(L.get("fingerprint_rules.data_field"));
+        List<String> fields = FpRule.getFieldsByDataSource(dataSource);
+        result.addAll(fields);
         return result;
     }
 
@@ -131,13 +145,10 @@ public class FpRulesPanel extends JPanel {
         if (mMethodItems != null) {
             return mMethodItems;
         } else {
-            Method[] methods = FpMethodHandler.class.getDeclaredMethods();
             Vector<String> result = new Vector<>();
             result.add(L.get("fingerprint_rules.match_method"));
-            for (Method method : methods) {
-                String name = method.getName();
-                result.add(name);
-            }
+            List<String> methods = FpRule.getMethods();
+            result.addAll(methods);
             mMethodItems = result;
             return result;
         }
@@ -148,19 +159,26 @@ public class FpRulesPanel extends JPanel {
         int ruleCount = mRulesPanel.getComponentCount();
         for (int i = 0; i < ruleCount; i++) {
             JPanel panel = (JPanel) mRulesPanel.getComponent(i);
-            JComboBox<String> matchBox = (JComboBox) panel.getComponent(0);
-            int matchIndex = matchBox.getSelectedIndex();
-            JComboBox<String> methodBox = (JComboBox) panel.getComponent(1);
+            // 数据源
+            JComboBox<String> dataSourceBox = (JComboBox) panel.getComponent(0);
+            int dataSourceIndex = dataSourceBox.getSelectedIndex();
+            // 数据字段
+            JComboBox<String> fieldBox = (JComboBox) panel.getComponent(1);
+            int fieldIndex = fieldBox.getSelectedIndex();
+            // 匹配方法
+            JComboBox<String> methodBox = (JComboBox) panel.getComponent(2);
             int methodIndex = methodBox.getSelectedIndex();
-            JTextField input = (JTextField) panel.getComponent(2);
-            if (matchIndex == 0 || methodIndex == 0) {
+            JTextField input = (JTextField) panel.getComponent(3);
+            if (dataSourceIndex == 0 || fieldIndex == 0 || methodIndex == 0) {
                 continue;
             }
-            String match = genMatchItems().get(matchIndex);
+            String dataSource = genDataSourceItems().get(dataSourceIndex);
+            String field = genDataFieldItems(dataSource).get(fieldIndex);
             String method = genMethodItems().get(methodIndex);
             String value = input.getText();
             FpRule rule = new FpRule();
-            rule.setMatch(match);
+            rule.setDataSource(dataSource);
+            rule.setField(field);
             rule.setMethod(method);
             rule.setContent(value);
             rules.add(rule);

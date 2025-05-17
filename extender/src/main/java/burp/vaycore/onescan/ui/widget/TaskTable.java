@@ -12,6 +12,7 @@ import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.L;
+import burp.vaycore.onescan.manager.FpManager;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -67,7 +68,7 @@ public class TaskTable extends JTable implements ActionListener {
                 Component c = renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, rowIndex, columnIndex);
                 TaskData data = getTaskData(rowIndex);
                 String highlight = data.getHighlight();
-                Color bgColor = findColorByName(highlight);
+                Color bgColor = FpManager.findColorByName(highlight);
                 Color fontColor = UIManager.getColor("Table.foreground");
                 // 检测是否需要显示高亮颜色
                 if (bgColor == null) {
@@ -95,10 +96,11 @@ public class TaskTable extends JTable implements ActionListener {
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
-        // 颜色字段等级排序
-        mTableRowSorter.setComparator(11, (Comparator<String>) (left, right) -> {
-            int leftLevel = findColorLevelByName(left);
-            int rightLevel = findColorLevelByName(right);
+        // 颜色字段等级排序（固定最后一列为颜色等级）
+        int comparatorColumn = TaskTableModel.COLUMN_NAMES.length - 1;
+        mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
+            int leftLevel = getColorLevel(left);
+            int rightLevel = getColorLevel(right);
             return Integer.compare(leftLevel, rightLevel);
         });
         setRowSorter(mTableRowSorter);
@@ -132,9 +134,13 @@ public class TaskTable extends JTable implements ActionListener {
         setColumnWidth(6, 125);
         setColumnWidth(7, 70);
         setColumnWidth(8, 100);
-        setColumnWidth(9, 200);
-        setColumnWidth(10, 200);
-        setColumnWidth(11, 70);
+        setColumnWidth(9, 100);
+        setColumnWidth(10, 100);
+        setColumnWidth(11, 100);
+        setColumnWidth(12, 100);
+        setColumnWidth(13, 100);
+        setColumnWidth(14, 100);
+        setColumnWidth(15, 70);
     }
 
     private void setColumnWidth(int columnIndex, int width) {
@@ -218,63 +224,6 @@ public class TaskTable extends JTable implements ActionListener {
             root.add(menuItem);
         }
         menu.add(root);
-    }
-
-    private Color findColorByName(String colorName) {
-        if (StringUtils.isEmpty(colorName)) {
-            return null;
-        }
-        switch (colorName) {
-            case "red":
-                return Color.decode("#FF555D");
-            case "orange":
-                return Color.decode("#FFC54D");
-            case "yellow":
-                return Color.decode("#FFFF3A");
-            case "green":
-                return Color.decode("#00FF45");
-            case "cyan":
-                return Color.decode("#00FFFF");
-            case "blue":
-                return Color.decode("#6464FF");
-            case "pink":
-                return Color.decode("#FFC5C7");
-            case "magenta":
-                return Color.decode("#FF55FF");
-            case "gray":
-                return Color.decode("#B4B4B4");
-            default:
-                break;
-        }
-        return null;
-    }
-
-    private static int findColorLevelByName(String colorName) {
-        if (StringUtils.isEmpty(colorName)) {
-            return 0;
-        }
-        switch (colorName) {
-            case "red":
-                return 9;
-            case "orange":
-                return 8;
-            case "yellow":
-                return 7;
-            case "green":
-                return 6;
-            case "cyan":
-                return 5;
-            case "blue":
-                return 4;
-            case "pink":
-                return 3;
-            case "magenta":
-                return 2;
-            case "gray":
-                return 1;
-            default:
-                return 0;
-        }
     }
 
     private Color darkerColor(Color color) {
@@ -670,6 +619,17 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     /**
+     * 根据颜色名，获取颜色等级
+     *
+     * @param colorName 颜色名
+     * @return 颜色等级
+     */
+    private static int getColorLevel(String colorName) {
+        int level = FpManager.findColorLevelByName(colorName);
+        return FpManager.sColorNames.length - level;
+    }
+
+    /**
      * 监听器
      */
     public interface OnTaskTableEventListener {
@@ -719,8 +679,12 @@ public class TaskTable extends JTable implements ActionListener {
                 L.get("task_table_columns.ip"),
                 L.get("task_table_columns.status"),
                 L.get("task_table_columns.length"),
-                L.get("task_table_columns.fingerprint"),
-                L.get("task_table_columns.comment"),
+                L.get("task_table_columns.application"),
+                L.get("task_table_columns.webserver"),
+                L.get("task_table_columns.os"),
+                L.get("task_table_columns.lang"),
+                L.get("task_table_columns.framework"),
+                L.get("task_table_columns.description"),
                 L.get("task_table_columns.color"),
         };
         private final List<TaskData> mData;

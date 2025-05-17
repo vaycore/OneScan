@@ -1,5 +1,11 @@
 package burp.vaycore.onescan.bean;
 
+import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.manager.FpManager;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 任务数据
  * <p>
@@ -16,8 +22,12 @@ public class TaskData {
     private String ip;
     private int status;
     private int length;
-    private String fingerprint;
-    private String comment;
+    private String application;
+    private String webserver;
+    private String os;
+    private String lang;
+    private String framework;
+    private String description;
     private String highlight;
     // 请求响应数据
     private Object reqResp;
@@ -94,20 +104,52 @@ public class TaskData {
         this.length = length;
     }
 
-    public String getFingerprint() {
-        return fingerprint;
+    public String getApplication() {
+        return application;
     }
 
-    public void setFingerprint(String fingerprint) {
-        this.fingerprint = fingerprint;
+    public void setApplication(String application) {
+        this.application = application;
     }
 
-    public String getComment() {
-        return comment;
+    public String getWebserver() {
+        return webserver;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setWebserver(String webserver) {
+        this.webserver = webserver;
+    }
+
+    public String getOS() {
+        return os;
+    }
+
+    public void setOS(String os) {
+        this.os = os;
+    }
+
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
+
+    public String getFramework() {
+        return framework;
+    }
+
+    public void setFramework(String framework) {
+        this.framework = framework;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getHighlight() {
@@ -124,5 +166,59 @@ public class TaskData {
 
     public void setReqResp(Object reqResp) {
         this.reqResp = reqResp;
+    }
+
+    public void setFingerprint(List<FpData> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        StringBuilder application = newStringBuilder(getApplication());
+        StringBuilder webserver = newStringBuilder(getWebserver());
+        StringBuilder os = newStringBuilder(getOS());
+        StringBuilder lang = newStringBuilder(getLang());
+        StringBuilder framework = newStringBuilder(getFramework());
+        StringBuilder description = newStringBuilder(getDescription());
+        List<Integer> colorLevels = new ArrayList<>();
+        for (FpData item : list) {
+            // 收集指纹数据
+            appendData(application, item.getApplication());
+            appendData(webserver, item.getWebserver());
+            appendData(os, item.getOS());
+            appendData(lang, item.getLang());
+            appendData(framework, item.getFramework());
+            appendData(description, item.getDescription());
+            // 收集所有颜色等级
+            String color = item.getColor();
+            int level = FpManager.findColorLevelByName(color);
+            colorLevels.add(level);
+        }
+        // 填充指纹数据
+        setApplication(application.toString());
+        setWebserver(webserver.toString());
+        setOS(os.toString());
+        setLang(lang.toString());
+        setFramework(framework.toString());
+        setDescription(description.toString());
+        // 处理高亮颜色
+        String highlight = FpManager.upgradeColors(colorLevels);
+        setHighlight(highlight);
+    }
+
+    private StringBuilder newStringBuilder(String text) {
+        StringBuilder result = new StringBuilder();
+        if (StringUtils.isNotEmpty(text)) {
+            return result.append(text);
+        }
+        return result;
+    }
+
+    private void appendData(StringBuilder sb, String data) {
+        if (StringUtils.isEmpty(data) || sb.indexOf(data) >= 0) {
+            return;
+        }
+        if (StringUtils.isNotEmpty(sb)) {
+            sb.append(",");
+        }
+        sb.append(data);
     }
 }

@@ -59,6 +59,7 @@ public class OtherTab extends BaseConfigTab implements ActionListener {
                 int ret = UIHelper.showOkCancelDialog(L.get("clear_cache_dialog_message", count));
                 if (ret == 0) {
                     FpManager.clearCache();
+                    FpManager.clearHistory();
                     UIHelper.showTipsDialog(L.get("clear_success"));
                 }
                 break;

@@ -72,9 +72,10 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             data.setLength(Utils.randomInt(99999));
             FpData fp = Utils.getRandomItem(FpManager.getList());
             if (fp != null) {
-                data.setFingerprint(fp.getName());
+                List<FpData> list = new ArrayList<>();
+                list.add(fp);
+                data.setFingerprint(list);
             }
-            data.setComment("");
             data.setFrom("Proxy");
             data.setReqResp(new Object());
             getTaskTable().addTaskData(data);

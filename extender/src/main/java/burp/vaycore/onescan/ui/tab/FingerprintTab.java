@@ -11,6 +11,7 @@ import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.onescan.ui.widget.FpDetailPanel;
 import burp.vaycore.onescan.ui.widget.FpTable;
+import burp.vaycore.onescan.ui.widget.FpTestWindow;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,7 +20,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.List;
 
 /**
  * 指纹面板
@@ -30,6 +30,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
     private FpTable mFpTable;
     private JLabel mCountLabel;
     private HintTextField mFpFilterRegexText;
+    private FpTestWindow mFpTestWindow;
 
     protected void initData() {
 
@@ -157,48 +158,20 @@ public class FingerprintTab extends BaseTab implements ActionListener {
                 if (data == null) {
                     return;
                 }
-                int ret = UIHelper.showOkCancelDialog(L.get("fingerprint_delete_hint", data.getName()));
+                String info = "{" + data.toInfo() + "}";
+                 int ret = UIHelper.showOkCancelDialog(L.get("fingerprint_delete_hint", info));
                 if (ret == 0) {
                     mFpTable.removeFpData(rowIndex);
                     refreshCount();
                 }
                 break;
             case "test":
-                showFpTestDialog();
+                if (mFpTestWindow == null) {
+                    mFpTestWindow = new FpTestWindow();
+                }
+                mFpTestWindow.showWindow();
                 break;
         }
-    }
-
-    /**
-     * 指纹测试对话框
-     */
-    private void showFpTestDialog() {
-        JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(500, 300));
-        panel.setLayout(new VLayout());
-        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
-        JTextArea area = new JTextArea();
-        JScrollPane pane = new JScrollPane(area);
-        panel.add(pane, "1w");
-        JButton test = new JButton(L.get("test"));
-        panel.add(test);
-        panel.add(new JLabel(L.get("test_result")));
-        JTextField result = new JTextField("");
-        result.setEditable(false);
-        panel.add(result);
-        test.addActionListener((event) -> {
-            String text = area.getText();
-            if (StringUtils.isEmpty(text)) {
-                result.setText(L.get("input_is_empty"));
-                return;
-            }
-            text = text.replace("\n", "\r\n");
-            byte[] bytes = text.getBytes();
-            List<FpData> list = FpManager.check(bytes, false);
-            String names = FpManager.listToNames(list);
-            result.setText(StringUtils.isEmpty(names) ? L.get("no_test_result_hint") : names);
-        });
-        UIHelper.showCustomDialog(L.get("fingerprint_test_dialog_title"), new String[]{L.get("close")}, panel);
     }
 
     public String getTitleName() {

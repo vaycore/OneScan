@@ -219,7 +219,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         // 开启线程识别指纹，将识别结果缓存起来
-        mFpThreadPool.execute(() -> FpManager.check(message.getMessageInfo().getResponse()));
+        mFpThreadPool.execute(() -> {
+            IHttpRequestResponse info = message.getMessageInfo();
+            FpManager.check(info.getRequest(), info.getResponse());
+        });
         // 检测开关状态
         if (!mDataBoardTab.hasListenProxyMessage()) {
             return;
@@ -1168,7 +1171,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 检测指纹数据
-        List<FpData> fpDataList = FpManager.check(httpReqResp.getResponse());
+        List<FpData> checkResult = FpManager.check(httpReqResp.getRequest(), httpReqResp.getResponse());
         // 构建表格对象
         TaskData data = new TaskData();
         data.setMethod(method);
@@ -1178,7 +1181,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         data.setIp(ip);
         data.setStatus(status);
         data.setLength(length);
-        data.setFingerprint(FpManager.listToNames(fpDataList));
+        data.setFingerprint(checkResult);
         data.setReqResp(httpReqResp);
         return data;
     }
@@ -1523,6 +1526,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         count = FpManager.getCacheCount();
         FpManager.clearCache();
         Logger.info("Clear: fingerprint recognition cache completed. Total %d records.", count);
+        // 清除指纹识别历史
+        count = FpManager.getHistoryCount();
+        FpManager.clearHistory();
+        Logger.info("Clear: fingerprint recognition history completed. Total %d records.", count);
         // 清除数据收集的去重过滤集合
         count = CollectManager.getRepeatFilterCount();
         CollectManager.clearRepeatFilter();
