@@ -99,7 +99,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
         panel.setLayout(new HLayout(5));
         panel.setBorder(new EmptyBorder(0, 5, 5, 5));
         JPanel leftPanel = addLeftPanel();
-        panel.add(leftPanel, "75px");
+        panel.add(leftPanel, "85px");
         mFpTable = new FpTable();
         JScrollPane scrollPane = new JScrollPane(mFpTable);
         scrollPane.setPreferredSize(new Dimension(scrollPane.getWidth(), 0));
@@ -114,6 +114,7 @@ public class FingerprintTab extends BaseTab implements ActionListener {
         addButton(panel, L.get("edit"), "edit-item");
         addButton(panel, L.get("delete"), "delete-item");
         addButton(panel, L.get("test"), "test");
+        addButton(panel, L.get("clear_cache"), "do-clear-cache");
         return panel;
     }
 
@@ -166,11 +167,38 @@ public class FingerprintTab extends BaseTab implements ActionListener {
                 }
                 break;
             case "test":
-                if (mFpTestWindow == null) {
-                    mFpTestWindow = new FpTestWindow();
-                }
-                mFpTestWindow.showWindow();
+                showTestWindow();
                 break;
+            case "do-clear-cache":
+                doClearCache();
+                break;
+        }
+    }
+
+    /**
+     * 弹出指纹测试窗口
+     */
+    private void showTestWindow() {
+        if (mFpTestWindow == null) {
+            mFpTestWindow = new FpTestWindow();
+        }
+        mFpTestWindow.showWindow();
+    }
+
+    /**
+     * 清除缓存
+     */
+    private static void doClearCache() {
+        int count = FpManager.getCacheCount();
+        if (count == 0) {
+            UIHelper.showTipsDialog(L.get("cache_is_empty"));
+            return;
+        }
+        int ret = UIHelper.showOkCancelDialog(L.get("clear_cache_dialog_message", count));
+        if (ret == 0) {
+            FpManager.clearCache();
+            FpManager.clearHistory();
+            UIHelper.showTipsDialog(L.get("clear_success"));
         }
     }
 
