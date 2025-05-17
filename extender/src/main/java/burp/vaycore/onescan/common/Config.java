@@ -91,9 +91,9 @@ public class Config {
     }
 
     private static void initFpManager() {
-        String path = getWorkDir() + "fingerprint.json";
+        String path = getWorkDir() + "finger.json";
         if (!FileUtils.isFile(path)) {
-            InputStream is = Config.class.getClassLoader().getResourceAsStream("fingerprint.json");
+            InputStream is = Config.class.getClassLoader().getResourceAsStream("finger.json");
             String content = FileUtils.readStreamToString(is);
             FileUtils.writeFile(path, content);
         }
