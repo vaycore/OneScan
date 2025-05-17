@@ -15,6 +15,11 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 指纹测试结果
+ * <p>
+ * Created by vaycore on 2025-05-17.
+ */
 public class FpTestResultPanel extends JScrollPane {
 
     private JPanel mPanel;
