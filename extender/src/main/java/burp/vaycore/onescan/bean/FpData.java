@@ -16,7 +16,7 @@ public class FpData implements Serializable {
     /**
      * 应用程序
      */
-    private String application;
+    private String app;
 
     /**
      * Web服务器
@@ -54,11 +54,11 @@ public class FpData implements Serializable {
     private ArrayList<ArrayList<FpRule>> rules;
 
     public String getApplication() {
-        return application;
+        return app;
     }
 
     public void setApplication(String application) {
-        this.application = application;
+        this.app = application;
     }
 
     public String getWebserver() {
@@ -119,8 +119,8 @@ public class FpData implements Serializable {
 
     public String toInfo() {
         StringBuilder sb = new StringBuilder();
-        if (StringUtils.isNotEmpty(this.application)) {
-            sb.append("App=").append(this.application).append(", ");
+        if (StringUtils.isNotEmpty(this.app)) {
+            sb.append("App=").append(this.app).append(", ");
         }
         if (StringUtils.isNotEmpty(this.webserver)) {
             sb.append("WebServer=").append(this.webserver).append(", ");
@@ -150,7 +150,7 @@ public class FpData implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         FpData fpData = (FpData) o;
-        return Objects.equals(application, fpData.application) &&
+        return Objects.equals(app, fpData.app) &&
                 Objects.equals(webserver, fpData.webserver) &&
                 Objects.equals(os, fpData.os) &&
                 Objects.equals(lang, fpData.lang) &&
@@ -162,6 +162,6 @@ public class FpData implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(application, webserver, os, lang, framework, description, color, rules);
+        return Objects.hash(app, webserver, os, lang, framework, description, color, rules);
     }
 }

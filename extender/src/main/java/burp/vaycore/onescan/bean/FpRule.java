@@ -19,53 +19,53 @@ public class FpRule implements Serializable {
     /**
      * 数据源
      */
-    private String dataSource;
+    private String ds;
 
     /**
      * 匹配字段
      */
-    private String field;
+    private String f;
 
     /**
      * 匹配方法
      */
-    private String method;
+    private String m;
 
     /**
      * 匹配内容
      */
-    private String content;
+    private String c;
 
     public String getDataSource() {
-        return dataSource;
+        return ds;
     }
 
     public void setDataSource(String dataSource) {
-        this.dataSource = dataSource;
+        this.ds = dataSource;
     }
 
     public String getField() {
-        return field;
+        return f;
     }
 
     public void setField(String field) {
-        this.field = field;
+        this.f = field;
     }
 
     public String getMethod() {
-        return method;
+        return m;
     }
 
     public void setMethod(String method) {
-        this.method = method;
+        this.m = method;
     }
 
     public String getContent() {
-        return content;
+        return c;
     }
 
     public void setContent(String content) {
-        this.content = content;
+        this.c = content;
     }
 
     /**
