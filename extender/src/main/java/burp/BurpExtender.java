@@ -1526,7 +1526,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         count = FpManager.getCacheCount();
         FpManager.clearCache();
         Logger.info("Clear: fingerprint recognition cache completed. Total %d records.", count);
-        // 清除指纹识别历史
+        // 清除指纹识别历史记录
         count = FpManager.getHistoryCount();
         FpManager.clearHistory();
         Logger.info("Clear: fingerprint recognition history completed. Total %d records.", count);
