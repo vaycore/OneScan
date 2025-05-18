@@ -246,6 +246,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         mTaskTable.clearAll();
+        FpManager.clearHistory();
     }
 
     public TaskTable getTaskTable() {
