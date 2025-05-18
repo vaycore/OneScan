@@ -145,19 +145,39 @@ public class FpManager {
         }
     }
 
+    /**
+     * 指纹识别
+     *
+     * @param reqBytes  HTTP 请求数据包
+     * @param respBytes HTTP 响应数据包
+     * @return 失败返回空列表
+     */
     public static List<FpData> check(byte[] reqBytes, byte[] respBytes) {
-        checkInit();
         return check(reqBytes, respBytes, true);
     }
 
+    /**
+     * 指纹识别
+     *
+     * @param reqBytes  HTTP 请求数据包
+     * @param respBytes HTTP 响应数据包
+     * @param useCache  是否使用缓存
+     * @return 失败返回空列表
+     */
     public static List<FpData> check(byte[] reqBytes, byte[] respBytes, boolean useCache) {
-        checkInit();
         return check(new FpDSProvider(reqBytes, respBytes), useCache);
     }
 
+    /**
+     * 指纹识别
+     *
+     * @param provider 指纹数据源
+     * @param useCache 是否使用缓存
+     * @return 失败返回空列表
+     */
     public static List<FpData> check(FpDSProvider provider, boolean useCache) {
         checkInit();
-        // 提供的数据为空，不需要继续往下执行
+        // 提供的数据为空，不继续往下执行
         if (provider == null || provider.isEmpty()) {
             return new ArrayList<>();
         }
@@ -169,6 +189,10 @@ public class FpManager {
             if (cacheResults != null && !cacheResults.isEmpty()) {
                 return cacheResults;
             }
+        }
+        // 没有指纹规则，不继续往下执行
+        if (getCount() == 0) {
+            return new ArrayList<>();
         }
         // 匹配指纹规则（可能在扫描过程中存在添加/修改/删除指纹等操作，所以不能使用 sFpList 实例遍历）
         ArrayList<FpData> list = new ArrayList<>(sFpList);
@@ -281,7 +305,7 @@ public class FpManager {
     /**
      * 添加指纹识别结果到缓存
      *
-     * @param key 缓存 key
+     * @param key     缓存 key
      * @param results 指纹识别结果
      */
     public static void addResultToCache(String key, List<FpData> results) {
@@ -331,6 +355,7 @@ public class FpManager {
             dataList.add(item);
         }
     }
+
     /**
      * 清除指纹识别历史记录
      */
