@@ -157,6 +157,10 @@ public class FpManager {
 
     public static List<FpData> check(FpDSProvider provider, boolean useCache) {
         checkInit();
+        // 提供的数据为空，不需要继续往下执行
+        if (provider == null || provider.isEmpty()) {
+            return new ArrayList<>();
+        }
         String hashKey = "";
         // 判断是否启用缓存
         if (useCache) {

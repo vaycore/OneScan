@@ -5,7 +5,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
-import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.List;
 
@@ -15,6 +14,8 @@ import java.util.List;
  * Created by vaycore on 2022-08-08.
  */
 public class Utils {
+
+    private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
 
     private Utils() {
         throw new IllegalAccessError("utils class not support create instance.");
@@ -110,14 +111,19 @@ public class Utils {
     /**
      * 字节转换为16进制字符串
      *
-     * @param data 字节数据
+     * @param bytes 字节数据
      * @return 失败返回空字符串
      */
-    public static String bytesToHex(byte[] data) {
-        if (data == null || data.length == 0) {
+    public static String bytesToHex(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
             return "";
         }
-        BigInteger bigInt = new BigInteger(1, data);
-        return bigInt.toString(16);
+        char[] hexChars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_CHARS[v >>> 4];
+            hexChars[i * 2 + 1] = HEX_CHARS[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }

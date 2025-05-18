@@ -74,6 +74,10 @@ public class FpDSProvider {
         return _hasResponse;
     }
 
+    public boolean isEmpty() {
+        return !hasRequest() && !hasResponse();
+    }
+
     /**
      * 获取用于匹配的数据
      *
