@@ -4,6 +4,7 @@ import burp.vaycore.common.utils.HtmlUtils;
 import burp.vaycore.common.utils.Utils;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 /**
@@ -45,12 +46,14 @@ public class FpHttpRespDS extends FpHttpDS {
     @Override
     public String calculateCacheKey() {
         // 响应头包含 Set-Cookie，不计算 Hash 值（不缓存）
-        if (this.getHeader().contains("Set-Cookie")) {
+        if (getHeader().contains("Set-Cookie")) {
             return null;
         }
-        // 将日期相关的字符串都替换为空
-        String newData = REGEX_RESP_DATE.matcher(getData()).replaceAll("");
-        return Utils.md5(newData.getBytes(getCharset()));
+        // 只处理响应头的日期相关字符串
+        String newHeader = REGEX_RESP_DATE.matcher(getHeader()).replaceAll("");
+        // 计算拼接后的 Md5 值
+        String mergeValue = newHeader + getBodyMd5();
+        return Utils.md5(mergeValue.getBytes(StandardCharsets.UTF_8));
     }
 
     public String getStatus() {
