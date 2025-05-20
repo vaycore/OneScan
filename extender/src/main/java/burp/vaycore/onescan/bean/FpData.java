@@ -1,6 +1,7 @@
 package burp.vaycore.onescan.bean;
 
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.manager.FpManager;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -14,34 +15,9 @@ import java.util.Objects;
 public class FpData implements Serializable {
 
     /**
-     * 应用程序
+     * 指纹数据参数
      */
-    private String app;
-
-    /**
-     * Web服务器
-     */
-    private String webserver;
-
-    /**
-     * 操作系统
-     */
-    private String os;
-
-    /**
-     * 编程语言
-     */
-    private String lang;
-
-    /**
-     * 开发框架
-     */
-    private String framework;
-
-    /**
-     * 描述信息
-     */
-    private String description;
+    private ArrayList<Param> params;
 
     /**
      * 颜色
@@ -53,52 +29,15 @@ public class FpData implements Serializable {
      */
     private ArrayList<ArrayList<FpRule>> rules;
 
-    public String getApplication() {
-        return app;
+    public ArrayList<Param> getParams() {
+        if (params == null) {
+            params = new ArrayList<>();
+        }
+        return params;
     }
 
-    public void setApplication(String application) {
-        this.app = application;
-    }
-
-    public String getWebserver() {
-        return webserver;
-    }
-
-    public void setWebserver(String webserver) {
-        this.webserver = webserver;
-    }
-
-    public String getOS() {
-        return os;
-    }
-
-    public void setOS(String os) {
-        this.os = os;
-    }
-
-    public String getLang() {
-        return lang;
-    }
-
-    public void setLang(String lang) {
-        this.lang = lang;
-    }
-
-    public String getFramework() {
-        return framework;
-    }
-
-    public void setFramework(String framework) {
-        this.framework = framework;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setParams(ArrayList<Param> params) {
+        this.params = params;
     }
 
     public String getColor() {
@@ -110,6 +49,9 @@ public class FpData implements Serializable {
     }
 
     public ArrayList<ArrayList<FpRule>> getRules() {
+        if (rules == null) {
+            rules = new ArrayList<>();
+        }
         return this.rules;
     }
 
@@ -119,24 +61,19 @@ public class FpData implements Serializable {
 
     public String toInfo() {
         StringBuilder sb = new StringBuilder();
-        if (StringUtils.isNotEmpty(this.app)) {
-            sb.append("App=").append(this.app).append(", ");
+        // 拼接指纹数据字段值
+        ArrayList<FpData.Param> params = getParams();
+        if (params != null && !params.isEmpty()) {
+            for (FpData.Param param : params) {
+                String key = param.getK();
+                String value = param.getV();
+                String columnName = FpManager.findColumnNameById(key);
+                if (StringUtils.isNotEmpty(value)) {
+                    sb.append(columnName).append("=").append(value).append(",");
+                }
+            }
         }
-        if (StringUtils.isNotEmpty(this.webserver)) {
-            sb.append("WebServer=").append(this.webserver).append(", ");
-        }
-        if (StringUtils.isNotEmpty(this.os)) {
-            sb.append("OS=").append(this.os).append(", ");
-        }
-        if (StringUtils.isNotEmpty(this.lang)) {
-            sb.append("Lang=").append(this.lang).append(", ");
-        }
-        if (StringUtils.isNotEmpty(this.framework)) {
-            sb.append("Frame=").append(this.framework).append(", ");
-        }
-        if (StringUtils.isNotEmpty(this.description)) {
-            sb.append("Desc=").append(this.description).append(", ");
-        }
+        // 拼接指纹数据的颜色值
         if (StringUtils.isNotEmpty(this.color)) {
             sb.append("Color=").append(this.color).append(", ");
         }
@@ -150,18 +87,43 @@ public class FpData implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         FpData fpData = (FpData) o;
-        return Objects.equals(app, fpData.app) &&
-                Objects.equals(webserver, fpData.webserver) &&
-                Objects.equals(os, fpData.os) &&
-                Objects.equals(lang, fpData.lang) &&
-                Objects.equals(framework, fpData.framework) &&
-                Objects.equals(description, fpData.description) &&
+        return Objects.equals(params, fpData.params) &&
                 Objects.equals(color, fpData.color) &&
                 Objects.equals(rules, fpData.rules);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(app, webserver, os, lang, framework, description, color, rules);
+        return Objects.hash(params, color, rules);
+    }
+
+    /**
+     * 指纹数据参数
+     */
+    public static class Param implements Serializable {
+
+        private String k;
+        private String v;
+
+        public Param(String k, String v) {
+            this.k = k;
+            this.v = v;
+        }
+
+        public String getK() {
+            return k;
+        }
+
+        public void setK(String k) {
+            this.k = k;
+        }
+
+        public String getV() {
+            return v;
+        }
+
+        public void setV(String v) {
+            this.v = v;
+        }
     }
 }

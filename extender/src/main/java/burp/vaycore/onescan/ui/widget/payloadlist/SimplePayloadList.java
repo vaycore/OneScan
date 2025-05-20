@@ -80,39 +80,31 @@ public class SimplePayloadList extends JPanel implements ActionListener {
         setLayout(new HLayout(5));
         setPreferredSize(new Dimension(0, 200));
 
-        add(newLeftPanel(), "85px");
+        add(SimpleProcessingList.newLeftPanel(this), "85px");
         add(newRightPanel(), "400px");
     }
 
-    private JPanel newLeftPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout(3));
-        panel.add(newButton(L.get("add"), "add-item"));
-        panel.add(newButton(L.get("edit"), "edit-item"));
-        panel.add(newButton(L.get("remove"), "remove-item"));
-        panel.add(newButton(L.get("clear"), "clear-item"));
-        panel.add(newButton(L.get("up"), "up-item"));
-        panel.add(newButton(L.get("down"), "down-item"));
-        return panel;
-    }
-
-    private JButton newButton(String text, String action) {
-        JButton button = new JButton(text);
-        button.setActionCommand(action);
-        button.addActionListener(this);
-        return button;
-    }
-
     private JPanel newRightPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout());
-
+        JPanel panel = new JPanel(new VLayout());
         mListView = new JTable(mListModel);
         UIHelper.setTableHeaderAlign(mListView, SwingConstants.CENTER);
         mListView.getTableHeader().setReorderingAllowed(false);
         JScrollPane scrollPane = new JScrollPane(mListView);
         panel.add(scrollPane, "1w");
         return panel;
+    }
+
+    /**
+     * 获取选中的真实数据下标
+     *
+     * @return 未选中返回-1
+     */
+    private int getSelectedRowIndex() {
+        int rowIndex = mListView.getSelectedRow();
+        if (rowIndex < 0 || rowIndex >= mListModel.getRowCount()) {
+            return -1;
+        }
+        return mListView.convertRowIndexToModel(rowIndex);
     }
 
     @Override
@@ -130,7 +122,7 @@ public class SimplePayloadList extends JPanel implements ActionListener {
                 }
                 break;
         }
-        int index = mListView.getSelectedRow();
+        int index = getSelectedRowIndex();
         if (index < 0) {
             return;
         }
@@ -183,9 +175,8 @@ public class SimplePayloadList extends JPanel implements ActionListener {
             title = L.get("edit_payload_rule_title");
         }
         // 布局
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new VLayout(10));
         panel.setPreferredSize(new Dimension(400, 200));
-        panel.setLayout(new VLayout(10));
         // 描述信息
         JLabel label = new JLabel(message);
         panel.add(label);
@@ -299,9 +290,8 @@ public class SimplePayloadList extends JPanel implements ActionListener {
     }
 
     private JPanel newParamItemView(String paramName) {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new HLayout());
         panel.setPreferredSize(new Dimension(0, 25));
-        panel.setLayout(new HLayout());
 
         JLabel label = new JLabel(paramName + ":");
         label.setBorder(new EmptyBorder(0, 1, 0, 5));

@@ -84,26 +84,25 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         setLayout(new HLayout(5));
         setPreferredSize(new Dimension(0, 200));
 
-        add(newLeftPanel(), "85px");
+        add(newLeftPanel(this), "85px");
         add(newRightPanel(), "460px");
     }
 
-    private JPanel newLeftPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout(3));
-        panel.add(newButton(L.get("add"), "add-item"));
-        panel.add(newButton(L.get("edit"), "edit-item"));
-        panel.add(newButton(L.get("remove"), "remove-item"));
-        panel.add(newButton(L.get("clear"), "clear-item"));
-        panel.add(newButton(L.get("up"), "up-item"));
-        panel.add(newButton(L.get("down"), "down-item"));
+    static JPanel newLeftPanel(ActionListener l) {
+        JPanel panel = new JPanel(new VLayout(3));
+        panel.add(newLeftPanelButton(L.get("add"), "add-item", l));
+        panel.add(newLeftPanelButton(L.get("edit"), "edit-item", l));
+        panel.add(newLeftPanelButton(L.get("remove"), "remove-item", l));
+        panel.add(newLeftPanelButton(L.get("clear"), "clear-item", l));
+        panel.add(newLeftPanelButton(L.get("up"), "up-item", l));
+        panel.add(newLeftPanelButton(L.get("down"), "down-item", l));
         return panel;
     }
 
-    private JButton newButton(String text, String action) {
+    static JButton newLeftPanelButton(String text, String action, ActionListener l) {
         JButton button = new JButton(text);
         button.setActionCommand(action);
-        button.addActionListener(this);
+        button.addActionListener(l);
         return button;
     }
 
@@ -125,6 +124,19 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
         return panel;
     }
 
+    /**
+     * 获取选中的真实数据下标
+     *
+     * @return 未选中返回-1
+     */
+    private int getSelectedRowIndex() {
+        int rowIndex = mListView.getSelectedRow();
+        if (rowIndex < 0 || rowIndex >= mListView.getRowCount()) {
+            return -1;
+        }
+        return mListView.convertRowIndexToModel(rowIndex);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         String action = e.getActionCommand();
@@ -140,7 +152,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
                 }
                 break;
         }
-        int index = mListView.getSelectedRow();
+        int index = getSelectedRowIndex();
         if (index < 0) {
             return;
         }

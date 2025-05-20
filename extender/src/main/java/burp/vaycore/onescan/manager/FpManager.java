@@ -3,17 +3,15 @@ package burp.vaycore.onescan.manager;
 import burp.vaycore.common.utils.FileUtils;
 import burp.vaycore.common.utils.GsonUtils;
 import burp.vaycore.common.utils.StringUtils;
-import burp.vaycore.onescan.bean.FpDSProvider;
-import burp.vaycore.onescan.bean.FpData;
-import burp.vaycore.onescan.bean.FpRule;
+import burp.vaycore.common.utils.Utils;
+import burp.vaycore.onescan.bean.*;
 import burp.vaycore.onescan.common.FpMethodHandler;
+import burp.vaycore.onescan.common.OnFpColumnModifyListener;
 
 import java.awt.*;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -48,10 +46,11 @@ public class FpManager {
             "#B4B4B4", // gray
     };
 
-    private static String sFilePath;
-    private static final List<FpData> sFpList = new ArrayList<>();
     private static final ConcurrentHashMap<String, List<FpData>> sFpCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, List<FpData>> sFpHistory = new ConcurrentHashMap<>();
+    private static final List<OnFpColumnModifyListener> sFpColumnModifyListeners = new ArrayList<>();
+    private static String sFilePath;
+    private static FpConfig sConfig;
 
     private FpManager() {
         throw new IllegalAccessError("manager class not support create instance.");
@@ -62,86 +61,26 @@ public class FpManager {
             throw new IllegalArgumentException("fingerprint config file not found.");
         }
         sFilePath = path;
-        loadDataByFile();
+        loadConfig();
     }
 
-    private static void loadDataByFile() {
-        if (!sFpList.isEmpty()) {
-            sFpList.clear();
-        }
+    private static void loadConfig() {
         String json = FileUtils.readFileToString(sFilePath);
         if (StringUtils.isEmpty(json)) {
-            throw new IllegalArgumentException("fingerprint data is empty.");
+            throw new IllegalArgumentException("fingerprint config is empty.");
         }
-        List<FpData> data = GsonUtils.toList(json, FpData.class);
-        if (data != null && !data.isEmpty()) {
-            sFpList.addAll(data);
-        }
-    }
-
-    /**
-     * 获取指纹规则数据列表
-     */
-    public static List<FpData> getList() {
-        checkInit();
-        return new ArrayList<>(sFpList);
-    }
-
-    /**
-     * 获取当前指纹规则数据的本地文件路径
-     */
-    public static String getPath() {
-        checkInit();
-        return sFilePath;
-    }
-
-    /**
-     * 获取指纹规则数量
-     */
-    public static int getCount() {
-        checkInit();
-        return sFpList.size();
-    }
-
-    /**
-     * 添加指纹规则数据
-     *
-     * @param data 指纹规则数据实例
-     */
-    public static void addItem(FpData data) {
-        checkInit();
-        if (data != null && data.getRules() != null && !data.getRules().isEmpty()) {
-            sFpList.add(data);
-            writeToFile();
+        sConfig = GsonUtils.toObject(json, FpConfig.class);
+        if (sConfig == null) {
+            throw new IllegalArgumentException("fingerprint config parsing failed.");
         }
     }
 
     /**
-     * 移除指纹规则数据
-     *
-     * @param index 数据下标
+     * 检测是否初始化
      */
-    public static void removeItem(int index) {
-        checkInit();
-        if (index >= 0 && index < sFpList.size()) {
-            sFpList.remove(index);
-            writeToFile();
-        }
-    }
-
-    /**
-     * 更新指纹规则数据
-     *
-     * @param index 下标
-     * @param data  指纹规则数据实例
-     */
-    public static void setItem(int index, FpData data) {
-        checkInit();
-        if (index >= 0 && index < sFpList.size()) {
-            if (data != null && data.getRules() != null && !data.getRules().isEmpty()) {
-                sFpList.set(index, data);
-                writeToFile();
-            }
+    private static void checkInit() {
+        if (StringUtils.isEmpty(sFilePath) || !FileUtils.isFile(sFilePath) || sConfig == null) {
+            throw new IllegalArgumentException("FpManager no init.");
         }
     }
 
@@ -190,17 +129,14 @@ public class FpManager {
                 return cacheResults;
             }
         }
-        // 没有指纹规则，不继续往下执行
+        // 没有指纹数据，不继续往下执行
         if (getCount() == 0) {
             return new ArrayList<>();
         }
-        // 匹配指纹规则（可能在扫描过程中存在添加/修改/删除指纹等操作，所以不能使用 sFpList 实例遍历）
-        ArrayList<FpData> list = new ArrayList<>(sFpList);
-        List<FpData> result = list.parallelStream().filter((item) -> {
-            ArrayList<ArrayList<FpRule>> rules = item.getRules();
-            if (rules == null || rules.isEmpty()) {
-                return false;
-            }
+        // 匹配指纹数据
+        List<FpData> result = getList().parallelStream().filter((item) -> {
+            // 可能在扫描过程中存在添加/修改/删除等操作，所以不能使用 item.getRules() 获取的实例进行遍历
+            ArrayList<ArrayList<FpRule>> rules = new ArrayList<>(item.getRules());
             List<ArrayList<FpRule>> checkResults = rules.parallelStream().filter((ruleItems) -> {
                 if (ruleItems == null || ruleItems.isEmpty()) {
                     return false;
@@ -234,29 +170,218 @@ public class FpManager {
     }
 
     /**
-     * 检测是否初始化
+     * 获取当前指纹数据的本地文件路径
      */
-    private static void checkInit() {
-        if (StringUtils.isEmpty(sFilePath) || !FileUtils.isFile(sFilePath)) {
-            throw new IllegalArgumentException("FpManager no init.");
+    public static String getPath() {
+        checkInit();
+        return sFilePath;
+    }
+
+    /**
+     * 获取指纹数据列表
+     */
+    public static List<FpData> getList() {
+        checkInit();
+        return new ArrayList<>(sConfig.getList());
+    }
+
+    /**
+     * 获取指纹数据数量
+     */
+    public static int getCount() {
+        checkInit();
+        return sConfig.getListSize();
+    }
+
+    /**
+     * 添加指纹数据
+     *
+     * @param data 指纹数据实例
+     */
+    public static void addItem(FpData data) {
+        checkInit();
+        sConfig.addListItem(data);
+    }
+
+    /**
+     * 移除指纹数据
+     *
+     * @param index 数据下标
+     */
+    public static void removeItem(int index) {
+        checkInit();
+        sConfig.removeListItem(index);
+    }
+
+    /**
+     * 更新指纹数据
+     *
+     * @param index 下标
+     * @param data  指纹数据实例
+     */
+    public static void setItem(int index, FpData data) {
+        checkInit();
+        sConfig.setListItem(index, data);
+    }
+
+    /**
+     * 获取指纹字段列表
+     */
+    public static List<FpColumn> getColumns() {
+        checkInit();
+        return new ArrayList<>(sConfig.getColumns());
+    }
+
+    /**
+     * 根据下标，获取指纹字段 ID 值
+     *
+     * @return 失败返回null
+     */
+    public static String getColumnId(int columnIndex) {
+        checkInit();
+        if (columnIndex < 0 || columnIndex >= getColumnsCount()) {
+            return null;
         }
+        List<FpColumn> columns = sConfig.getColumns();
+        FpColumn column = columns.get(columnIndex);
+        return column.getId();
     }
 
     /**
-     * 写入指纹规则数据到文件中
+     * 获取指纹字段名列表
+     *
+     * @return 失败返回空列表
      */
-    private static void writeToFile() {
-        new Thread(() -> {
-            synchronized (sFpList) {
-                List<FpData> list = getList();
-                String json = GsonUtils.toJson(list);
-                FileUtils.writeFile(sFilePath, json);
+    public static List<String> getColumnNames() {
+        checkInit();
+        List<FpColumn> columns = sConfig.getColumns();
+        List<String> result = new ArrayList<>(columns.size());
+        for (FpColumn column : columns) {
+            if (column != null) {
+                result.add(column.getName());
             }
-        }).start();
+        }
+        return result;
     }
 
     /**
-     * 调用指纹规则匹配方法
+     * 获取指纹字段数量
+     */
+    public static int getColumnsCount() {
+        checkInit();
+        return sConfig.getColumnsSize();
+    }
+
+    /**
+     * 添加指纹字段
+     *
+     * @param column 指纹字段实例
+     */
+    public static void addColumnsItem(FpColumn column) {
+        checkInit();
+        sConfig.addColumnsItem(column);
+        invokeFpColumnModifyListeners();
+    }
+
+    /**
+     * 移除指纹字段
+     *
+     * @param index 数据下标
+     */
+    public static void removeColumnsItem(int index) {
+        checkInit();
+        FpColumn column = sConfig.removeColumnsItem(index);
+        // 等于 null 表示删除失败
+        if (column == null) {
+            return;
+        }
+        // 同步删除指纹数据中的参数和值
+        List<FpData> list = getList();
+        for (FpData data : list) {
+            // 遍历参数列表，过滤需要移除的参数
+            List<FpData.Param> removeParams = data.getParams()
+                    .stream()
+                    .filter(param -> column.getId().equals(param.getK()))
+                    .collect(Collectors.toList());
+            // 批量移除
+            data.getParams().removeAll(removeParams);
+        }
+        // 保存指纹数据
+        sConfig.setList(list);
+        invokeFpColumnModifyListeners();
+    }
+
+    /**
+     * 更新指纹字段
+     *
+     * @param index 下标
+     * @param column  指纹字段实例
+     */
+    public static void setColumnsItem(int index, FpColumn column) {
+        checkInit();
+        sConfig.setColumnsItem(index, column);
+        invokeFpColumnModifyListeners();
+    }
+
+    /**
+     * 根据指纹字段 ID 值，查找字段名
+     *
+     * @param id 字段 ID 值
+     * @return 失败返回null
+     */
+    public static String findColumnNameById(String id) {
+        checkInit();
+        if (StringUtils.isEmpty(id)) {
+            return null;
+        }
+        List<FpColumn> columns = sConfig.getColumns();
+        for (FpColumn column : columns) {
+            if (id.equals(column.getId())) {
+                return column.getName();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 根据指纹字段名，查找字段 ID 值
+     *
+     * @param name 字段名
+     * @return 失败返回null
+     */
+    public static String findColumnIdByName(String name) {
+        checkInit();
+        if (StringUtils.isEmpty(name)) {
+            return null;
+        }
+        List<FpColumn> columns = sConfig.getColumns();
+        for (FpColumn column : columns) {
+            if (name.equals(column.getName())) {
+                return column.getId();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 生成一个指纹字段实例
+     *
+     * @return 指纹字段实例
+     */
+    public static FpColumn generateFpColumn() {
+        checkInit();
+        String id = Utils.randomString(3);
+        String name = findColumnNameById(id);
+        if (name != null) {
+            return generateFpColumn();
+        }
+        FpColumn column = new FpColumn();
+        column.setId(id);
+        return column;
+    }
+
+    /**
+     * 调用指纹数据匹配方法
      *
      * @param methodName 方法名
      * @param data       数据源
@@ -411,6 +536,69 @@ public class FpManager {
             }
         }
         return sColorNames.length;
+    }
+
+    /**
+     * 添加指纹字段修改监听器
+     *
+     * @param l 监听器实例
+     */
+    public static void addOnFpColumnModifyListener(OnFpColumnModifyListener l) {
+        checkInit();
+        if (sFpColumnModifyListeners.contains(l)) {
+            return;
+        }
+        sFpColumnModifyListeners.add(l);
+    }
+
+
+    /**
+     * 移除指纹字段修改监听器
+     *
+     * @param l 监听器实例
+     */
+    public static void removeOnFpColumnModifyListener(OnFpColumnModifyListener l) {
+        checkInit();
+        if (!sFpColumnModifyListeners.contains(l)) {
+            return;
+        }
+        sFpColumnModifyListeners.remove(l);
+    }
+
+    /**
+     * 清除指纹字段修改监听器
+     */
+    public static void clearsFpColumnModifyListeners() {
+        if (sFpColumnModifyListeners.isEmpty()) {
+            return;
+        }
+        sFpColumnModifyListeners.clear();
+    }
+
+    /**
+     * 调用指纹字段修改监听器
+     */
+    private static void invokeFpColumnModifyListeners() {
+        checkInit();
+        if (sFpColumnModifyListeners.isEmpty()) {
+            return;
+        }
+        for (OnFpColumnModifyListener l : sFpColumnModifyListeners) {
+            l.onFpColumnModify();
+        }
+    }
+
+    /**
+     * 颜色升级算法
+     *
+     * @param colorLevels 颜色等级列表
+     * @return 颜色名（示例：{@link FpManager#sColorNames}）；失败返回空字符串
+     */
+    public static String upgradeColors(Integer... colorLevels) {
+        if (colorLevels == null || colorLevels.length == 0) {
+            return "";
+        }
+        return upgradeColors(Arrays.asList(colorLevels));
     }
 
     /**

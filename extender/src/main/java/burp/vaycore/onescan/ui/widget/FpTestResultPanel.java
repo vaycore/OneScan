@@ -13,6 +13,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -50,21 +51,24 @@ public class FpTestResultPanel extends JScrollPane {
         if (list == null || list.isEmpty()) {
             return;
         }
-        List<ItemData> applicationItems = new ArrayList<>();
-        List<ItemData> webserverItems = new ArrayList<>();
-        List<ItemData> osItems = new ArrayList<>();
-        List<ItemData> langItems = new ArrayList<>();
-        List<ItemData> frameworkItems = new ArrayList<>();
-        List<ItemData> descriptionItems = new ArrayList<>();
+        LinkedHashMap<String, List<ItemData>> itemDataMap = new LinkedHashMap<>();
         List<ItemData> colorItems = new ArrayList<>();
         List<Integer> colorLevels = new ArrayList<>();
         for (FpData item : list) {
-            appendData(applicationItems, item.getApplication(), item.getColor());
-            appendData(webserverItems, item.getWebserver(), item.getColor());
-            appendData(osItems, item.getOS(), item.getColor());
-            appendData(langItems, item.getLang(), item.getColor());
-            appendData(frameworkItems, item.getFramework(), item.getColor());
-            appendData(descriptionItems, item.getDescription(), item.getColor());
+            ArrayList<FpData.Param> params = item.getParams();
+            // 指纹数据收集
+            if (params != null && !params.isEmpty()) {
+                for (FpData.Param param : params) {
+                    String key = param.getK();
+                    String value = param.getV();
+                    if (!itemDataMap.containsKey(key)) {
+                        itemDataMap.put(key, new ArrayList<>());
+                    }
+                    // 获取对应字段的列表
+                    List<ItemData> items = itemDataMap.get(key);
+                    appendData(items, value, item.getColor());
+                }
+            }
             // 颜色等级收集
             int colorLevel = FpManager.findColorLevelByName(item.getColor());
             colorLevels.add(colorLevel);
@@ -73,12 +77,12 @@ public class FpTestResultPanel extends JScrollPane {
         String colorName = FpManager.upgradeColors(colorLevels);
         colorItems.add(new ItemData(colorName, colorName));
         // 将数据添加到布局中展示
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.application"), applicationItems));
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.webserver"), webserverItems));
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.os"), osItems));
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.lang"), langItems));
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.framework"), frameworkItems));
-        addToPanel(createItemsPanel(L.get("fingerprint_table_columns.description"), descriptionItems));
+        for (String key : itemDataMap.keySet()) {
+            List<ItemData> items = itemDataMap.get(key);
+            String columnName = FpManager.findColumnNameById(key);
+            JPanel itemsPanel = createItemsPanel(columnName, items);
+            addToPanel(itemsPanel);
+        }
         addToPanel(createItemsPanel(L.get("fingerprint_table_columns.color"), colorItems));
         UIHelper.refreshUI(this);
     }
@@ -142,10 +146,7 @@ public class FpTestResultPanel extends JScrollPane {
             if (item.getTagName().equals(data)) {
                 int leftColorLevel = FpManager.findColorLevelByName(item.getColorName());
                 int rightColorLevel = FpManager.findColorLevelByName(colorName);
-                List<Integer> levels = new ArrayList<>();
-                levels.add(leftColorLevel);
-                levels.add(rightColorLevel);
-                String newColorName = FpManager.upgradeColors(levels);
+                String newColorName = FpManager.upgradeColors(leftColorLevel, rightColorLevel);
                 item.setColorName(newColorName);
                 list.set(i, item);
                 return;

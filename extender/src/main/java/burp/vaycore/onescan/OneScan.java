@@ -19,6 +19,7 @@ public class OneScan extends JTabbedPane {
 
     private DataBoardTab mDataBoardTab;
     private ConfigPanel mConfigPanel;
+    private FingerprintTab mFingerprintTab;
 
     public OneScan() {
         loadModule();
@@ -37,8 +38,8 @@ public class OneScan extends JTabbedPane {
         mConfigPanel = new ConfigPanel();
         addTab(mConfigPanel.getTitleName(), mConfigPanel);
         // 指纹面板
-        FingerprintTab fingerprintTab = new FingerprintTab();
-        addTab(fingerprintTab.getTitleName(), fingerprintTab);
+        mFingerprintTab = new FingerprintTab();
+        addTab(mFingerprintTab.getTitleName(), mFingerprintTab);
         // 数据收集面板
         CollectPanel collectTab = new CollectPanel();
         addTab(collectTab.getTitleName(), collectTab);
@@ -50,6 +51,10 @@ public class OneScan extends JTabbedPane {
 
     public ConfigPanel getConfigPanel() {
         return mConfigPanel;
+    }
+
+    public FingerprintTab getFingerprintTab() {
+        return mFingerprintTab;
     }
 
     public static void main(String[] args) {

@@ -117,8 +117,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     }
 
     private JPanel newLeftPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout(3));
+        JPanel panel = new JPanel(new VLayout(3));
         panel.add(newButton(L.get("paste"), "paste-item"));
         panel.add(newButton(L.get("remove"), "remove-item"));
         panel.add(newButton(L.get("clear"), "clear-item"));
@@ -138,9 +137,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     }
 
     private JPanel newRightPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout(10));
-
+        JPanel panel = new JPanel(new VLayout(10));
         mListView = new JList<>(mListModel);
         UIHelper.setListCellRenderer(mListView);
         JScrollPane scrollPane = new JScrollPane(mListView);
@@ -181,7 +178,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         }
         // 以下是需要用到选中下标才能进行操作
         int index = mListView.getSelectedIndex();
-        if (index < 0) {
+        if (index < 0 || index >= mListModel.getSize()) {
             return;
         }
         switch (action) {

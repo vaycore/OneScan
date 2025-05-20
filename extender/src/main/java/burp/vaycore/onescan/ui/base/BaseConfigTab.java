@@ -81,8 +81,7 @@ public abstract class BaseConfigTab extends BaseTab {
      * @return 文件框组件对象
      */
     protected JTextField addTextConfigPanel(String title, String subTitle, int columns, String configKey) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(3));
+        JPanel panel = new JPanel(new HLayout(3));
         JTextField textField = new JTextField(Config.get(configKey), columns);
         panel.add(textField);
         JButton button = new JButton(L.get("save"));
@@ -105,8 +104,7 @@ public abstract class BaseConfigTab extends BaseTab {
      * @param configKey 配置文件中的Key
      */
     protected void addFileConfigPanel(String title, String subTitle, String configKey) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(3));
+        JPanel panel = new JPanel(new HLayout(3));
         String filePath = Config.getFilePath(configKey);
         JTextField textField = new JTextField(filePath, 35);
         textField.setEditable(false);
@@ -133,8 +131,7 @@ public abstract class BaseConfigTab extends BaseTab {
      * @param configKey 配置文件中的Key
      */
     protected void addDirectoryConfigPanel(String title, String subTitle, String configKey) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(3));
+        JPanel panel = new JPanel(new HLayout(3));
         String dirPath = Config.getFilePath(configKey);
         JTextField textField = new JTextField(dirPath, 35);
         textField.setEditable(false);
@@ -179,8 +176,7 @@ public abstract class BaseConfigTab extends BaseTab {
             java.util.List<String> listData = wordlist.getListData();
             WordlistManager.putList(configKey, listData);
         });
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(5, true));
+        JPanel panel = new JPanel(new HLayout(5, true));
         Vector<String> items = new Vector<>(WordlistManager.getItemList(configKey));
         JComboBox<String> cb = new JComboBox<>(items);
         cb.setSelectedItem(WordlistManager.getItem(configKey));

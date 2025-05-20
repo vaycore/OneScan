@@ -22,14 +22,35 @@ public class FpDSProvider {
     private boolean _hasRequest;
     private boolean _hasResponse;
 
+    /**
+     * 构造方法
+     *
+     * @param reqBytes  HTTP 请求数据包
+     * @param respBytes HTTP 响应数据包
+     */
     public FpDSProvider(byte[] reqBytes, byte[] respBytes) {
         this(reqBytes, respBytes, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 构造方法
+     *
+     * @param reqBytes  HTTP 请求数据包
+     * @param respBytes HTTP 响应数据包
+     * @param charset   指定 HTTP 数据包编码
+     */
     public FpDSProvider(byte[] reqBytes, byte[] respBytes, Charset charset) {
         this(reqBytes, respBytes, charset, charset);
     }
 
+    /**
+     * 构造方法
+     *
+     * @param reqBytes    HTTP 请求数据包
+     * @param respBytes   HTTP 响应数据包
+     * @param reqCharset  指定 HTTP 请求数据包编码
+     * @param respCharset 指定 HTTP 响应数据包编码
+     */
     public FpDSProvider(byte[] reqBytes, byte[] respBytes, Charset reqCharset, Charset respCharset) {
         // 解析请求数据
         try {
@@ -47,6 +68,11 @@ public class FpDSProvider {
         }
     }
 
+    /**
+     * 获取用于缓存的 key 值
+     *
+     * @return 无数据返回空字符串
+     */
     public String getCacheKey() {
         StringBuilder key = new StringBuilder();
         if (hasRequest()) {
@@ -58,22 +84,47 @@ public class FpDSProvider {
         return key.toString();
     }
 
+    /**
+     * 获取请求数据源
+     *
+     * @return 请求数据源实例
+     */
     public FpHttpReqDS getRequest() {
         return request;
     }
 
+    /**
+     * 获取响应数据源
+     *
+     * @return 响应数据源实例
+     */
     public FpHttpRespDS getResponse() {
         return response;
     }
 
+    /**
+     * 是否存在请求数据
+     *
+     * @return true=是；false=否
+     */
     public boolean hasRequest() {
         return _hasRequest;
     }
 
+    /**
+     * 是否存在响应数据
+     *
+     * @return true=是；false=否
+     */
     public boolean hasResponse() {
         return _hasResponse;
     }
 
+    /**
+     * 提供的数据是否为空
+     *
+     * @return true=是；false=否
+     */
     public boolean isEmpty() {
         return !hasRequest() && !hasResponse();
     }

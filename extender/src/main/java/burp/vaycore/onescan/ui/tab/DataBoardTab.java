@@ -3,10 +3,10 @@ package burp.vaycore.onescan.ui.tab;
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.filter.TableFilter;
 import burp.vaycore.common.filter.TableFilterPanel;
+import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
-import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.Utils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.bean.FpData;
@@ -14,6 +14,7 @@ import burp.vaycore.onescan.bean.TaskData;
 import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.DialogCallbackAdapter;
 import burp.vaycore.onescan.common.L;
+import burp.vaycore.onescan.common.OnFpColumnModifyListener;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
 import burp.vaycore.onescan.ui.widget.ImportUrlWindow;
@@ -31,7 +32,7 @@ import java.util.List;
  * <p>
  * Created by vaycore on 2022-08-07.
  */
-public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrlListener {
+public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrlListener, OnFpColumnModifyListener {
 
     public static final String EVENT_IMPORT_URL = "event-import-url";
     public static final String EVENT_STOP_TASK = "event-stop-task";
@@ -48,6 +49,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
 
     @Override
     protected void initData() {
+        FpManager.addOnFpColumnModifyListener(this);
     }
 
     @Override
@@ -88,10 +90,9 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         }
         setLayout(new VLayout(0));
         // 控制栏
-        JPanel controlPanel = new JPanel();
+        JPanel controlPanel = new JPanel(new HLayout(5, true));
         controlPanel.setBorder(new EmptyBorder(0, 0, 0, 5));
         controlPanel.setFocusable(false);
-        controlPanel.setLayout(new HLayout(5, true));
         add(controlPanel);
         // 代理监听开关
         mListenProxyMessage = newJCheckBox(controlPanel, L.get("listen_proxy_message"), Config.KEY_ENABLE_LISTEN_PROXY);
@@ -170,7 +171,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         // 借助 TableFilterPanel 组件转换配置
-        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, rules);
+        TableFilterPanel panel = new TableFilterPanel(TaskTable.getColumnNames(), rules);
         ArrayList<TableFilter<AbstractTableModel>> filters = panel.exportTableFilters();
         String rulesText = panel.exportRulesText();
         mTaskTable.setRowFilter(filters);
@@ -216,12 +217,19 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     }
 
     @Override
-    public void onImportUrl(String prefix, List<String> data) {
-        // 如果存在前缀，对每一项进行拼接
-        if (StringUtils.isNotEmpty(prefix)) {
-            data.replaceAll(s -> prefix + s);
+    public void onImportUrl(List<String> data) {
+        if (data == null || data.isEmpty()) {
+            return;
         }
         sendTabEvent(EVENT_IMPORT_URL, data);
+        UIHelper.showTipsDialog(L.get("import_url_success"), mImportUrlWindow);
+    }
+
+    @Override
+    public void onFpColumnModify() {
+        if (mTaskTable != null) {
+            mTaskTable.refreshColumns();
+        }
     }
 
     /**
@@ -249,26 +257,44 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         FpManager.clearHistory();
     }
 
+    /**
+     * 获取任务表格组件
+     */
     public TaskTable getTaskTable() {
         return mTaskTable;
     }
 
+    /**
+     * 是否开启监听代理请求开关
+     */
     public boolean hasListenProxyMessage() {
         return mListenProxyMessage != null && mListenProxyMessage.isSelected();
     }
 
+    /**
+     * 是否开启移除请求头开关
+     */
     public boolean hasRemoveHeader() {
         return mRemoveHeader != null && mRemoveHeader.isSelected();
     }
 
+    /**
+     * 是否开启替换请求头开关
+     */
     public boolean hasReplaceHeader() {
         return mReplaceHeader != null && mReplaceHeader.isSelected();
     }
 
+    /**
+     * 是否开启目录扫描开关
+     */
     public boolean hasDirScan() {
         return mDirScan != null && mDirScan.isSelected();
     }
 
+    /**
+     * 是否开启请求包处理开关
+     */
     public boolean hasPayloadProcessing() {
         return mPayloadProcessing != null && mPayloadProcessing.isSelected();
     }
@@ -277,8 +303,9 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
      * 设置过滤对话框
      */
     private void showSetupFilterDialog() {
-        TableFilterPanel panel = new TableFilterPanel(TaskTable.TaskTableModel.COLUMN_NAMES, mLastFilters);
+        TableFilterPanel panel = new TableFilterPanel(TaskTable.getColumnNames(), mLastFilters);
         panel.showDialog(new DialogCallbackAdapter() {
+
             @Override
             public void onConfirm(ArrayList<FilterRule> filterRules, ArrayList<TableFilter<AbstractTableModel>> filters, String rulesText) {
                 mTaskTable.setRowFilter(filters);

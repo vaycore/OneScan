@@ -23,7 +23,7 @@ public class VLayout extends BaseLayout {
     }
 
     public void addLayoutComponent(String name, Component comp) {
-        Item item = new Item(null);
+        Item item = new Item();
         item.comp = comp;
         item.constraints = "auto";
         this.items.add(item);
@@ -39,7 +39,7 @@ public class VLayout extends BaseLayout {
     }
 
     public void addLayoutComponent(Component comp, Object constraints) {
-        Item item = new Item(null);
+        Item item = new Item();
         item.comp = comp;
         item.constraints = (String) constraints;
         this.items.add(item);
@@ -79,7 +79,11 @@ public class VLayout extends BaseLayout {
             it2.height = preferred.height;
             it2.weight = 0;
             String cstr = it2.constraints;
-            if (!(cstr == null || cstr.length() == 0 || cstr.equals("auto"))) {
+            // 定义参数，使用预设的宽度
+            if ("w-auto".equals(cstr)) {
+                it2.width = preferred.width;
+            }
+            if (!(cstr == null || cstr.isEmpty() || cstr.equals("auto") || cstr.equals("w-auto"))) {
                 if (cstr.endsWith("%")) {
                     it2.height = (validSize * Integer.valueOf(cstr.substring(0, cstr.length() - 1)).intValue()) / 100;
                 } else if (cstr.endsWith("w")) {
@@ -129,10 +133,6 @@ public class VLayout extends BaseLayout {
             this.width = 0;
             this.height = 0;
             this.weight = 0;
-        }
-
-        Item(Item item) {
-            this();
         }
     }
 }

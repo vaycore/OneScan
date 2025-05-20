@@ -15,7 +15,17 @@ import java.util.List;
  */
 public class Utils {
 
+    /**
+     * 十六进制字符表
+     */
     private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
+
+    /**
+     * 随机值的字符表
+     */
+    private static final char[] RANDOM_CHARS = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+            "0123456789" +
+            "abcdefghijklmnopqrstuvwxyz").toCharArray();
 
     private Utils() {
         throw new IllegalAccessError("utils class not support create instance.");
@@ -77,7 +87,7 @@ public class Utils {
     }
 
     /**
-     * 从列表随机获取一个数据
+     * 从列表随机获取一条数据
      *
      * @param list 数据列表
      * @return 返回随机数据
@@ -88,6 +98,24 @@ public class Utils {
         }
         int r = randomInt(list.size() - 1);
         return list.get(r);
+    }
+
+    /**
+     * 生成一个随机字符串
+     *
+     * @param length 字符串长度
+     * @return 返回随机字符串
+     */
+    public static String randomString(int length) {
+        if (length <= 0) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            int randomIndex = randomInt(RANDOM_CHARS.length - 1);
+            result.append(RANDOM_CHARS[randomIndex]);
+        }
+        return result.toString();
     }
 
     /**

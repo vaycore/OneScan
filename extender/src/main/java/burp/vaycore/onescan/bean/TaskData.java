@@ -4,7 +4,9 @@ import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.onescan.manager.FpManager;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 任务数据
@@ -22,13 +24,9 @@ public class TaskData {
     private String ip;
     private int status;
     private int length;
-    private String application;
-    private String webserver;
-    private String os;
-    private String lang;
-    private String framework;
-    private String description;
     private String highlight;
+    // 自定义指纹数据参数
+    private Map<String, String> params;
     // 请求响应数据
     private Object reqResp;
 
@@ -104,60 +102,27 @@ public class TaskData {
         this.length = length;
     }
 
-    public String getApplication() {
-        return application;
-    }
-
-    public void setApplication(String application) {
-        this.application = application;
-    }
-
-    public String getWebserver() {
-        return webserver;
-    }
-
-    public void setWebserver(String webserver) {
-        this.webserver = webserver;
-    }
-
-    public String getOS() {
-        return os;
-    }
-
-    public void setOS(String os) {
-        this.os = os;
-    }
-
-    public String getLang() {
-        return lang;
-    }
-
-    public void setLang(String lang) {
-        this.lang = lang;
-    }
-
-    public String getFramework() {
-        return framework;
-    }
-
-    public void setFramework(String framework) {
-        this.framework = framework;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public String getHighlight() {
         return highlight;
     }
 
     public void setHighlight(String highlight) {
         this.highlight = highlight;
+    }
+
+    public Map<String, String> getParams() {
+        if (params == null) {
+            params = new LinkedHashMap<>();
+        }
+        return params;
+    }
+
+    public void setParams(Map<String, String> params) {
+        if (params == null) {
+            this.params = new LinkedHashMap<>();
+        } else {
+            this.params = new LinkedHashMap<>(params);
+        }
     }
 
     public Object getReqResp() {
@@ -172,33 +137,32 @@ public class TaskData {
         if (list == null || list.isEmpty()) {
             return;
         }
-        StringBuilder application = newStringBuilder(getApplication());
-        StringBuilder webserver = newStringBuilder(getWebserver());
-        StringBuilder os = newStringBuilder(getOS());
-        StringBuilder lang = newStringBuilder(getLang());
-        StringBuilder framework = newStringBuilder(getFramework());
-        StringBuilder description = newStringBuilder(getDescription());
         List<Integer> colorLevels = new ArrayList<>();
         for (FpData item : list) {
-            // 收集指纹数据
-            appendData(application, item.getApplication());
-            appendData(webserver, item.getWebserver());
-            appendData(os, item.getOS());
-            appendData(lang, item.getLang());
-            appendData(framework, item.getFramework());
-            appendData(description, item.getDescription());
+            ArrayList<FpData.Param> itemParams = item.getParams();
+            // 收集识别的指纹数据
+            for (FpData.Param itemParam : itemParams) {
+                String key = itemParam.getK();
+                String value = itemParam.getV();
+                Map<String, String> params = getParams();
+                // key 不存在，添加数据
+                if (!params.containsKey(key)) {
+                    params.put(key, value);
+                    continue;
+                }
+                // value 不能为空
+                if (StringUtils.isEmpty(value)) {
+                    continue;
+                }
+                // key 存在，拼接新值
+                String newValue = getParams().get(key) + "," + value;
+                params.put(key, newValue);
+            }
             // 收集所有颜色等级
             String color = item.getColor();
             int level = FpManager.findColorLevelByName(color);
             colorLevels.add(level);
         }
-        // 填充指纹数据
-        setApplication(application.toString());
-        setWebserver(webserver.toString());
-        setOS(os.toString());
-        setLang(lang.toString());
-        setFramework(framework.toString());
-        setDescription(description.toString());
         // 处理高亮颜色
         String highlight = FpManager.upgradeColors(colorLevels);
         setHighlight(highlight);

@@ -16,6 +16,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * 表过滤面板
@@ -29,10 +30,10 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
 
     private final ArrayList<FilterRule> mRules;
     private int mLastColumnIndex = 0;
-    private final String[] mColumns;
+    private final Vector<String> mColumns;
     private JScrollPane mRulesScrollPanel;
 
-    public TableFilterPanel(String[] columns, ArrayList<FilterRule> rules) {
+    public TableFilterPanel(Vector<String> columns, ArrayList<FilterRule> rules) {
         if (columns == null) {
             throw new IllegalArgumentException("columns param is null.");
         }
@@ -99,19 +100,17 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
     }
 
     private void addRuleItem(int logic, int operate, String value) {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new VLayout());
         mRulesPanel.add(panel);
-        panel.setLayout(new VLayout());
         if (logic == 0) {
             panel.setPreferredSize(new Dimension(0, 31));
         } else {
             panel.setPreferredSize(new Dimension(0, 62));
         }
         // 过滤规则 AND、OR 选项
-        JPanel radioBtnPanel = new JPanel();
+        JPanel radioBtnPanel = new JPanel(new HLayout(10));
         radioBtnPanel.setBorder(new EmptyBorder(0, 5, 0, 0));
         panel.add(radioBtnPanel);
-        radioBtnPanel.setLayout(new HLayout(10));
         JRadioButton andRadioBtn = new JRadioButton(L.get("table_filter.and"));
         andRadioBtn.setFocusable(false);
         andRadioBtn.setSelected(logic == FilterRule.LOGIC_AND);
@@ -123,9 +122,8 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         radioBtnPanel.add(orRadioBtn);
         radioBtnPanel.setVisible(logic > 0);
         // 过滤规则条件
-        JPanel rulePanel = new JPanel();
+        JPanel rulePanel = new JPanel(new HLayout(5, true));
         panel.add(rulePanel);
-        rulePanel.setLayout(new HLayout(5, true));
         JComboBox<String> operateBox = new JComboBox<>(FilterRule.OPERATE_ITEMS);
         operateBox.setSelectedIndex(operate);
         rulePanel.add(operateBox);
@@ -184,7 +182,7 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
             }
         }
         // 如果存在规则，将规则保存到内存
-        if (rule.getItems().size() > 0) {
+        if (!rule.getItems().isEmpty()) {
             if (index >= 0) {
                 mRules.set(index, rule);
             } else {
@@ -235,7 +233,7 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
         }
         for (FilterRule rule : mRules) {
             int columnIndex = rule.getColumnIndex();
-            String columnName = mColumns[columnIndex];
+            String columnName = getColumnName(columnIndex);
             ArrayList<FilterRule.Item> items = rule.getItems();
             // 规则与规则之间是并且的关系
             if (!StringUtils.isEmpty(result)) {
@@ -270,6 +268,19 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
             }
         }
         return result.toString();
+    }
+
+    /**
+     * 获取过滤的字段名
+     *
+     * @param columnIndex 字段下标
+     * @return 失败返回空字符串
+     */
+    private String getColumnName(int columnIndex) {
+        if (columnIndex < 0 || columnIndex >= mColumns.size()) {
+            return "";
+        }
+        return mColumns.get(columnIndex);
     }
 
     /**

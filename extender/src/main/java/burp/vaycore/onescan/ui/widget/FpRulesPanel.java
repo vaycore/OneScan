@@ -44,9 +44,8 @@ public class FpRulesPanel extends JPanel {
     private void initView() {
         setPreferredSize(new Dimension(600, 300));
         setLayout(new VLayout(10));
-        JPanel columnPanel = new JPanel();
+        JPanel columnPanel = new JPanel(new HLayout(10, true));
         add(columnPanel);
-        columnPanel.setLayout(new HLayout(10, true));
         JButton addItemBtn = new JButton(L.get("fingerprint_rules.add_rule"));
         addItemBtn.setActionCommand("add-rule-item");
         addItemBtn.addActionListener((e) -> {
@@ -54,12 +53,10 @@ public class FpRulesPanel extends JPanel {
             UIHelper.refreshUI(mRulesScrollPanel);
         });
         columnPanel.add(addItemBtn);
-        mRulesScrollPanel = new JScrollPane();
+        mRulesPanel = new JPanel(new VFlowLayout());
+        mRulesScrollPanel = new JScrollPane(mRulesPanel);
         mRulesScrollPanel.getVerticalScrollBar().setUnitIncrement(30);
         add(mRulesScrollPanel, "1w");
-        mRulesPanel = new JPanel();
-        mRulesScrollPanel.setViewportView(mRulesPanel);
-        mRulesPanel.setLayout(new VFlowLayout());
     }
 
     private void setupData(ArrayList<FpRule> rules) {
@@ -85,9 +82,8 @@ public class FpRulesPanel extends JPanel {
             content = rule.getContent();
         }
         // 布局
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new HLayout(5, true));
         mRulesPanel.add(panel);
-        panel.setLayout(new HLayout(5, true));
         // 数据源组件
         JComboBox<String> dataSourceBox = new JComboBox<>(genDataSourceItems());
         dataSourceBox.setSelectedItem(dataSource);

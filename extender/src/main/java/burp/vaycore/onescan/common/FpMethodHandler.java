@@ -23,6 +23,8 @@ public class FpMethodHandler {
             "iNotContains",
             "regex",
             "notRegex",
+            "iRegex",
+            "iNotRegex",
     };
 
     /**
@@ -148,5 +150,33 @@ public class FpMethodHandler {
      */
     public static boolean notRegex(String data, String content) {
         return !regex(data, content);
+    }
+
+    /**
+     * 检测正则匹配（忽略大小写）
+     *
+     * @param data    数据源
+     * @param content 匹配的内容
+     * @return true=匹配；false=不匹配
+     */
+    public static boolean iRegex(String data, String content) {
+        try {
+            Pattern pattern = Pattern.compile(content, Pattern.CASE_INSENSITIVE);
+            return pattern.matcher(data).find();
+        } catch (Exception var3) {
+            Logger.error("Regex compile error: %s", var3.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 检测正则不匹配（忽略大小写）
+     *
+     * @param data    数据源
+     * @param content 匹配的内容
+     * @return true=不匹配；false=匹配
+     */
+    public static boolean iNotRegex(String data, String content) {
+        return !iRegex(data, content);
     }
 }

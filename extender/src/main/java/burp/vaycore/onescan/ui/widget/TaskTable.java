@@ -37,6 +37,22 @@ import java.util.stream.Collectors;
  */
 public class TaskTable extends JTable implements ActionListener {
 
+    /**
+     * 预设的列宽
+     */
+    private static final int[] PRE_COLUMN_WIDTH = {
+            70, // #
+            50, // From
+            70, // Method
+            200, // Host
+            200, // Url
+            200, // Title
+            125, // IP
+            70, // Status
+            100, // Length
+            70, // Color
+    };
+
     private final TaskTableModel mTaskTableModel;
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
     private ArrayList<TableFilter<AbstractTableModel>> mTableFilters = new ArrayList<>();
@@ -96,17 +112,12 @@ public class TaskTable extends JTable implements ActionListener {
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
-        // 颜色字段等级排序（固定最后一列为颜色等级）
-        int comparatorColumn = TaskTableModel.COLUMN_NAMES.length - 1;
-        mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
-            int leftLevel = getColorLevel(left);
-            int rightLevel = getColorLevel(right);
-            return Integer.compare(leftLevel, rightLevel);
-        });
         setRowSorter(mTableRowSorter);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
-        // 设置列宽参数
+        // 初始化颜色等级排序
+        initColorLevelSorter();
+        // 初始化列宽
         initColumnWidth();
         // 初始化监听器
         initEvent();
@@ -124,27 +135,34 @@ public class TaskTable extends JTable implements ActionListener {
         });
     }
 
-    private void initColumnWidth() {
-        setColumnWidth(0, 70);
-        setColumnWidth(1, 50);
-        setColumnWidth(2, 70);
-        setColumnWidth(3, 200);
-        setColumnWidth(4, 200);
-        setColumnWidth(5, 200);
-        setColumnWidth(6, 125);
-        setColumnWidth(7, 70);
-        setColumnWidth(8, 100);
-        setColumnWidth(9, 100);
-        setColumnWidth(10, 100);
-        setColumnWidth(11, 100);
-        setColumnWidth(12, 100);
-        setColumnWidth(13, 100);
-        setColumnWidth(14, 100);
-        setColumnWidth(15, 70);
+    /**
+     * 初始化颜色等级排序
+     */
+    private void initColorLevelSorter() {
+        // 颜色字段等级排序（固定最后一列为颜色等级）
+        int comparatorColumn = TaskTableModel.PRE_COLUMN_NAMES.length - 1;
+        mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
+            int leftLevel = getColorLevel(left);
+            int rightLevel = getColorLevel(right);
+            return Integer.compare(leftLevel, rightLevel);
+        });
     }
 
-    private void setColumnWidth(int columnIndex, int width) {
-        getColumnModel().getColumn(columnIndex).setPreferredWidth(width);
+    /**
+     * 初始化列宽
+     */
+    private void initColumnWidth() {
+        int columnCount = getColumnModel().getColumnCount();
+        for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+            // 默认宽度
+            int columnWidth = 120;
+            // 如果在预设宽度范围内
+            if (columnIndex < PRE_COLUMN_WIDTH.length) {
+                columnWidth = PRE_COLUMN_WIDTH[columnIndex];
+            }
+            // 设置宽度
+            getColumnModel().getColumn(columnIndex).setPreferredWidth(columnWidth);
+        }
     }
 
     @Override
@@ -206,18 +224,19 @@ public class TaskTable extends JTable implements ActionListener {
         if (selectedColumn < 0) {
             selectedColumn = 0;
         }
+        Vector<String> columnNames = getColumnNames();
         // 选中的列置顶
-        String topName = TaskTableModel.COLUMN_NAMES[selectedColumn];
+        String topName = columnNames.get(selectedColumn);
         JMenuItem topItem = new JMenuItem(topName);
         topItem.setActionCommand("temp-filter-item-" + topName);
         topItem.addActionListener(this);
         root.add(topItem);
         // 添加其它的列
-        for (int i = 0; i < TaskTableModel.COLUMN_NAMES.length; i++) {
+        for (int i = 0; i < columnNames.size(); i++) {
             if (i == selectedColumn) {
                 continue;
             }
-            String itemName = TaskTableModel.COLUMN_NAMES[i];
+            String itemName = columnNames.get(i);
             JMenuItem menuItem = new JMenuItem(itemName);
             menuItem.setActionCommand("temp-filter-item-" + itemName);
             menuItem.addActionListener(this);
@@ -509,8 +528,8 @@ public class TaskTable extends JTable implements ActionListener {
      * @return 失败返回-1
      */
     private int findColumnIndexByName(String columnName) {
-        for (int i = 0; i < TaskTableModel.COLUMN_NAMES.length; i++) {
-            String name = TaskTableModel.COLUMN_NAMES[i];
+        for (int i = 0; i < getColumnNames().size(); i++) {
+            String name = getColumnName(i);
             if (name.equals(columnName)) {
                 return i;
             }
@@ -607,10 +626,27 @@ public class TaskTable extends JTable implements ActionListener {
         updateRowFilter();
     }
 
+    /**
+     * 刷新所有字段
+     */
+    public void refreshColumns() {
+        if (mTaskTableModel == null) {
+            return;
+        }
+        mTaskTableModel.fireTableStructureChanged();
+        initColorLevelSorter();
+        initColumnWidth();
+    }
+
+    /**
+     * 显示文本信息对话框
+     *
+     * @param title 对话框标题
+     * @param text  文本内容
+     */
     private static void showTextAreaDialog(String title, String text) {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new VLayout());
         panel.setPreferredSize(new Dimension(400, 150));
-        panel.setLayout(new VLayout());
         JTextArea area = new JTextArea(text);
         area.setEditable(false);
         JScrollPane pane = new JScrollPane(area);
@@ -627,6 +663,19 @@ public class TaskTable extends JTable implements ActionListener {
     private static int getColorLevel(String colorName) {
         int level = FpManager.findColorLevelByName(colorName);
         return FpManager.sColorNames.length - level;
+    }
+
+    /**
+     * 获取所有字段名
+     *
+     * @return 失败返回空列表
+     */
+    public static Vector<String> getColumnNames() {
+        Vector<String> result = new Vector<>(Arrays.asList(TaskTableModel.PRE_COLUMN_NAMES));
+        // 指纹字段名列表
+        List<String> fpColumnNames = FpManager.getColumnNames();
+        result.addAll(fpColumnNames);
+        return result;
     }
 
     /**
@@ -669,7 +718,10 @@ public class TaskTable extends JTable implements ActionListener {
     public static class TaskTableModel extends AbstractTableModel
             implements DataTableItemLoader.OnDataItemLoadEvent<TaskData> {
 
-        public static final String[] COLUMN_NAMES = new String[]{
+        /**
+         * 预设的字段名
+         */
+        private static final String[] PRE_COLUMN_NAMES = new String[]{
                 L.get("task_table_columns.id"),
                 L.get("task_table_columns.from"),
                 L.get("task_table_columns.method"),
@@ -679,12 +731,6 @@ public class TaskTable extends JTable implements ActionListener {
                 L.get("task_table_columns.ip"),
                 L.get("task_table_columns.status"),
                 L.get("task_table_columns.length"),
-                L.get("task_table_columns.application"),
-                L.get("task_table_columns.webserver"),
-                L.get("task_table_columns.os"),
-                L.get("task_table_columns.lang"),
-                L.get("task_table_columns.framework"),
-                L.get("task_table_columns.description"),
                 L.get("task_table_columns.color"),
         };
         private final List<TaskData> mData;
@@ -748,23 +794,37 @@ public class TaskTable extends JTable implements ActionListener {
 
         @Override
         public int getColumnCount() {
-            return COLUMN_NAMES.length;
+            return getColumnNames().size();
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return getColumnNames().get(column);
         }
 
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             TaskData data = mData.get(rowIndex);
-            return ClassUtils.getValueByFieldId(data, columnIndex);
+            if (columnIndex < PRE_COLUMN_NAMES.length) {
+                return ClassUtils.getValueByFieldId(data, columnIndex);
+            }
+            // 减去预设的列
+            columnIndex = columnIndex - PRE_COLUMN_NAMES.length;
+            Map<String, String> params = data.getParams();
+            String key = FpManager.getColumnId(columnIndex);
+            String value = "";
+            if (params.containsKey(key)) {
+                value = params.get(key);
+            }
+            return value;
         }
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            return ClassUtils.getTypeByFieldId(TaskData.class, columnIndex);
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return COLUMN_NAMES[column];
+            if (columnIndex < PRE_COLUMN_NAMES.length) {
+                return ClassUtils.getTypeByFieldId(TaskData.class, columnIndex);
+            }
+            return String.class;
         }
 
         @Override

@@ -114,8 +114,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
     }
 
     private JPanel newJsonInfoPanel(ArrayList<String> keys) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout());
+        JPanel panel = new JPanel(new VLayout());
         mJsonKeyList = new JList<>(new Vector<>(keys));
         UIHelper.setListCellRenderer(mJsonKeyList);
         JScrollPane scrollPane = new JScrollPane(mJsonKeyList);

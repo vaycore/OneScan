@@ -14,6 +14,7 @@ import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.DataBoardTab;
+import burp.vaycore.onescan.ui.tab.FingerprintTab;
 import burp.vaycore.onescan.ui.tab.config.OtherTab;
 import burp.vaycore.onescan.ui.tab.config.RequestTab;
 import burp.vaycore.onescan.ui.widget.TaskTable;
@@ -1515,13 +1516,24 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         Logger.info("Clear: repeat filter list completed. Total %d records.", count);
         // 清除任务列表
         count = 0;
-        if (mDataBoardTab != null && mDataBoardTab.getTaskTable() != null) {
-            count = mDataBoardTab.getTaskTable().getTaskCount();
-            mDataBoardTab.getTaskTable().clearAll();
+        if (mDataBoardTab != null) {
+            TaskTable taskTable = mDataBoardTab.getTaskTable();
+            if (taskTable != null) {
+                count = taskTable.getTaskCount();
+                taskTable.clearAll();
+            }
             // 关闭导入 URL 窗口
             mDataBoardTab.closeImportUrlWindow();
         }
         Logger.info("Clear: task list completed. Total %d records.", count);
+        // 关闭指纹相关窗口
+        if (mOneScan != null && mOneScan.getFingerprintTab() != null) {
+            FingerprintTab tab = mOneScan.getFingerprintTab();
+            // 指纹测试窗口
+            tab.closeFpTestWindow();
+            // 指纹字段管理窗口
+            tab.closeFpColumnManagerWindow();
+        }
         // 清除指纹识别缓存
         count = FpManager.getCacheCount();
         FpManager.clearCache();
@@ -1530,6 +1542,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         count = FpManager.getHistoryCount();
         FpManager.clearHistory();
         Logger.info("Clear: fingerprint recognition history completed. Total %d records.", count);
+        // 清除指纹字段修改监听器
+        FpManager.clearsFpColumnModifyListeners();
         // 清除数据收集的去重过滤集合
         count = CollectManager.getRepeatFilterCount();
         CollectManager.clearRepeatFilter();

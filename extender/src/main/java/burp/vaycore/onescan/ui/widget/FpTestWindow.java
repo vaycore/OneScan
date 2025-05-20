@@ -144,8 +144,12 @@ public class FpTestWindow extends JPanel implements ActionListener {
      * 显示窗口
      */
     public void showWindow() {
-        if (isShowing()) {
-            mFrame.toFront();
+        if (mFrame != null) {
+            if (isShowing()) {
+                mFrame.toFront();
+            } else {
+                mFrame.setVisible(true);
+            }
             return;
         }
         mFrame = new JFrame(L.get("fingerprint_test_dialog_title"));

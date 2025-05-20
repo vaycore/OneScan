@@ -2,6 +2,7 @@ package burp.vaycore.onescan.ui.widget;
 
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
+import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.ClassUtils;
 import burp.vaycore.common.utils.StringUtils;
@@ -12,11 +13,12 @@ import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.FpManager;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * 指纹详情
@@ -25,29 +27,26 @@ import java.util.ArrayList;
  */
 public class FpDetailPanel extends JPanel implements ActionListener {
 
-    private boolean hasCreate;
+    private final boolean hasCreate;
     private final FpData mData;
-    private JTextField mApplication;
-    private JTextField mWebServer;
-    private JTextField mOS;
-    private JTextField mLang;
-    private JTextField mFramework;
-    private JTextField mDescription;
-    private JComboBox<String> mColor;
+    private JComboBox<String> mColorComboBox;
     private DefaultListModel<String> mRulesListModel;
     private JList<String> mRulesListView;
+    private JPanel mParamsPanel;
+    private JScrollPane mParamsScrollPanel;
+    private Vector<String> mParamNameItems;
 
     public FpDetailPanel() {
         this(null);
     }
 
     public FpDetailPanel(FpData data) {
-        this.hasCreate = false;
         if (data == null) {
             data = new FpData();
             this.hasCreate = true;
         } else {
             data = ClassUtils.deepCopy(data);
+            this.hasCreate = false;
         }
         mData = data;
         this.initView();
@@ -55,23 +54,27 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     }
 
     private void initView() {
-        this.setPreferredSize(new Dimension(400, 450));
-        this.setLayout(new VLayout());
-        this.addInputPanel();
-        this.addRulesPanel();
+        setLayout(new VLayout(3));
+        setPreferredSize(new Dimension(400, 450));
+        addParamsPanel();
+        addColorPanel();
+        addRulesPanel();
     }
 
     private void setupData() {
         if (this.hasCreate) {
             return;
         }
-        mApplication.setText(mData.getApplication());
-        mWebServer.setText(mData.getWebserver());
-        mOS.setText(mData.getOS());
-        mLang.setText(mData.getLang());
-        mFramework.setText(mData.getFramework());
-        mDescription.setText(mData.getDescription());
-        mColor.setSelectedItem(mData.getColor());
+        // 指纹参数填充
+        ArrayList<FpData.Param> params = mData.getParams();
+        if (params != null) {
+            for (FpData.Param param : params) {
+                addParamItem(param);
+            }
+        }
+        // 填充颜色数据
+        mColorComboBox.setSelectedItem(mData.getColor());
+        // 填充指纹规则
         ArrayList<ArrayList<FpRule>> rules = mData.getRules();
         for (ArrayList<FpRule> fpRules : rules) {
             String ruleItem = this.parseFpRulesToStr(fpRules);
@@ -79,64 +82,121 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         }
     }
 
-    private void addInputPanel() {
-        mApplication = this.addInputItem(L.get("fingerprint_table_columns.application"));
-        mWebServer = this.addInputItem(L.get("fingerprint_table_columns.webserver"));
-        mOS = this.addInputItem(L.get("fingerprint_table_columns.os"));
-        mLang = this.addInputItem(L.get("fingerprint_table_columns.lang"));
-        mFramework = this.addInputItem(L.get("fingerprint_table_columns.framework"));
-        mDescription = this.addInputItem(L.get("fingerprint_table_columns.description"));
-        mColor = this.addComboBoxItem(L.get("fingerprint_table_columns.color"));
+    /**
+     * 添加指纹参数布局
+     */
+    private void addParamsPanel() {
+        // 添加参数按钮
+        JButton addParamBtn = new JButton(L.get("fingerprint_detail.add_param"));
+        addParamBtn.setActionCommand("add-param");
+        addParamBtn.addActionListener(this);
+        add(addParamBtn, "w-auto");
+        // 参数列表
+        mParamsPanel = new JPanel(new VFlowLayout());
+        mParamsScrollPanel = new JScrollPane(mParamsPanel);
+        mParamsScrollPanel.getVerticalScrollBar().setUnitIncrement(30);
+        add(mParamsScrollPanel, "1w");
     }
 
-    private JTextField addInputItem(String label) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(2, true));
-        panel.add(new JLabel(label + "："), "98px");
-        HintTextField textField = new HintTextField();
-        textField.setHintText(L.get("optional"));
-        panel.add(textField, "1w");
-        this.add(panel);
-        return textField;
+    /**
+     * 添加参数
+     */
+    private void doAddParam() {
+        addParamItem(null);
+        UIHelper.refreshUI(mParamsScrollPanel);
     }
 
-    private JComboBox<String> addComboBoxItem(String label) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(2, true));
-        panel.add(new JLabel(label + "："), "98px");
-        JComboBox<String> comboBox = new JComboBox<>(FpManager.sColorNames);
-        panel.add(comboBox, "1w");
-        this.add(panel);
-        return comboBox;
+    private void addParamItem(FpData.Param param) {
+        String paramName = "";
+        String paramValue = "";
+        if (param != null) {
+            // 存储的是指纹字段 ID 值，需要转换
+            paramName = FpManager.findColumnNameById(param.getK());
+            paramValue = param.getV();
+        }
+        // 布局
+        JPanel panel = new JPanel(new HLayout(5, true));
+        mParamsPanel.add(panel);
+        // 参数名组件
+        JComboBox<String> paramNameBox = new JComboBox<>(genParamNameItems());
+        paramNameBox.setSelectedItem(paramName);
+        panel.add(paramNameBox);
+        // 参数值输入框组件
+        HintTextField paramValueInput = new HintTextField(paramValue);
+        paramValueInput.setHintText(L.get("fingerprint_detail.param_value"));
+        panel.add(paramValueInput, "1w");
+        // 删除按钮组件
+        JButton delBtn = new JButton("X");
+        panel.add(delBtn, "40px");
+        // 事件处理
+        delBtn.addActionListener((e) -> {
+            mParamsPanel.remove(panel);
+            UIHelper.refreshUI(mParamsScrollPanel);
+        });
     }
 
+    /**
+     * 生成参数名 Item 选项
+     */
+    private Vector<String> genParamNameItems() {
+        if (mParamNameItems != null) {
+            return mParamNameItems;
+        }
+        Vector<String> result = new Vector<>();
+        result.add(L.get("fingerprint_detail.param_name"));
+        List<String> list = FpManager.getColumnNames();
+        result.addAll(list);
+        mParamNameItems = result;
+        return result;
+    }
+
+    /**
+     * 添加指纹颜色布局
+     */
+    private void addColorPanel() {
+        String label = L.get("fingerprint_table_columns.color");
+        JPanel panel = new JPanel(new HLayout(2, true));
+        panel.add(new JLabel(label + "："), "78px");
+        mColorComboBox = new JComboBox<>(FpManager.sColorNames);
+        panel.add(mColorComboBox, "1w");
+        add(panel);
+    }
+
+    /**
+     * 添加指纹规则布局
+     */
     private void addRulesPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new HLayout(5));
-        panel.setBorder(new TitledBorder(L.get("fingerprint_detail.rules_border_title")));
-        panel.add(this.addLeftPanel(), "75px");
+        add(new JLabel(L.get("fingerprint_detail.rules_border_title")));
+        // 指纹规则
+        JPanel panel = new JPanel(new HLayout(5));
+        panel.add(createRulesLeftPanel(), "75px");
         mRulesListModel = new DefaultListModel<>();
         mRulesListView = new JList<>(mRulesListModel);
         UIHelper.setListCellRenderer(mRulesListView);
         JScrollPane scrollPane = new JScrollPane(mRulesListView);
         panel.add(scrollPane, "1w");
-        this.add(panel, "1w");
+        add(panel, "1w");
     }
 
-    private JPanel addLeftPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new VLayout(5));
-        this.addButton(panel, L.get("add"), "add-item");
-        this.addButton(panel, L.get("edit"), "edit-item");
-        this.addButton(panel, L.get("delete"), "delete-item");
-        this.addButton(panel, L.get("up"), "up-item");
-        this.addButton(panel, L.get("down"), "down-item");
+    /**
+     * 创建指纹规则功能按钮布局
+     */
+    private JPanel createRulesLeftPanel() {
+        JPanel panel = new JPanel(new VLayout(5));
+        addRulesLeftButton(panel, L.get("add"), "add-item");
+        addRulesLeftButton(panel, L.get("edit"), "edit-item");
+        addRulesLeftButton(panel, L.get("delete"), "delete-item");
+        addRulesLeftButton(panel, L.get("up"), "up-item");
+        addRulesLeftButton(panel, L.get("down"), "down-item");
         return panel;
     }
 
-    private void addButton(JPanel panel, String text, String actionCommand) {
+    /**
+     * 添加指纹规则功能按钮
+     */
+    private void addRulesLeftButton(JPanel panel, String text, String action) {
         JButton btn = new JButton(text);
-        btn.setActionCommand(actionCommand);
+        btn.setActionCommand(action);
         btn.addActionListener(this);
         panel.add(btn);
     }
@@ -144,11 +204,6 @@ public class FpDetailPanel extends JPanel implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         String action = e.getActionCommand();
         ArrayList<ArrayList<FpRule>> rules = mData.getRules();
-        if (rules == null) {
-            rules = new ArrayList<>();
-            mData.setRules(rules);
-        }
-
         if ("add-item".equals(action)) {
             FpRulesPanel panel = new FpRulesPanel();
             ArrayList<FpRule> fpRules = panel.showDialog(this);
@@ -157,6 +212,10 @@ public class FpDetailPanel extends JPanel implements ActionListener {
                 String rulesText = this.parseFpRulesToStr(fpRules);
                 mRulesListModel.addElement(rulesText);
             }
+            return;
+        } else if ("add-param".equals(action)) {
+            doAddParam();
+            return;
         }
         int index = mRulesListView.getSelectedIndex();
         if (index < 0 || index >= rules.size()) {
@@ -173,7 +232,8 @@ public class FpDetailPanel extends JPanel implements ActionListener {
                 }
                 break;
             case "delete-item":
-                int ret = UIHelper.showOkCancelDialog(L.get("fingerprint_detail.confirm_delete_rule_hint"), this);
+                int ret = UIHelper.showOkCancelDialog(
+                        L.get("fingerprint_detail.confirm_delete_rule_hint"), this);
                 if (ret == 0) {
                     mRulesListModel.removeElementAt(index);
                     rules.remove(index);
@@ -182,30 +242,42 @@ public class FpDetailPanel extends JPanel implements ActionListener {
             case "up-item":
                 int upIndex = index - 1;
                 if (upIndex >= 0) {
-                    String temp = mRulesListModel.get(upIndex);
-                    mRulesListModel.setElementAt(mRulesListModel.get(index), upIndex);
-                    mRulesListModel.setElementAt(temp, index);
-                    mRulesListView.setSelectedIndex(upIndex);
-                    ArrayList<FpRule> tempRule = rules.get(upIndex);
-                    rules.set(upIndex, rules.get(index));
-                    rules.set(index, tempRule);
+                    doMoveItem(rules, index, upIndex);
                 }
                 break;
             case "down-item":
                 int downIndex = index + 1;
                 if (downIndex < mRulesListModel.size()) {
-                    String temp = mRulesListModel.get(index);
-                    mRulesListModel.setElementAt(mRulesListModel.get(downIndex), index);
-                    mRulesListModel.setElementAt(temp, downIndex);
-                    mRulesListView.setSelectedIndex(downIndex);
-                    ArrayList<FpRule> tempRule = rules.get(index);
-                    rules.set(index, rules.get(downIndex));
-                    rules.set(downIndex, tempRule);
+                    doMoveItem(rules, index, downIndex);
                 }
                 break;
         }
     }
 
+    /**
+     * 移动 Item 位置
+     *
+     * @param rules   指纹规则列表
+     * @param index   当前位置下标
+     * @param toIndex 目标位置下标
+     */
+    private void doMoveItem(ArrayList<ArrayList<FpRule>> rules, int index, int toIndex) {
+        String temp = mRulesListModel.get(index);
+        mRulesListModel.setElementAt(mRulesListModel.get(toIndex), index);
+        mRulesListModel.setElementAt(temp, toIndex);
+        mRulesListView.setSelectedIndex(toIndex);
+        // 同步更新
+        ArrayList<FpRule> tempRule = rules.get(index);
+        rules.set(index, rules.get(toIndex));
+        rules.set(toIndex, tempRule);
+    }
+
+    /**
+     * 解析指纹规则数据，转换为表达式格式
+     *
+     * @param rules 指纹规则数据
+     * @return 失败返回空字符串
+     */
     private String parseFpRulesToStr(ArrayList<FpRule> rules) {
         if (rules == null || rules.isEmpty()) {
             return "";
@@ -219,29 +291,89 @@ public class FpDetailPanel extends JPanel implements ActionListener {
         return StringUtils.join(ruleItems, " && ");
     }
 
+    /**
+     * 检测指纹参数列表是否已包含指纹字段 ID 值
+     *
+     * @param params   指纹参数列表
+     * @param columnId 指纹字段 ID 值
+     * @return true=包含；false=不包含
+     */
+    private boolean containsColumnId(ArrayList<FpData.Param> params, String columnId) {
+        if (StringUtils.isEmpty(columnId) || params == null || params.isEmpty()) {
+            return false;
+        }
+        for (FpData.Param param : params) {
+            if (param != null && columnId.equals(param.getK())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获取对话框标题
+     */
+    private String getDialogTitle() {
+        if (hasCreate) {
+            return L.get("fingerprint_detail.add_title");
+        } else {
+            return L.get("fingerprint_detail.edit_title");
+        }
+    }
+
+    /**
+     * 显示添加/编辑指纹对话框
+     *
+     * @return 返回添加/编辑完成的指纹数据实例；取消添加/编辑时返回null
+     */
     public FpData showDialog() {
-        int state = UIHelper.showCustomDialog(L.get("fingerprint_detail.dialog_title"), this);
+        int state = UIHelper.showCustomDialog(getDialogTitle(), this);
         if (state != JOptionPane.OK_OPTION) {
             return null;
         }
-        String application = mApplication.getText();
-        String webserver = mWebServer.getText();
-        String os = mOS.getText();
-        String lang = mLang.getText();
-        String framework = mFramework.getText();
-        String description = mDescription.getText();
-        String color = String.valueOf(mColor.getSelectedItem());
-        if (mData.getRules() == null || mData.getRules().isEmpty()) {
-            UIHelper.showTipsDialog(L.get("fingerprint_detail.rules_empty_hint"));
-            return this.showDialog();
+        // 获取用户输入的指纹参数信息
+        int count = mParamsPanel.getComponentCount();
+        ArrayList<FpData.Param> params = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            JPanel panel = (JPanel) mParamsPanel.getComponent(i);
+            // 参数名组件
+            JComboBox<String> paramNameBox = (JComboBox) panel.getComponent(0);
+            int paramNameIndex = paramNameBox.getSelectedIndex();
+            // 参数值输入框组件
+            JTextField paramValueInput = (JTextField) panel.getComponent(1);
+            if (paramNameIndex == 0) {
+                continue;
+            }
+            String paramName = genParamNameItems().get(paramNameIndex);
+            String columnId = FpManager.findColumnIdByName(paramName);
+            // 找不到字段 ID 值（可能已经被删除）
+            if (columnId == null) {
+                continue;
+            }
+            String paramValue = paramValueInput.getText();
+            // 参数值为空，忽略
+            if (StringUtils.isEmpty(paramValue)) {
+                continue;
+            }
+            // 检测是否添加重复参数
+            if (containsColumnId(params, columnId)) {
+                String message = L.get("fingerprint_detail.duplicate_param_names_exist", paramName);
+                UIHelper.showTipsDialog(message, this);
+                return showDialog();
+            }
+            params.add(new FpData.Param(columnId, paramValue));
         }
-        mData.setApplication(application);
-        mData.setWebserver(webserver);
-        mData.setOS(os);
-        mData.setLang(lang);
-        mData.setFramework(framework);
-        mData.setDescription(description);
+        // 设置指纹参数
+        mData.setParams(params);
+        // 设置指纹颜色
+        String color = String.valueOf(mColorComboBox.getSelectedItem());
         mData.setColor(color);
+        // 检测指纹规则是否为空
+        if (mData.getRules().isEmpty()) {
+            String message = L.get("fingerprint_detail.rules_empty_hint");
+            UIHelper.showTipsDialog(message, this);
+            return showDialog();
+        }
         return mData;
     }
 }

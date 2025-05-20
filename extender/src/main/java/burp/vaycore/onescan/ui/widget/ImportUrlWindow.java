@@ -3,6 +3,7 @@ package burp.vaycore.onescan.ui.widget;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
+import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.common.L;
 
@@ -65,28 +66,58 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (mWordlist.isEmptyListData()) {
-            UIHelper.showTipsDialog(L.get("data_is_empty_hint"), this);
-            return;
-        }
         String action = e.getActionCommand();
         switch (action) {
             case "scan-action":
                 doScan();
                 break;
             case "scan-on-exit-action":
-                doScan();
-                closeWindow();
+                boolean state = doScan();
+                if (state) {
+                    closeWindow();
+                }
                 break;
         }
     }
 
-    private void doScan() {
-        List<String> data = mWordlist.getListData();
+    /**
+     * 开始扫描
+     */
+    private boolean doScan() {
         String prefix = mTextField.getText();
-        // 调用事件
+        List<String> data = mWordlist.getListData();
+        // 如果存在前缀，对每一项进行拼接；如果不存在，直接使用列表的数据
+        if (StringUtils.isNotEmpty(prefix)) {
+            // 检测列表是否不为空
+            if (!data.isEmpty()) {
+                data.replaceAll(item -> {
+                    // 检测是否需要添加 '/' 字符
+                    if (!prefix.endsWith("/") && !item.startsWith("/")) {
+                        item = "/" + item;
+                    }
+                    return prefix + item;
+                });
+            } else {
+                // 列表为空，直接将前缀添加到列表
+                data.add(prefix);
+            }
+        } else if (data == null || data.isEmpty()) {
+            UIHelper.showTipsDialog(L.get("data_is_empty_hint"), this);
+            return false;
+        }
+        // 调用监听器
+        invokeOnImportUrlListener(data);
+        return true;
+    }
+
+    /**
+     * 调用 OnImportUrlListener 监听器
+     *
+     * @param data 导入的 URL 数据
+     */
+    private void invokeOnImportUrlListener(List<String> data) {
         if (mOnImportUrlListener != null) {
-            this.mOnImportUrlListener.onImportUrl(prefix, data);
+            this.mOnImportUrlListener.onImportUrl(data);
         }
     }
 
@@ -152,9 +183,8 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         /**
          * 导入 Url 事件
          *
-         * @param prefix Url 前缀
          * @param data   字典数据
          */
-        void onImportUrl(String prefix, List<String> data);
+        void onImportUrl(List<String> data);
     }
 }
