@@ -79,6 +79,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
     private QpsLimiter mQpsLimit;
+    private OneScanInfoTab mOneScanInfoTab;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
@@ -1313,6 +1314,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 清空显示的请求、响应数据包
         mRequestTextEditor.setMessage(EMPTY_BYTES, true);
         mResponseTextEditor.setMessage(EMPTY_BYTES, false);
+        // 清除信息辅助面板缓存
+        if (mOneScanInfoTab != null) {
+            mOneScanInfoTab.clearCache();
+        }
     }
 
     /**
@@ -1488,7 +1493,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public IMessageEditorTab createNewInstance(IMessageEditorController iMessageEditorController, boolean editable) {
-        return new OneScanInfoTab(mCallbacks);
+        if (mOneScanInfoTab == null) {
+            mOneScanInfoTab = new OneScanInfoTab(mCallbacks);
+        }
+        return mOneScanInfoTab;
     }
 
     @Override
