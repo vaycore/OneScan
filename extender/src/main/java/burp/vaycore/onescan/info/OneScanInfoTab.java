@@ -5,7 +5,6 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.JsonUtils;
 import burp.vaycore.common.utils.StringUtils;
-import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.widget.FpTestResultPanel;
@@ -15,9 +14,7 @@ import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * OneScan 信息辅助面板
@@ -28,8 +25,6 @@ public class OneScanInfoTab implements IMessageEditorTab {
 
     private final IExtensionHelpers mHelpers;
     private final JTabbedPane mTabPanel;
-    private static final Map<String, Boolean> sEnabledMap = new ConcurrentHashMap<>();
-    private static final Map<String, MessageCacheBean> sMessageCacheMap = new ConcurrentHashMap<>();
     private final IMessageEditorController mController;
 
     private JList<String> mJsonKeyList;
@@ -52,91 +47,66 @@ public class OneScanInfoTab implements IMessageEditorTab {
 
     @Override
     public boolean isEnabled(byte[] content, boolean isRequest) {
-        String key = Utils.md5(content);
-        if (!isRequest && sEnabledMap.containsKey(key)) {
-            return sEnabledMap.get(key);
-        }
-        boolean state = checkEnabled(content, isRequest);
-        // 请求包直接返回状态（只缓存响应包数据）
         if (isRequest) {
-            return state;
+            return checkReqEnabled(content);
+        } else {
+            return checkRespEnabled(content);
         }
-        sEnabledMap.put(key, state);
-        return state;
     }
 
     /**
-     * 检测是否启用信息辅助面板
+     * 检测当前请求是否需要启用信息辅助面板
      *
-     * @param content   请求/响应数据包
-     * @param isRequest 是否请求包
+     * @param content 请求数据包
      * @return true=启用；false=不启用
      */
-    private boolean checkEnabled(byte[] content, boolean isRequest) {
-        boolean hasJsonEnabled = false;
-        boolean hasFingerprint = false;
-        if (isRequest) {
-            // 解析请求包数据
-            IRequestInfo info = mHelpers.analyzeRequest(content);
-            // 请求包中是否包含 JSON 数据格式
-            String body = getReqBody(info, content);
-            hasJsonEnabled = JsonUtils.hasJson(body);
-            // 是否存在指纹识别历史记录
-            if (FpManager.getHistoryCount() > 0) {
-                String host = getRequestHost(info);
-                List<FpData> list = FpManager.findHistoryByHost(host);
-                hasFingerprint = list != null && !list.isEmpty();
-            } else {
-                // 请求包是否存在指纹识别数据
-                List<FpData> results = FpManager.check(content, mController.getResponse());
-                hasFingerprint = results != null && !results.isEmpty();
-            }
-        } else {
-            // 解析响应包数据
-            IResponseInfo info = mHelpers.analyzeResponse(content);
-            // 响应包中是否包含 JSON 数据格式
-            String body = getRespBody(info, content);
-            hasJsonEnabled = JsonUtils.hasJson(body);
-            // 响应包是否存在指纹识别数据
-            List<FpData> results = FpManager.check(mController.getRequest(), content);
-            hasFingerprint = results != null && !results.isEmpty();
+    private boolean checkReqEnabled(byte[] content) {
+        boolean hasEnabled = false;
+        // 解析请求包数据
+        IRequestInfo info = mHelpers.analyzeRequest(content);
+        // 是否存在指纹识别历史记录
+        if (FpManager.getHistoryCount() > 0) {
+            String host = getRequestHost(info);
+            List<FpData> historyResults = FpManager.findHistoryByHost(host);
+            hasEnabled = historyResults != null && !historyResults.isEmpty();
         }
-        return hasJsonEnabled || hasFingerprint;
+        // 如果未启用，检测请求包是否存在指纹识别数据
+        if (!hasEnabled) {
+            List<FpData> results = FpManager.check(content, mController.getResponse());
+            hasEnabled = results != null && !results.isEmpty();
+        }
+        // 如果未启用，检测请求包中是否包含 JSON 数据格式
+        if (!hasEnabled) {
+            String body = getReqBody(info, content);
+            hasEnabled = JsonUtils.hasJson(body);
+        }
+        return hasEnabled;
+    }
+
+    /**
+     * 检测当前响应是否需要启用信息辅助面板
+     *
+     * @param content 响应数据包
+     * @return true=启用；false=不启用
+     */
+    private boolean checkRespEnabled(byte[] content) {
+        boolean hasEnabled = false;
+        // 解析响应包数据
+        IResponseInfo info = mHelpers.analyzeResponse(content);
+        // 检测响应包中是否包含 JSON 数据格式
+        String body = getRespBody(info, content);
+        hasEnabled = JsonUtils.hasJson(body);
+        return hasEnabled;
     }
 
     @Override
     public void setMessage(byte[] content, boolean isRequest) {
         mTabPanel.removeAll();
-        String key = Utils.md5(content);
-        // 如果响应包存在缓存（只缓存响应包数据）
-        if (!isRequest && sMessageCacheMap.containsKey(key)) {
-            loadCacheMessage(key);
-            return;
-        }
-        // 无缓存，进入数据提取流程
+        // 根据当前数据类型，进入数据提取流程
         if (isRequest) {
             handleReqMessage(content);
         } else {
-            handleRespMessage(content, key);
-        }
-    }
-
-    /**
-     * 加载缓存信息
-     *
-     * @param key 缓存 key
-     */
-    private void loadCacheMessage(String key) {
-        MessageCacheBean bean = sMessageCacheMap.get(key);
-        // 指纹识别结果
-        List<FpData> results = bean.getResults();
-        if (results != null && !results.isEmpty()) {
-            mTabPanel.addTab("Fingerprint", new FpTestResultPanel(results));
-        }
-        // Json 字段
-        List<String> jsonKeys = bean.getJsonKeys();
-        if (jsonKeys != null && !jsonKeys.isEmpty()) {
-            mTabPanel.addTab("Json", newJsonInfoPanel(jsonKeys));
+            handleRespMessage(content);
         }
     }
 
@@ -176,26 +146,17 @@ public class OneScanInfoTab implements IMessageEditorTab {
      *
      * @param content 数据包
      */
-    private void handleRespMessage(byte[] content, String key) {
-        MessageCacheBean bean = new MessageCacheBean();
+    private void handleRespMessage(byte[] content) {
         // 解析响应包数据
         IResponseInfo info = mHelpers.analyzeResponse(content);
-        // 识别响应包的指纹
-        List<FpData> results = FpManager.check(mController.getRequest(), content);
-        if (results != null && !results.isEmpty()) {
-            bean.setResults(results);
-            mTabPanel.addTab("Fingerprint", new FpTestResultPanel(results));
-        }
         // 提取响应包 Json 字段数据展示
         String body = getRespBody(info, content);
         if (JsonUtils.hasJson(body)) {
             ArrayList<String> keys = JsonUtils.findAllKeysByJson(body);
             if (!keys.isEmpty()) {
-                bean.setJsonKeys(keys);
                 mTabPanel.addTab("Json", newJsonInfoPanel(keys));
             }
         }
-        sMessageCacheMap.put(key, bean);
     }
 
     private JPanel newJsonInfoPanel(List<String> keys) {
@@ -248,13 +209,13 @@ public class OneScanInfoTab implements IMessageEditorTab {
     }
 
     private String getRequestHost(IRequestInfo info) {
-        if (info == null) {
-            return null;
-        }
         // 优先使用从 IHttpService 获取的 Host 值
         String host = getRequestHost();
         if (StringUtils.isNotEmpty(host)) {
             return host;
+        }
+        if (info == null) {
+            return null;
         }
         // 从 HTTP 请求头中获取 Host 值
         List<String> headers = info.getHeaders();
@@ -282,57 +243,5 @@ public class OneScanInfoTab implements IMessageEditorTab {
             return host;
         }
         return host + ":" + port;
-    }
-
-    /**
-     * 清除缓存
-     */
-    public static void clearCache() {
-        if (!sEnabledMap.isEmpty()) {
-            sEnabledMap.clear();
-        }
-        if (!sMessageCacheMap.isEmpty()) {
-            sMessageCacheMap.clear();
-        }
-    }
-
-    /**
-     * 信息缓存实体类
-     */
-    private static class MessageCacheBean {
-
-        private List<FpData> mResults;
-        private List<FpData> mHistoryResults;
-        private List<String> mJsonKeys;
-
-        public List<FpData> getResults() {
-            return mResults;
-        }
-
-        public void setResults(List<FpData> mResults) {
-            this.mResults = mResults;
-        }
-
-        public List<FpData> getHistoryResults() {
-            return mHistoryResults;
-        }
-
-        public void setHistoryResults(List<FpData> mHistoryResults) {
-            this.mHistoryResults = mHistoryResults;
-        }
-
-        public List<String> getJsonKeys() {
-            return mJsonKeys;
-        }
-
-        public void setJsonKeys(List<String> mJsonKeys) {
-            this.mJsonKeys = mJsonKeys;
-        }
-
-        public boolean isNotEmpty() {
-            return mResults != null && !mResults.isEmpty() &&
-                    mHistoryResults != null && !mHistoryResults.isEmpty() &&
-                    mJsonKeys != null && !mJsonKeys.isEmpty();
-        }
     }
 }
