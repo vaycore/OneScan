@@ -52,7 +52,7 @@ Extender -> Extensions -> Add -> Select File -> Next
 Extensions -> Installed -> Add -> Select File -> Next
 ```
 
-流程结束后，打印如下信息表示插件安装完成（需要在 Config -> Other -> HaE 中配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径后，才会显示 **HaE** 插件的日志信息、数据高亮功能）：
+流程结束后，打印如下信息表示插件安装完成：
 
 ![](imgs/install_success.png)
 
@@ -193,8 +193,8 @@ Request 配置界面如下
 - `Retry` 请求失败时重试次数配置，范围（`0-9`）
 - `Include method` 配置请求方法白名单
 - `Exclude suffix` 排除指定后缀的数据包
-- `Header` 递归扫描过程的请求头配置，可配置变量
-- `Remove header` 请求时移除请求头中对应的值
+- `Header` 设置扫描的请求头（启用替换请求头时生效）
+- `Remove header` 设置移除的请求头字段，根据请求头字段移除对应的请求头（启用移除请求头开关时生效）
 - `UserAgent` 这里配置的是 `{{random.ua}}` 变量列表里的值
 
 #### Host（主要是黑、白名单配置）
@@ -215,8 +215,6 @@ Other配置界面如下
 - `Maximum display length` 限制请求、响应包的最大显示长度（插件 `1.6.11` 版本新增）
 - `Collect directory` 数据收集存放目录
 - `Wordlist Directory` 插件`1.0.0`版本新增字典管理，此目录下包含所有字典文件的配置
-- `HaE` 配置 [HaE](https://github.com/gh0stkey/HaE) 插件 JAR 包路径，与 [HaE](https://github.com/gh0stkey/HaE) 联动，使数据看板里的敏感信息高亮
-- `Clear cache` 清除指纹识别缓存（缓存用于加快指纹识别的速度）
 
 ### Fingerprint指纹
 
@@ -230,35 +228,45 @@ Other配置界面如下
 - `Edit` 编辑选中的指纹信息
 - `Delete` 删除选中的指纹信息
 - `Test` 测试指纹规则
+- `Clear cache` 清除指纹识别缓存
+- `Column manager` 指纹字段管理
 
 指纹信息全程使用 UI 添加，不需要编写正则匹配规则（也可以使用正则匹配），UI 界面如下：
 
-![](imgs/create_fingerprint_ui.png)
+![](imgs/add_fingerprint_ui.png)
 
 #### 指纹信息说明
 
-- `Name` 指纹名称（产品名）
-- `Company` 产品公司（默认：Other）
-- `Lang` 编程语言
-- `SoftHard` 软硬件（0=其它；1=硬件；2=软件）
-- `Frame` 产品使用的开发框架
-- `ParentCategory` 父类别（默认：Other）
-- `Category` 类别（默认：Other）
+- `Add param` 添加指纹参数
+- `Param Name` 指纹参数名（与指纹字段绑定）
+- `Param Value` 指纹参数值
+- `Color` 命中指纹规则后标记的颜色（参考了 [HaE](https://github.com/gh0stkey/HaE) 项目的颜色标记机制）
 - `Rules` 指纹匹配规则
 
 #### 指纹规则说明
 
-包含七种数据源
+包含 HTTP 通用字段如下：
 
-- `header` Header
-- `server` Header 中的 Server 值
-- `body` Body 数据
-- `title` Html 标题
-- `bodyMd5` Body 数据 MD5 值
-- `bodyHash` Body 数据 Hash 值
-- `banner` 其它协议的 Banner 信息（HTTP协议无法匹配该值）
+- `firstLine` HTTP 首行（格式示例：`GET / HTTP/1.1` 、 `HTTP/1.1 200 OK`）
+- `header` HTTP 协议头
+- `body` HTTP Body 数据
+- `bodyMd5` HTTP Body 数据 MD5 值
+- `bodyHash` HTTP Body 数据 Hash 值
+- `bodyHex` HTTP Body 数据 Hex 值（格式示例：000102030405；只取前 100 个字节）
+- `data` 整个 HTTP 数据包
 
-共有十种匹配方法
+其中 HTTP 请求数据源包含如下字段：
+
+- `method` HTTP 请求方法
+- `url` HTTP 请求 URL（示例格式：/path/to/index.do?a=1）
+
+其中 HTTP 响应数据源包含如下字段：
+
+- `status` HTTP 响应状态码
+- `server` HTTP 响应头中 Server 的值
+- `title` HTML 标题
+
+共十二种匹配方法
 
 - `equals` 匹配相等
 - `notEquals` 匹配不相等
@@ -270,6 +278,8 @@ Other配置界面如下
 - `iNotContains` 不包含（忽略大小写）
 - `regex` 正则匹配
 - `notRegex` 正则不匹配
+- `iRegex` 正则匹配（忽略大小写）
+- `iNotRegex` 正则不匹配（忽略大小写）
 
 ### Collect数据收集
 
