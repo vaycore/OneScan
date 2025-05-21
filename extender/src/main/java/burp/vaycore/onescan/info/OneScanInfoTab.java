@@ -30,12 +30,14 @@ public class OneScanInfoTab implements IMessageEditorTab {
     private final JTabbedPane mTabPanel;
     private static final Map<String, Boolean> sEnabledMap = new ConcurrentHashMap<>();
     private static final Map<String, MessageCacheBean> sMessageCacheMap = new ConcurrentHashMap<>();
+    private final IMessageEditorController mController;
 
     private JList<String> mJsonKeyList;
 
-    public OneScanInfoTab(IBurpExtenderCallbacks callbacks) {
+    public OneScanInfoTab(IBurpExtenderCallbacks callbacks, IMessageEditorController controller) {
         mHelpers = callbacks.getHelpers();
         mTabPanel = new JTabbedPane();
+        mController = controller;
     }
 
     @Override
@@ -86,7 +88,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
                 hasFingerprint = list != null && !list.isEmpty();
             } else {
                 // 请求包是否存在指纹识别数据
-                List<FpData> results = FpManager.check(content, null);
+                List<FpData> results = FpManager.check(content, mController.getResponse());
                 hasFingerprint = results != null && !results.isEmpty();
             }
         } else {
@@ -96,7 +98,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
             String body = getRespBody(info, content);
             hasJsonEnabled = JsonUtils.hasJson(body);
             // 响应包是否存在指纹识别数据
-            List<FpData> results = FpManager.check(null, content);
+            List<FpData> results = FpManager.check(mController.getRequest(), content);
             hasFingerprint = results != null && !results.isEmpty();
         }
         return hasJsonEnabled || hasFingerprint;
@@ -147,7 +149,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
         // 解析请求包数据
         IRequestInfo info = mHelpers.analyzeRequest(content);
         // 识别请求包的指纹
-        List<FpData> results = FpManager.check(content, null);
+        List<FpData> results = FpManager.check(content, mController.getResponse());
         if (results != null && !results.isEmpty()) {
             mTabPanel.addTab("Fingerprint", new FpTestResultPanel(results));
         }
@@ -179,7 +181,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
         // 解析响应包数据
         IResponseInfo info = mHelpers.analyzeResponse(content);
         // 识别响应包的指纹
-        List<FpData> results = FpManager.check(null, content);
+        List<FpData> results = FpManager.check(mController.getRequest(), content);
         if (results != null && !results.isEmpty()) {
             bean.setResults(results);
             mTabPanel.addTab("Fingerprint", new FpTestResultPanel(results));
@@ -249,6 +251,12 @@ public class OneScanInfoTab implements IMessageEditorTab {
         if (info == null) {
             return null;
         }
+        // 优先使用从 IHttpService 获取的 Host 值
+        String host = getRequestHost();
+        if (StringUtils.isNotEmpty(host)) {
+            return host;
+        }
+        // 从 HTTP 请求头中获取 Host 值
         List<String> headers = info.getHeaders();
         for (String header : headers) {
             if (header.startsWith("Host: ")) {
@@ -256,6 +264,24 @@ public class OneScanInfoTab implements IMessageEditorTab {
             }
         }
         return null;
+    }
+
+    /**
+     * 通过 IHttpService 实例，获取请求的 Host 值（示例格式：x.x.x.x、x.x.x.x:8080）
+     *
+     * @return 失败返回null
+     */
+    private String getRequestHost() {
+        IHttpService service = mController.getHttpService();
+        if (service == null) {
+            return null;
+        }
+        String host = service.getHost();
+        int port = service.getPort();
+        if (port < 0 || port == 80 || port == 443 || port > 65535) {
+            return host;
+        }
+        return host + ":" + port;
     }
 
     /**

@@ -1492,7 +1492,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
 
     @Override
     public IMessageEditorTab createNewInstance(IMessageEditorController iMessageEditorController, boolean editable) {
-        return new OneScanInfoTab(mCallbacks);
+        return new OneScanInfoTab(mCallbacks, iMessageEditorController);
     }
 
     @Override
