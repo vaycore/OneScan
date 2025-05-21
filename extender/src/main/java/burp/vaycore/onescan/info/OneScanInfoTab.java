@@ -28,16 +28,14 @@ public class OneScanInfoTab implements IMessageEditorTab {
 
     private final IExtensionHelpers mHelpers;
     private final JTabbedPane mTabPanel;
-    private final Map<String, Boolean> mEnabledMap;
-    private final Map<String, MessageCacheBean> mMessageCacheMap;
+    private static final Map<String, Boolean> sEnabledMap = new ConcurrentHashMap<>();
+    private static final Map<String, MessageCacheBean> sMessageCacheMap = new ConcurrentHashMap<>();
 
     private JList<String> mJsonKeyList;
 
     public OneScanInfoTab(IBurpExtenderCallbacks callbacks) {
         mHelpers = callbacks.getHelpers();
         mTabPanel = new JTabbedPane();
-        mEnabledMap = new ConcurrentHashMap<>();
-        mMessageCacheMap = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -53,15 +51,15 @@ public class OneScanInfoTab implements IMessageEditorTab {
     @Override
     public boolean isEnabled(byte[] content, boolean isRequest) {
         String key = Utils.md5(content);
-        if (!isRequest && mEnabledMap.containsKey(key)) {
-            return mEnabledMap.get(key);
+        if (!isRequest && sEnabledMap.containsKey(key)) {
+            return sEnabledMap.get(key);
         }
         boolean state = checkEnabled(content, isRequest);
         // 请求包直接返回状态（只缓存响应包数据）
         if (isRequest) {
             return state;
         }
-        mEnabledMap.put(key, state);
+        sEnabledMap.put(key, state);
         return state;
     }
 
@@ -109,7 +107,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
         mTabPanel.removeAll();
         String key = Utils.md5(content);
         // 如果响应包存在缓存（只缓存响应包数据）
-        if (!isRequest && mMessageCacheMap.containsKey(key)) {
+        if (!isRequest && sMessageCacheMap.containsKey(key)) {
             loadCacheMessage(key);
             return;
         }
@@ -127,7 +125,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
      * @param key 缓存 key
      */
     private void loadCacheMessage(String key) {
-        MessageCacheBean bean = mMessageCacheMap.get(key);
+        MessageCacheBean bean = sMessageCacheMap.get(key);
         // 指纹识别结果
         List<FpData> results = bean.getResults();
         if (results != null && !results.isEmpty()) {
@@ -195,7 +193,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
                 mTabPanel.addTab("Json", newJsonInfoPanel(keys));
             }
         }
-        mMessageCacheMap.put(key, bean);
+        sMessageCacheMap.put(key, bean);
     }
 
     private JPanel newJsonInfoPanel(List<String> keys) {
@@ -263,12 +261,12 @@ public class OneScanInfoTab implements IMessageEditorTab {
     /**
      * 清除缓存
      */
-    public void clearCache() {
-        if (!mEnabledMap.isEmpty()) {
-            mEnabledMap.clear();
+    public static void clearCache() {
+        if (!sEnabledMap.isEmpty()) {
+            sEnabledMap.clear();
         }
-        if (!mMessageCacheMap.isEmpty()) {
-            mMessageCacheMap.clear();
+        if (!sMessageCacheMap.isEmpty()) {
+            sMessageCacheMap.clear();
         }
     }
 
