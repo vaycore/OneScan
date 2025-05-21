@@ -1314,6 +1314,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 清空显示的请求、响应数据包
         mRequestTextEditor.setMessage(EMPTY_BYTES, true);
         mResponseTextEditor.setMessage(EMPTY_BYTES, false);
+        // 清除指纹识别历史记录
+        FpManager.clearHistory();
         // 清除信息辅助面板缓存
         if (mOneScanInfoTab != null) {
             mOneScanInfoTab.clearCache();
