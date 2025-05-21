@@ -3,6 +3,7 @@ package burp.vaycore.onescan.ui.widget;
 import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VFlowLayout;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.onescan.bean.FpColumn;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.FpManager;
@@ -15,6 +16,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 指纹测试结果
@@ -51,23 +53,21 @@ public class FpTestResultPanel extends JScrollPane {
         if (list == null || list.isEmpty()) {
             return;
         }
-        LinkedHashMap<String, List<ItemData>> itemDataMap = new LinkedHashMap<>();
+        Map<String, List<ItemData>> itemDataMap = createItemDataMap();
         List<ItemData> colorItems = new ArrayList<>();
         List<Integer> colorLevels = new ArrayList<>();
         for (FpData item : list) {
             ArrayList<FpData.Param> params = item.getParams();
             // 指纹数据收集
-            if (params != null && !params.isEmpty()) {
-                for (FpData.Param param : params) {
-                    String key = param.getK();
-                    String value = param.getV();
-                    if (!itemDataMap.containsKey(key)) {
-                        itemDataMap.put(key, new ArrayList<>());
-                    }
-                    // 获取对应字段的列表
-                    List<ItemData> items = itemDataMap.get(key);
-                    appendData(items, value, item.getColor());
+            for (FpData.Param param : params) {
+                String key = param.getK();
+                String value = param.getV();
+                if (!itemDataMap.containsKey(key)) {
+                    itemDataMap.put(key, new ArrayList<>());
                 }
+                // 获取对应字段的列表
+                List<ItemData> items = itemDataMap.get(key);
+                appendData(items, value, item.getColor());
             }
             // 颜色等级收集
             int colorLevel = FpManager.findColorLevelByName(item.getColor());
@@ -83,6 +83,7 @@ public class FpTestResultPanel extends JScrollPane {
             JPanel itemsPanel = createItemsPanel(columnName, items);
             addToPanel(itemsPanel);
         }
+        // 单独添加颜色布局
         addToPanel(createItemsPanel(L.get("fingerprint_table_columns.color"), colorItems));
         UIHelper.refreshUI(this);
     }
@@ -153,6 +154,23 @@ public class FpTestResultPanel extends JScrollPane {
             }
         }
         list.add(new ItemData(data, colorName));
+    }
+
+    /**
+     * 按指纹字段顺序创建数据列表键值对
+     *
+     * @return 返回实例
+     */
+    private Map<String, List<ItemData>> createItemDataMap() {
+        Map<String, List<ItemData>> result = new LinkedHashMap<>();
+        // 获取配置的指纹字段列表
+        List<FpColumn> columns = FpManager.getColumns();
+        // 遍历字段列表，初始化数据列表
+        for (FpColumn column : columns) {
+            String key = column.getId();
+            result.put(key, new ArrayList<>());
+        }
+        return result;
     }
 
     /**
