@@ -47,12 +47,11 @@ public class TableFilterPanel extends JPanel implements ItemListener, ActionList
     }
 
     private void initView() {
-        setPreferredSize(new Dimension(450, 260));
+        setPreferredSize(new Dimension(500, 290));
         setLayout(new VLayout(10));
         // 选择过滤字段，添加、清除字段过滤规则
-        JPanel columnPanel = new JPanel();
+        JPanel columnPanel = new JPanel(new HLayout(5, true));
         add(columnPanel);
-        columnPanel.setLayout(new HLayout(10, true));
         JLabel filterLabel = new JLabel(L.get("table_filter.select_column"));
         columnPanel.add(filterLabel);
         mColumnList = new JComboBox<>(mColumns);
