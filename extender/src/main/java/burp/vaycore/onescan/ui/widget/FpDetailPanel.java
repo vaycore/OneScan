@@ -338,22 +338,32 @@ public class FpDetailPanel extends JPanel implements ActionListener {
             JPanel panel = (JPanel) mParamsPanel.getComponent(i);
             // 参数名组件
             JComboBox<String> paramNameBox = (JComboBox) panel.getComponent(0);
-            int paramNameIndex = paramNameBox.getSelectedIndex();
             // 参数值输入框组件
             JTextField paramValueInput = (JTextField) panel.getComponent(1);
-            if (paramNameIndex == 0) {
-                continue;
-            }
-            String paramName = genParamNameItems().get(paramNameIndex);
-            String columnId = FpManager.findColumnIdByName(paramName);
-            // 找不到字段 ID 值（可能已经被删除）
-            if (columnId == null) {
-                continue;
-            }
+            // 获取输入的参数值
             String paramValue = paramValueInput.getText();
-            // 参数值为空，忽略
+            // 忽略参数值为空的参数（先检测参数值原因：如果不为空，需要提示参数名未做选择）
             if (StringUtils.isEmpty(paramValue)) {
                 continue;
+            }
+            // 获取选择的参数名下标
+            int paramNameIndex = paramNameBox.getSelectedIndex();
+            if (paramNameIndex == 0) {
+                // 提示需要选择参数名
+                String message = L.get("fingerprint_detail.please_select_param_name", paramValue);
+                UIHelper.showTipsDialog(message, this);
+                return showDialog();
+            }
+            // 获取选择的参数名
+            String paramName = genParamNameItems().get(paramNameIndex);
+            // 通过参数名，找到对应的指纹字段 ID 值
+            String columnId = FpManager.findColumnIdByName(paramName);
+            // 如果找不到指纹字段 ID 值（指纹字段可能已经被删除）
+            if (columnId == null) {
+                // 提示参数名不存在
+                String message = L.get("fingerprint_detail.param_name_not_exist", paramName);
+                UIHelper.showTipsDialog(message, this);
+                return showDialog();
             }
             // 检测是否添加重复参数
             if (containsColumnId(params, columnId)) {
