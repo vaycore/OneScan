@@ -25,10 +25,10 @@ public class FpTable extends JTable {
     private final TableRowSorter<FpTable.FpTableModel> mTableRowSorter;
 
     public FpTable() {
-        setModel(this.mTableModel);
+        setModel(mTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        mTableRowSorter = new TableRowSorter<>(this.mTableModel);
-        setRowSorter(this.mTableRowSorter);
+        mTableRowSorter = new TableRowSorter<>(mTableModel);
+        setRowSorter(mTableRowSorter);
         getTableHeader().setReorderingAllowed(false);
         initColorLevelSorter();
         initColumnWidth();
@@ -37,7 +37,7 @@ public class FpTable extends JTable {
 
     public void loadData() {
         List<FpData> list = FpManager.getList();
-        this.mTableModel.setData(list);
+        mTableModel.setData(list);
     }
 
     /**
@@ -47,7 +47,7 @@ public class FpTable extends JTable {
         String path = FpManager.getPath();
         FpManager.init(path);
         List<FpData> list = FpManager.getList();
-        this.mTableModel.setData(list);
+        mTableModel.setData(list);
     }
 
     /**
@@ -56,7 +56,7 @@ public class FpTable extends JTable {
     private void initColorLevelSorter() {
         // 颜色字段等级排序（固定最后一列为颜色等级）
         int comparatorColumn = getColumnNames().size() - 1;
-        this.mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
+        mTableRowSorter.setComparator(comparatorColumn, (Comparator<String>) (left, right) -> {
             int leftLevel = getColorLevel(left);
             int rightLevel = getColorLevel(right);
             return Integer.compare(leftLevel, rightLevel);
@@ -95,7 +95,7 @@ public class FpTable extends JTable {
      * @param filter 过滤器实例
      */
     public void setRowFilter(RowFilter<FpTable.FpTableModel, Integer> filter) {
-        this.mTableRowSorter.setRowFilter(filter);
+        mTableRowSorter.setRowFilter(filter);
     }
 
     /**
@@ -104,7 +104,7 @@ public class FpTable extends JTable {
      * @param data 指纹数据实例
      */
     public void addFpData(FpData data) {
-        this.mTableModel.add(data);
+        mTableModel.add(data);
         FpManager.addItem(data);
     }
 
@@ -114,10 +114,9 @@ public class FpTable extends JTable {
      * @param rowIndex 指纹数据下标
      */
     public void removeFpData(int rowIndex) {
-        if (rowIndex >= 0 && rowIndex < this.mTableModel.getRowCount()) {
-            int index = this.convertRowIndexToModel(rowIndex);
-            this.mTableModel.remove(index);
-            FpManager.removeItem(index);
+        if (rowIndex >= 0 && rowIndex < mTableModel.getRowCount()) {
+            mTableModel.remove(rowIndex);
+            FpManager.removeItem(rowIndex);
         }
     }
 
@@ -128,10 +127,9 @@ public class FpTable extends JTable {
      * @param data 指纹数据实例
      */
     public void setFpData(int rowIndex, FpData data) {
-        if (rowIndex >= 0 && rowIndex < this.mTableModel.getRowCount()) {
-            int index = this.convertRowIndexToModel(rowIndex);
-            this.mTableModel.set(index, data);
-            FpManager.setItem(index, data);
+        if (rowIndex >= 0 && rowIndex < mTableModel.getRowCount()) {
+            mTableModel.set(rowIndex, data);
+            FpManager.setItem(rowIndex, data);
         }
     }
 
@@ -142,9 +140,8 @@ public class FpTable extends JTable {
      * @return 失败返回null
      */
     public FpData getFpData(int rowIndex) {
-        if (rowIndex >= 0 && rowIndex < this.mTableModel.getRowCount()) {
-            int index = this.convertRowIndexToModel(rowIndex);
-            return this.mTableModel.mData.get(index);
+        if (rowIndex >= 0 && rowIndex < mTableModel.getRowCount()) {
+            return mTableModel.mData.get(rowIndex);
         } else {
             return null;
         }
@@ -196,18 +193,18 @@ public class FpTable extends JTable {
 
         public void add(FpData data) {
             if (data != null) {
-                synchronized (this.mData) {
+                synchronized (mData) {
                     int id = getRowCount();
-                    this.mData.add(data);
+                    mData.add(data);
                     this.fireTableRowsInserted(id, id);
                 }
             }
         }
 
         public void remove(int index) {
-            synchronized (this.mData) {
+            synchronized (mData) {
                 if (index >= 0 && index < getRowCount()) {
-                    this.mData.remove(index);
+                    mData.remove(index);
                     this.fireTableRowsDeleted(index, index);
                 }
             }
@@ -217,9 +214,9 @@ public class FpTable extends JTable {
             if (data == null) {
                 return;
             }
-            synchronized (this.mData) {
+            synchronized (mData) {
                 if (index >= 0 && index < getRowCount()) {
-                    this.mData.set(index, data);
+                    mData.set(index, data);
                     this.fireTableRowsUpdated(index, index);
                 }
             }
@@ -229,17 +226,17 @@ public class FpTable extends JTable {
             if (data == null || data.isEmpty()) {
                 return;
             }
-            synchronized (this.mData) {
-                this.mData.clear();
+            synchronized (mData) {
+                mData.clear();
                 if (!data.isEmpty()) {
-                    this.mData.addAll(data);
+                    mData.addAll(data);
                 }
                 this.fireTableDataChanged();
             }
         }
 
         public int getRowCount() {
-            return this.mData.size();
+            return mData.size();
         }
 
         public int getColumnCount() {
@@ -252,7 +249,7 @@ public class FpTable extends JTable {
 
         public Object getValueAt(int rowIndex, int columnIndex) {
             String columnName = getColumnName(columnIndex);
-            FpData data = this.mData.get(rowIndex);
+            FpData data = mData.get(rowIndex);
             if (columnIndex == 0) {
                 return rowIndex;
             } else if (columnIndex == getColumnCount() - 1) {
