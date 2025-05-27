@@ -24,7 +24,7 @@ public abstract class FpHttpDS extends FpDataSource {
     /**
      * 检测状态行格式正则表达式
      */
-    private static final Pattern REGEX_RESP_LINE = Pattern.compile("^HTTP/\\d+\\.\\d+\\s+\\d{3}\\s+.*",
+    private static final Pattern REGEX_RESP_LINE = Pattern.compile("^HTTP/\\d+(?:\\.\\d+)?\\s+\\d+\\s*.*",
             Pattern.CASE_INSENSITIVE);
 
     private final String firstLine;

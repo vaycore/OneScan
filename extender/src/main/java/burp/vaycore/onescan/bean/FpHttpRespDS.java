@@ -18,12 +18,14 @@ public class FpHttpRespDS extends FpHttpDS {
     /**
      * HTTP 响应状态码数据正则表达式
      */
-    private static final Pattern REGEX_RESP_STATUS = Pattern.compile("^HTTP/\\d+\\.\\d+\\s+(\\d{3})\\s+.*");
+    private static final Pattern REGEX_RESP_STATUS = Pattern.compile("^HTTP/\\d+(?:\\.\\d+)?\\s+(\\d+)\\s*.*",
+            Pattern.CASE_INSENSITIVE);
 
     /**
      * HTTP 响应头 Server 数据正则表达式
      */
-    private static final Pattern REGEX_RESP_SERVER = Pattern.compile("Server: (.*)");
+    private static final Pattern REGEX_RESP_SERVER = Pattern.compile("Server: (.*)",
+            Pattern.CASE_INSENSITIVE);
 
     /**
      * HTTP 响应日期格式正则表达式
