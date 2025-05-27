@@ -15,13 +15,13 @@ public class FpHttpReqDS extends FpHttpDS {
     /**
      * 获取请求方法正则表达式
      */
-    private static final Pattern REGEX_REQ_METHOD = Pattern.compile("^([a-zA-Z]+)\\s+\\S+\\s+HTTP/\\d+\\.\\d+",
+    private static final Pattern REGEX_REQ_METHOD = Pattern.compile("^([A-Z]+)\\s+.*?\\s+HTTP/\\d+(?:\\.\\d+)?",
             Pattern.CASE_INSENSITIVE);
 
     /**
      * 获取请求 URL 正则表达式
      */
-    private static final Pattern REGEX_REQ_URL = Pattern.compile("[a-zA-Z]+\\s(.*?)\\sHTTP/",
+    private static final Pattern REGEX_REQ_URL = Pattern.compile("[A-Z]+\\s+(.*?)\\s+HTTP/",
             Pattern.CASE_INSENSITIVE);
 
     private final String method;
@@ -30,7 +30,7 @@ public class FpHttpReqDS extends FpHttpDS {
     public FpHttpReqDS(byte[] data, Charset charset) {
         super(data, charset);
         this.method = fetchRegexResult(REGEX_REQ_METHOD, getFirstLine());
-        this.url = fetchRegexResult(REGEX_REQ_URL, getHeader());
+        this.url = fetchRegexResult(REGEX_REQ_URL, getFirstLine());
     }
 
     @Override
