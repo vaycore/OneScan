@@ -218,7 +218,7 @@ Other配置界面如下
 
 ### Fingerprint指纹
 
-插件 `1.0.0` 版本新增 `Fingerprint` 指纹模块，指纹管理界面如下
+插件 `1.0.0` 版本新增 `Fingerprint` 指纹模块（版本 `2.0.0` 已重构指纹模块，匹配能力更加强大），指纹管理界面如下
 
 ![](imgs/fingerprint_panel.png)
 
