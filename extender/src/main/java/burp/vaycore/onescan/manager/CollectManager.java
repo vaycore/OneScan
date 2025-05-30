@@ -75,7 +75,7 @@ public class CollectManager {
         File dir = new File(sDirPath);
         // 第一层目录，主要是主域名和 ip 目录名
         File[] parentFiles = dir.listFiles(File::isDirectory);
-        if (parentFiles == null || parentFiles.length == 0) {
+        if (parentFiles == null) {
             return;
         }
         for (File parentFile : parentFiles) {
@@ -122,7 +122,12 @@ public class CollectManager {
      */
     public static void collect(boolean isRequest, String host, byte[] rawBytes) {
         checkInit();
-        if (host == null || StringUtils.isEmpty(host.trim())) {
+        if (host == null || StringUtils.isEmpty(host.trim()) ||
+                rawBytes == null || rawBytes.length == 0) {
+            return;
+        }
+        // 线程池已关闭，不继续执行
+        if (sThreadPool.isShutdown()) {
             return;
         }
         // 线程处理数据
