@@ -79,7 +79,7 @@ public class FpManager {
      * 检测是否初始化
      */
     private static void checkInit() {
-        if (StringUtils.isEmpty(sFilePath) || !FileUtils.isFile(sFilePath) || sConfig == null) {
+        if (StringUtils.isEmpty(sFilePath) || sConfig == null) {
             throw new IllegalArgumentException("FpManager no init.");
         }
     }
@@ -314,8 +314,8 @@ public class FpManager {
     /**
      * 更新指纹字段
      *
-     * @param index 下标
-     * @param column  指纹字段实例
+     * @param index  下标
+     * @param column 指纹字段实例
      */
     public static void setColumnsItem(int index, FpColumn column) {
         checkInit();

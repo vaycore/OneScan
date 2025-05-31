@@ -53,6 +53,8 @@ public class TaskTable extends JTable implements ActionListener {
             70, // Color
     };
 
+    private static Vector<String> sColumnNames;
+
     private final TaskTableModel mTaskTableModel;
     private final TableRowSorter<TaskTableModel> mTableRowSorter;
     private ArrayList<TableFilter<AbstractTableModel>> mTableFilters = new ArrayList<>();
@@ -83,7 +85,10 @@ public class TaskTable extends JTable implements ActionListener {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int rowIndex, int columnIndex) {
                 Component c = renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, rowIndex, columnIndex);
                 TaskData data = getTaskData(rowIndex);
-                String highlight = data.getHighlight();
+                String highlight = "";
+                if (data != null) {
+                    highlight = data.getHighlight();
+                }
                 Color bgColor = FpManager.findColorByName(highlight);
                 Color fontColor = UIManager.getColor("Table.foreground");
                 // 检测是否需要显示高亮颜色
@@ -112,6 +117,7 @@ public class TaskTable extends JTable implements ActionListener {
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
+        mTableRowSorter.setMaxSortKeys(1);
         setRowSorter(mTableRowSorter);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
@@ -276,7 +282,23 @@ public class TaskTable extends JTable implements ActionListener {
         if (mTempFilters != null && !mTempFilters.isEmpty()) {
             groupFilter.addAll(mTempFilters);
         }
-        mTableRowSorter.setRowFilter(RowFilter.andFilter(groupFilter));
+        // 检测过滤字段是否有效
+        ArrayList<TableFilter<AbstractTableModel>> result = new ArrayList<>();
+        for (TableFilter<AbstractTableModel> filter : groupFilter) {
+            FilterRule rule = filter.getRule();
+            // 规则为空检测
+            if (rule == null || rule.getItems().isEmpty()) {
+                continue;
+            }
+            int filterColumnIndex = rule.getColumnIndex();
+            // 越界检测
+            if (filterColumnIndex < 0 || filterColumnIndex >= getColumnCount()) {
+                continue;
+            }
+            // 保留有效的过滤规则
+            result.add(filter);
+        }
+        mTableRowSorter.setRowFilter(RowFilter.andFilter(result));
     }
 
     /**
@@ -304,8 +326,11 @@ public class TaskTable extends JTable implements ActionListener {
      * @return 任务数据
      */
     private TaskData getTaskData(int rowIndex) {
-        int index = convertRowIndexToModel(rowIndex);
-        return mTaskTableModel.mData.get(index);
+        if (rowIndex >= 0 && rowIndex < getRowCount()) {
+            int index = convertRowIndexToModel(rowIndex);
+            return mTaskTableModel.mData.get(index);
+        }
+        return null;
     }
 
     @Override
@@ -369,6 +394,9 @@ public class TaskTable extends JTable implements ActionListener {
         StringBuilder result = new StringBuilder();
         for (int index : selectedRows) {
             TaskData data = getTaskData(index);
+            if (data == null) {
+                continue;
+            }
             byte[] bodyBytes = mOnTaskTableEventListener.getBodyByTaskData(data);
             String value;
             switch (action) {
@@ -419,7 +447,9 @@ public class TaskTable extends JTable implements ActionListener {
         ArrayList<TaskData> newData = new ArrayList<>(selectedRows.length);
         for (int index : selectedRows) {
             TaskData data = getTaskData(index);
-            newData.add(data);
+            if (data != null) {
+                newData.add(data);
+            }
         }
         if (mOnTaskTableEventListener != null) {
             mOnTaskTableEventListener.onSendToRepeater(newData);
@@ -448,7 +478,9 @@ public class TaskTable extends JTable implements ActionListener {
         ArrayList<TaskData> removeList = new ArrayList<>();
         for (int index : selectedRows) {
             TaskData data = getTaskData(index);
-            removeList.add(data);
+            if (data != null) {
+                removeList.add(data);
+            }
         }
         mTaskTableModel.removeItems(removeList);
     }
@@ -463,6 +495,9 @@ public class TaskTable extends JTable implements ActionListener {
         ArrayList<String> hosts = new ArrayList<>();
         for (int index : selectedRows) {
             TaskData data = getTaskData(index);
+            if (data == null) {
+                continue;
+            }
             try {
                 String host = new URL(data.getHost()).getHost();
                 if (!hosts.contains(host)) {
@@ -492,8 +527,9 @@ public class TaskTable extends JTable implements ActionListener {
         }
         FilterRule rule = getTempFilterRuleByColumn(columnIndex);
         for (int index : selectedRows) {
-            TaskData data = getTaskData(index);
-            Object objValue = ClassUtils.getValueByFieldId(data, columnIndex);
+            int rowIndex = convertRowIndexToModel(index);
+            // 从 TableModel 里拿数据
+            Object objValue = mTaskTableModel.getValueAt(rowIndex, columnIndex);
             String value = "";
             if (objValue != null) {
                 value = String.valueOf(objValue);
@@ -633,6 +669,8 @@ public class TaskTable extends JTable implements ActionListener {
         if (mTaskTableModel == null) {
             return;
         }
+        initColumnNames();
+        updateRowFilter();
         mTaskTableModel.fireTableStructureChanged();
         initColorLevelSorter();
         initColumnWidth();
@@ -671,11 +709,22 @@ public class TaskTable extends JTable implements ActionListener {
      * @return 失败返回空列表
      */
     public static Vector<String> getColumnNames() {
+        if (sColumnNames != null) {
+            return sColumnNames;
+        }
+        initColumnNames();
+        return sColumnNames;
+    }
+
+    /**
+     * 初始化所有字段名
+     */
+    private static void initColumnNames() {
         Vector<String> result = new Vector<>(Arrays.asList(TaskTableModel.PRE_COLUMN_NAMES));
         // 指纹字段名列表
         List<String> fpColumnNames = FpManager.getColumnNames();
         result.addAll(fpColumnNames);
-        return result;
+        sColumnNames = result;
     }
 
     /**
@@ -789,7 +838,9 @@ public class TaskTable extends JTable implements ActionListener {
 
         @Override
         public int getRowCount() {
-            return mData.size();
+            synchronized (this.mData) {
+                return mData.size();
+            }
         }
 
         @Override
@@ -802,26 +853,38 @@ public class TaskTable extends JTable implements ActionListener {
             return getColumnNames().get(column);
         }
 
+        private TaskData getItemData(int rowIndex) {
+            if (rowIndex < 0 || rowIndex >= getRowCount()) {
+                return null;
+            }
+            synchronized (this.mData) {
+                return mData.get(rowIndex);
+            }
+        }
+
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            TaskData data = mData.get(rowIndex);
-            if (columnIndex < PRE_COLUMN_NAMES.length) {
+            TaskData data = getItemData(rowIndex);
+            if (data == null) {
+                return "";
+            }
+            // 预设列的数据
+            if (columnIndex >= 0 && columnIndex < PRE_COLUMN_NAMES.length) {
                 return ClassUtils.getValueByFieldId(data, columnIndex);
             }
-            // 减去预设的列
+            // 减去预设列的数据，开始填充指纹参数里的数据
             columnIndex = columnIndex - PRE_COLUMN_NAMES.length;
             Map<String, String> params = data.getParams();
             String key = FpManager.getColumnId(columnIndex);
-            String value = "";
-            if (params.containsKey(key)) {
-                value = params.get(key);
+            if (key != null && params.containsKey(key)) {
+                return params.get(key);
             }
-            return value;
+            return "";
         }
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            if (columnIndex < PRE_COLUMN_NAMES.length) {
+            if (columnIndex >= 0 && columnIndex < PRE_COLUMN_NAMES.length) {
                 return ClassUtils.getTypeByFieldId(TaskData.class, columnIndex);
             }
             return String.class;

@@ -34,6 +34,11 @@ public class TableFilter<T extends AbstractTableModel> extends RowFilter<T, Obje
         T model = entry.getModel();
         Integer rowIndex = (Integer) entry.getIdentifier();
         int columnIndex = rule.getColumnIndex();
+        // 检测是否越界
+        if (columnIndex < 0 || columnIndex >= model.getColumnCount() ||
+                rowIndex < 0 || rowIndex >= model.getRowCount()) {
+            return false;
+        }
         Object valueObj = model.getValueAt(rowIndex, columnIndex);
         String value = valueObj == null ? "" : String.valueOf(valueObj);
         ArrayList<FilterRule.Item> items = rule.getItems();

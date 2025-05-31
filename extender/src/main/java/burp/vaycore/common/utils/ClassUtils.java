@@ -21,7 +21,7 @@ public class ClassUtils {
 
     public static Object getValueByFieldId(Object obj, int fieldId) {
         Field[] fields = obj.getClass().getDeclaredFields();
-        if (fieldId >= fields.length) {
+        if (fieldId < 0 || fieldId >= fields.length) {
             return "";
         }
         Field field = fields[fieldId];
@@ -35,7 +35,7 @@ public class ClassUtils {
 
     public static String getNameByFieldId(Class<?> clz, int fieldId) {
         Field[] fields = clz.getDeclaredFields();
-        if (fieldId >= fields.length) {
+        if (fieldId < 0 || fieldId >= fields.length) {
             return null;
         }
         Field field = fields[fieldId];
@@ -44,7 +44,7 @@ public class ClassUtils {
 
     public static Class<?> getTypeByFieldId(Class<?> clz, int fieldId) {
         Field[] fields = clz.getDeclaredFields();
-        if (fieldId >= fields.length) {
+        if (fieldId < 0 || fieldId >= fields.length) {
             return String.class;
         }
         Field field = fields[fieldId];

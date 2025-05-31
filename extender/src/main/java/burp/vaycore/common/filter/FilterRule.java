@@ -125,7 +125,7 @@ public class FilterRule {
     }
 
     public void addRule(int logic, int operate, String value) {
-        if (this.items.size() > 0) {
+        if (!this.items.isEmpty()) {
             if (logic <= 0) {
                 throw new IllegalArgumentException("logic is 0");
             }
