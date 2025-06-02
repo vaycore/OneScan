@@ -208,21 +208,26 @@ public class OneScanInfoTab implements IMessageEditorTab {
         return new String(content, bodyOffset, bodySize, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 通过 IRequestInfo 实例，获取请求头中的 Host 值（示例格式：x.x.x.x、x.x.x.x:8080）
+     *
+     * @return 失败返回null
+     */
     private String getRequestHost(IRequestInfo info) {
-        // 优先使用从 IHttpService 获取的 Host 值
-        String host = getRequestHost();
-        if (StringUtils.isNotEmpty(host)) {
-            return host;
-        }
         if (info == null) {
             return null;
         }
-        // 从 HTTP 请求头中获取 Host 值
+        // 优先使用从 HTTP 请求头中获取的 Host 值
         List<String> headers = info.getHeaders();
         for (String header : headers) {
             if (header.startsWith("Host: ")) {
                 return header.replace("Host: ", "");
             }
+        }
+        // 从 IHttpService 获取的 Host 值
+        String host = getRequestHost();
+        if (StringUtils.isNotEmpty(host)) {
+            return host;
         }
         return null;
     }
