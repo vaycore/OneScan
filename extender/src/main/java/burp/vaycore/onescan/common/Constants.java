@@ -11,12 +11,12 @@ public interface Constants {
 
     // 插件信息
     String PLUGIN_NAME = "OneScan";
-    String PLUGIN_VERSION = "2.0.0";
+    String PLUGIN_VERSION = "2.0.7";
     boolean DEBUG = false;
 
     // 插件启动显示的信息
-    String BANNER = "" +
-            "##############################################\n" +
+    String BANNER = "#" +
+            "#############################################\n" +
             "  " + PLUGIN_NAME + " v" + PLUGIN_VERSION + "\n" +
             "  Author:    0ne_1\n" +
             "  Developer: vaycore\n" +
