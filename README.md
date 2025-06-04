@@ -252,7 +252,7 @@ Other配置界面如下
 - `body` HTTP Body 数据
 - `bodyMd5` HTTP Body 数据 MD5 值
 - `bodyHash` HTTP Body 数据 Hash 值
-- `bodyHex` HTTP Body 数据 Hex 值（格式示例：000102030405；只取前 100 个字节）
+- `bodyHex` HTTP Body 数据 Hex 值（格式示例：0001020A0B0C；只取前 100 个字节）
 - `data` 整个 HTTP 数据包
 
 其中 HTTP 请求数据源包含如下字段：
