@@ -219,11 +219,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (messageIsRequest) {
             return;
         }
-        // 开启线程识别指纹，将识别结果缓存起来
-        mFpThreadPool.execute(() -> {
-            IHttpRequestResponse info = message.getMessageInfo();
-            FpManager.check(info.getRequest(), info.getResponse());
-        });
         // 检测开关状态
         if (!mDataBoardTab.hasListenProxyMessage()) {
             return;
@@ -244,6 +239,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         String host = httpReqResp.getHttpService().getHost();
+        byte[] request = httpReqResp.getRequest();
+        byte[] response = httpReqResp.getResponse();
         // 对来自代理的包进行检测，检测请求方法是否需要拦截
         if (from.equals("Proxy")) {
             String method = info.getMethod();
@@ -258,9 +255,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return;
             }
             // 收集数据（只收集代理流量的数据）
-            CollectManager.collect(true, host, httpReqResp.getRequest());
-            CollectManager.collect(false, host, httpReqResp.getResponse());
+            CollectManager.collect(true, host, request);
+            CollectManager.collect(false, host, response);
         }
+        // 开启线程识别指纹，将识别结果缓存起来
+        mFpThreadPool.execute(() -> FpManager.check(request, response));
         // 准备生成任务
         URL url = getUrlByRequestInfo(info);
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
@@ -531,9 +530,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
-        String url = getReqHostByHttpService(service) + newInfo.getUrl().getPath();
+        String path = getUrlByRequestInfo(newInfo).getPath();
+        String url = getReqHostByHttpService(service) + path;
         // 如果当前 URL 已经扫描，中止任务
-        if (sRepeatFilter.contains(url)) {
+        if (checkRepeatFilterByUrl(url)) {
             return;
         }
         // 如果未启用“请求包处理”功能，直接对扫描的任务发起请求
@@ -545,6 +545,22 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         runEnableAndMergeTask(service, url, request, from);
         // 运行已经启用并且不需要合并的任务
         runEnabledWithoutMergeProcessingTask(service, url, request);
+    }
+
+    /**
+     * 根据 Url 检测是否重复扫描
+     *
+     * @param url 请求 url（建议不包含参数部分）
+     * @return true=重复；false=不重复
+     */
+    private boolean checkRepeatFilterByUrl(String url) {
+        synchronized (sRepeatFilter) {
+            if (sRepeatFilter.contains(url)) {
+                return true;
+            }
+            sRepeatFilter.add(url);
+            return false;
+        }
     }
 
     /**
@@ -560,7 +576,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         List<ProcessingItem> processList = getPayloadProcess()
                 .stream().filter(ProcessingItem::isEnabledAndMerge)
                 .collect(Collectors.toList());
-        // 先检测规则是否为空
+        // 如果规则为空，直接发起请求
         if (processList.isEmpty()) {
             doBurpRequest(service, url, reqRawBytes, from);
             return;
@@ -620,10 +636,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 线程池关闭后，不接收任何任务
         if (mThreadPool.isShutdown()) {
             Logger.debug("doBurpRequest: thread pool is shutdown, intercept url: %s", url);
+            // 将未执行的任务从去重过滤集合中移除
+            sRepeatFilter.remove(url);
             return;
         }
-        // 将 URL 添加到去重过滤集合
-        sRepeatFilter.add(url);
         // 创建任务运行实例
         TaskRunnable task = new TaskRunnable(url) {
             @Override
@@ -738,7 +754,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
             requestRaw.append(reqLine).append("\r\n");
         }
-        // 请求头的参数处理（顺带处理移除的请求头）
+        // 请求头的参数处理（顺带处理移除的请求头），从 1 开始表示跳过首行（请求行）
         for (int i = 1; i < headers.size(); i++) {
             String item = headers.get(i);
             String key = item.split(": ")[0];
@@ -794,7 +810,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 请求头构建完成后，对里面包含的动态变量进行赋值
-        String newRequestRaw = setupVariable(service, info.getUrl(), requestRaw.toString());
+        URL url = getUrlByRequestInfo(info);
+        String newRequestRaw = setupVariable(service, url, requestRaw.toString());
         if (newRequestRaw == null) {
             return null;
         }
@@ -1060,9 +1077,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return null;
         }
         IRequestInfo info = mHelpers.analyzeRequest(service, requestBytes);
+        URL u = getUrlByRequestInfo(info);
         int bodyOffset = info.getBodyOffset();
         int bodySize = requestBytes.length - bodyOffset;
-        String url = UrlUtils.toURI(info.getUrl());
+        String url = UrlUtils.toURI(u);
         String header = new String(requestBytes, 0, bodyOffset - 4);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
         String request = mHelpers.bytesToString(requestBytes);
@@ -1150,11 +1168,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 列表Item数据
      */
     private TaskData buildTaskData(IHttpRequestResponse httpReqResp) {
-        IRequestInfo request = mHelpers.analyzeRequest(httpReqResp);
+        IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         byte[] respBytes = httpReqResp.getResponse();
         // 获取所需要的参数
-        String method = request.getMethod();
-        URL url = request.getUrl();
+        String method = info.getMethod();
+        URL url = getUrlByRequestInfo(info);
         String reqHost = getReqHostByUrl(url);
         String reqUrl = url.getFile();
         String title = HtmlUtils.findTitleByHtmlBody(respBytes);
@@ -1256,12 +1274,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         URL url = info.getUrl();
         try {
             // IRequestInfo.getUrl 方法有时候获取的值不准确，重新解析一下
-            url = new URL(url.toString());
-            return url;
+            return new URL(url.toString());
         } catch (Exception e) {
             Logger.error("getUrlByRequestInfo: convert url error: %s", e.getMessage());
+            return url;
         }
-        return url;
     }
 
     @Override
@@ -1512,6 +1529,20 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 关闭数据收集线程池
         count = CollectManager.closeThreadPool();
         Logger.info("Close: data collection thread pool completed. Task %d records.", count);
+        // 清除数据收集的去重过滤集合
+        count = CollectManager.getRepeatFilterCount();
+        CollectManager.clearRepeatFilter();
+        Logger.info("Clear: data collection repeat filter list completed. Total %d records.", count);
+        // 清除指纹识别缓存
+        count = FpManager.getCacheCount();
+        FpManager.clearCache();
+        Logger.info("Clear: fingerprint recognition cache completed. Total %d records.", count);
+        // 清除指纹识别历史记录
+        count = FpManager.getHistoryCount();
+        FpManager.clearHistory();
+        Logger.info("Clear: fingerprint recognition history completed. Total %d records.", count);
+        // 清除指纹字段修改监听器
+        FpManager.clearsFpColumnModifyListeners();
         // 清除去重过滤集合
         count = sRepeatFilter.size();
         sRepeatFilter.clear();
@@ -1536,20 +1567,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 指纹字段管理窗口
             tab.closeFpColumnManagerWindow();
         }
-        // 清除指纹识别缓存
-        count = FpManager.getCacheCount();
-        FpManager.clearCache();
-        Logger.info("Clear: fingerprint recognition cache completed. Total %d records.", count);
-        // 清除指纹识别历史记录
-        count = FpManager.getHistoryCount();
-        FpManager.clearHistory();
-        Logger.info("Clear: fingerprint recognition history completed. Total %d records.", count);
-        // 清除指纹字段修改监听器
-        FpManager.clearsFpColumnModifyListeners();
-        // 清除数据收集的去重过滤集合
-        count = CollectManager.getRepeatFilterCount();
-        CollectManager.clearRepeatFilter();
-        Logger.info("Clear: data collection repeat filter list completed. Total %d records.", count);
         // 卸载完成
         Logger.info(Constants.UNLOAD_BANNER);
     }
