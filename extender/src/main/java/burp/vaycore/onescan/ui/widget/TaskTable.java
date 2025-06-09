@@ -328,7 +328,7 @@ public class TaskTable extends JTable implements ActionListener {
     private TaskData getTaskData(int rowIndex) {
         if (rowIndex >= 0 && rowIndex < getRowCount()) {
             int index = convertRowIndexToModel(rowIndex);
-            return mTaskTableModel.mData.get(index);
+            return mTaskTableModel.getItemData(index);
         }
         return null;
     }
@@ -814,7 +814,11 @@ public class TaskTable extends JTable implements ActionListener {
                 int firstRow = getRowCount();
                 this.mData.addAll(validItems);
                 int lastRow = getRowCount() - 1;
-                fireTableRowsInserted(firstRow, lastRow);
+                if (firstRow > 0) {
+                    fireTableRowsInserted(firstRow, lastRow);
+                } else {
+                    fireTableDataChanged();
+                }
             }
         }
 
@@ -831,8 +835,8 @@ public class TaskTable extends JTable implements ActionListener {
         public void clearAll() {
             synchronized (this.mData) {
                 mData.clear();
-                mCounter.set(0);
                 fireTableDataChanged();
+                mCounter.set(0);
             }
         }
 
