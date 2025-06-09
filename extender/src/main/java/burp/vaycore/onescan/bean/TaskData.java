@@ -14,19 +14,40 @@ import java.util.Map;
  * Created by vaycore on 2022-08-10.
  */
 public class TaskData {
-    // 展示的数据
+
+    // 序号（用于表格排序）
     private int id;
+
+    // 数据来源
     private String from;
+
+    // 请求方法
     private String method;
+
+    // 主机
     private String host;
+
+    // 请求路径
     private String url;
+
+    // 响应页面标题
     private String title;
+
+    // IP 地址
     private String ip;
+
+    // 响应状态码
     private int status;
+
+    // 响应长度（取 Content-Length 值）
     private int length;
+
+    // 颜色标记
     private String highlight;
+
     // 自定义指纹数据参数
     private Map<String, String> params;
+
     // 请求响应数据
     private Object reqResp;
 
@@ -166,23 +187,5 @@ public class TaskData {
         // 处理高亮颜色
         String highlight = FpManager.upgradeColors(colorLevels);
         setHighlight(highlight);
-    }
-
-    private StringBuilder newStringBuilder(String text) {
-        StringBuilder result = new StringBuilder();
-        if (StringUtils.isNotEmpty(text)) {
-            return result.append(text);
-        }
-        return result;
-    }
-
-    private void appendData(StringBuilder sb, String data) {
-        if (StringUtils.isEmpty(data) || sb.indexOf(data) >= 0) {
-            return;
-        }
-        if (StringUtils.isNotEmpty(sb)) {
-            sb.append(",");
-        }
-        sb.append(data);
     }
 }

@@ -625,10 +625,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * 使用Burp自带的方式请求
+     * 使用 Burp 自带的方式请求
      *
      * @param service     请求目标服务实例
-     * @param url         请求URL
+     * @param url         请求 URL
      * @param reqRawBytes 请求数据包
      * @param from        请求来源
      */
@@ -644,33 +644,17 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         TaskRunnable task = new TaskRunnable(url) {
             @Override
             public void run() {
-                // 限制QPS
-                if (mQpsLimit != null) {
-                    try {
-                        mQpsLimit.limit();
-                    } catch (InterruptedException e) {
-                        // 线程强制停止时，将未执行的任务从去重过滤集合中移除
-                        sRepeatFilter.remove(url);
-                        return;
-                    }
-                }
-                Logger.debug("Do Send Request url: %s", url);
-                // 动态变量赋值
-                String reqRaw = mHelpers.bytesToString(reqRawBytes);
-                reqRaw = setupVariable(service, url, reqRaw);
-                if (reqRaw == null) {
-                    // 动态变量处理异常，丢弃当前请求
+                String url = getTaskUrl();
+                if (checkQPSLimit(url)) {
                     return;
                 }
+                Logger.debug("Do Send Request url: %s", url);
                 // 请求配置的请求重试次数
                 int retryCount = getReqRetryCount();
                 // 发起请求
-                byte[] newReqRawBytes = mHelpers.stringToBytes(reqRaw);
-                IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, newReqRawBytes, retryCount);
+                IHttpRequestResponse newReqResp = doMakeHttpRequest(service, url, reqRawBytes, retryCount);
                 // 构建展示的数据包
-                TaskData data = buildTaskData(newReqResp);
-                // 用于过滤代理数据包
-                data.setFrom(from);
+                TaskData data = buildTaskData(newReqResp, from);
                 mDataBoardTab.getTaskTable().addTaskData(data);
                 // 收集数据
                 CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
@@ -733,7 +717,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 处理完成的数据包，失败时返回null
      */
     private byte[] handleHeader(IHttpRequestResponse httpReqResp, IRequestInfo info, String pathWithQuery, String from) {
-        IHttpService service = httpReqResp.getHttpService();
         // 配置的请求头
         List<String> configHeader = getHeader();
         // 要移除的请求头KEY列表
@@ -811,11 +794,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 请求头构建完成后，对里面包含的动态变量进行赋值
         URL url = getUrlByRequestInfo(info);
+        IHttpService service = httpReqResp.getHttpService();
         String newRequestRaw = setupVariable(service, url, requestRaw.toString());
         if (newRequestRaw == null) {
             return null;
         }
-        return mHelpers.stringToBytes(newRequestRaw);
+        // 更新 Content-Length
+        return updateContentLength(mHelpers.stringToBytes(newRequestRaw));
     }
 
     /**
@@ -850,27 +835,30 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
+     * 检测 QPS 限制
+     *
+     * @param url 请求 URL
+     * @return true=拦截；false=不拦截
+     */
+    private boolean checkQPSLimit(String url) {
+        if (mQpsLimit != null) {
+            try {
+                mQpsLimit.limit();
+            } catch (InterruptedException e) {
+                // 线程强制停止时，将未执行的任务从去重过滤集合中移除
+                sRepeatFilter.remove(url);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 从配置中获取请求重试次数
      */
     private int getReqRetryCount() {
         String value = Config.get(Config.KEY_RETRY_COUNT);
         return StringUtils.parseInt(value, 0);
-    }
-
-    /**
-     * 给数据包填充动态变量
-     *
-     * @param service    请求目标实例
-     * @param url        请求 url 字符串
-     * @param requestRaw 请求数据包字符串
-     * @return 处理失败返回null
-     */
-    private String setupVariable(IHttpService service, String url, String requestRaw) {
-        URL u = UrlUtils.parseURL(url);
-        if (u == null) {
-            return null;
-        }
-        return setupVariable(service, u, requestRaw);
     }
 
     /**
@@ -1070,10 +1058,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 处理后的数据包
      */
     private byte[] handlePayloadProcess(IHttpService service, byte[] requestBytes, List<PayloadItem> list) {
-        if (requestBytes == null || requestBytes.length == 0) {
-            return null;
-        }
-        if (list == null || list.isEmpty()) {
+        if (requestBytes == null || requestBytes.length == 0 || list == null || list.isEmpty()) {
             return null;
         }
         IRequestInfo info = mHelpers.analyzeRequest(service, requestBytes);
@@ -1125,8 +1110,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 return null;
             }
         }
+        // 动态变量赋值
+        String newRequest = setupVariable(service, u, request);
+        if (newRequest == null) {
+            return null;
+        }
         // 更新 Content-Length
-        return updateContentLength(mHelpers.stringToBytes(request));
+        return updateContentLength(mHelpers.stringToBytes(newRequest));
     }
 
     /**
@@ -1136,8 +1126,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 更新后的数据包
      */
     private byte[] updateContentLength(byte[] rawBytes) {
-        String request = new String(rawBytes, StandardCharsets.US_ASCII);
-        int bodyOffset = request.indexOf("\r\n\r\n");
+        String temp = new String(rawBytes, StandardCharsets.US_ASCII);
+        int bodyOffset = temp.indexOf("\r\n\r\n");
         if (bodyOffset == -1) {
             Logger.error("Handle payload process error: bodyOffset is -1");
             return null;
@@ -1157,8 +1147,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             header = header.replaceAll("Content-Length:.*", "Content-Length: " + bodySize);
         }
         String body = new String(rawBytes, bodyOffset, bodySize);
-        request = header + "\r\n\r\n" + body;
-        return request.getBytes(StandardCharsets.UTF_8);
+        String result = header + "\r\n\r\n" + body;
+        return result.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
@@ -1167,7 +1157,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @param httpReqResp Burp的请求响应对象
      * @return 列表Item数据
      */
-    private TaskData buildTaskData(IHttpRequestResponse httpReqResp) {
+    private TaskData buildTaskData(IHttpRequestResponse httpReqResp, String from) {
         IRequestInfo info = mHelpers.analyzeRequest(httpReqResp);
         byte[] respBytes = httpReqResp.getResponse();
         // 获取所需要的参数
@@ -1193,6 +1183,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         List<FpData> checkResult = FpManager.check(httpReqResp.getRequest(), httpReqResp.getResponse());
         // 构建表格对象
         TaskData data = new TaskData();
+        data.setFrom(from);
         data.setMethod(method);
         data.setHost(reqHost);
         data.setUrl(reqUrl);
