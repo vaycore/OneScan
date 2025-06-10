@@ -42,7 +42,7 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
 
     private StringBuilder buildRequest(URL url) {
         return new StringBuilder().append("GET ").append(UrlUtils.toPathWithQuery(url)).append(" HTTP/1.1").append("\r\n")
-                .append("Host: ").append(getHostByUrl(url)).append("\r\n")
+                .append("Host: ").append(getHostByURL(url)).append("\r\n")
                 .append("Accept: ").append("text/html,application/xhtml+xml,")
                 .append("application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;")
                 .append("q=0.8,application/signed-exchange;v=b3;q=0.9").append("\r\n")
@@ -52,13 +52,13 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
                 .append("\r\n");
     }
 
-    private String getHostByUrl(URL url) {
+    private String getHostByURL(URL url) {
         String host = url.getHost();
         int port = url.getPort();
-        if (port != -1) {
-            host += ":" + port;
+        if (port == -1 || port == 80 || port == 443) {
+            return host;
         }
-        return host;
+        return host + ":" + port;
     }
 
     private IHttpService buildHttpServer(URL url) {

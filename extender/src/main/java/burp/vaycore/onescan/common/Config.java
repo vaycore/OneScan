@@ -319,8 +319,8 @@ public class Config {
         }
         File dir = isDir ? new File(path) : new File(path).getParentFile();
         if (!dir.exists()) {
-            boolean mkdirs = dir.mkdirs();
-            Logger.debug("Config item path mkdirs: %s", mkdirs);
+            boolean state = dir.mkdirs();
+            Logger.debug("Config item path state: %s", state);
         }
         return path;
     }

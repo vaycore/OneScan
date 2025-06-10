@@ -64,6 +64,21 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private static final byte[] EMPTY_BYTES = new byte[0];
 
     /**
+     * 请求来源：代理
+     */
+    private static final String FROM_PROXY = "Proxy";
+
+    /**
+     * 请求来源：扫描
+     */
+    private static final String FROM_SCAN = "Scan";
+
+    /**
+     * 请求来源：导入
+     */
+    private static final String FROM_IMPORT = "Import";
+
+    /**
      * 去重过滤集合
      */
     private final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
@@ -225,7 +240,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         IHttpRequestResponse httpReqResp = message.getMessageInfo();
         // 扫描任务
-        doScan(httpReqResp, "Proxy");
+        doScan(httpReqResp, FROM_PROXY);
     }
 
     private void doScan(IHttpRequestResponse httpReqResp, String from) {
@@ -242,7 +257,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         byte[] request = httpReqResp.getRequest();
         byte[] response = httpReqResp.getResponse();
         // 对来自代理的包进行检测，检测请求方法是否需要拦截
-        if (from.equals("Proxy")) {
+        if (from.equals(FROM_PROXY)) {
             String method = info.getMethod();
             if (includeMethodFilter(method)) {
                 // 拦截不匹配的请求方法
@@ -263,7 +278,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 准备生成任务
         URL url = getUrlByRequestInfo(info);
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
-        if (!proxyExcludeSuffixFilter(url)) {
+        if (!proxyExcludeSuffixFilter(url.getPath())) {
             runScanTask(httpReqResp, info, null, from);
         } else {
             Logger.debug("proxyExcludeSuffixFilter filter request path: %s", url.getPath());
@@ -276,7 +291,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String reqPath = getReqPathByRequestInfo(info);
         // 从请求路径中，尝试获取请求主机地址
         String reqHost = getReqHostByReqPath(reqPath);
-        Logger.debug("doScan receive: %s%s", getReqHostByUrl(url), url.getPath());
+        Logger.debug("doScan receive: %s", url.toString());
         ArrayList<String> pathDict = getUrlPathDict(url.getPath());
         List<String> payloads = WordlistManager.getPayload(payloadItem);
         // 一级目录一级目录递减访问
@@ -289,10 +304,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 }
                 String urlPath = path + item;
                 // 检测一下是否携带完整的 Host 地址（兼容一下携带了完整的 Host 地址的情况）
-                if (reqPath.startsWith("http")) {
-                    urlPath = reqHost + urlPath;
+                if (reqPath.startsWith("http://") || reqPath.startsWith("https://")) {
+                    // 检测字典是否存在完整的 Host 地址，如果存在，直接覆盖（取消拼接原先的完整 Host 地址）
+                    if (!item.startsWith("http://") && !item.startsWith("https://")) {
+                        urlPath = reqHost + urlPath;
+                    }
                 }
-                runScanTask(httpReqResp, info, urlPath, "Scan");
+                runScanTask(httpReqResp, info, urlPath, FROM_SCAN);
             }
         }
     }
@@ -329,9 +347,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (StringUtils.isEmpty(reqPath)) {
             return "";
         }
+        if (!reqPath.startsWith("http://") && !reqPath.startsWith("https://")) {
+            return "";
+        }
         try {
             URL url = new URL(reqPath);
-            return getReqHostByUrl(url);
+            return UrlUtils.getReqHostByURL(url);
         } catch (MalformedURLException e) {
             return "";
         }
@@ -438,16 +459,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 代理请求的后缀过滤
      *
-     * @param url 请求 url 对象
+     * @param reqPath 请求路径（不包含 Query 参数）
      * @return true=拦截；false=不拦截
      */
-    private boolean proxyExcludeSuffixFilter(URL url) {
-        if (url == null || StringUtils.isEmpty(url.getPath()) || "/".equals(url.getPath())) {
+    private boolean proxyExcludeSuffixFilter(String reqPath) {
+        if (StringUtils.isEmpty(reqPath) || "/".equals(reqPath)) {
             return false;
         }
         // 统一转换为小写
         String suffix = Config.get(Config.KEY_EXCLUDE_SUFFIX).toLowerCase();
-        String path = url.getPath().toLowerCase();
+        String path = reqPath.toLowerCase();
         if (StringUtils.isEmpty(suffix)) {
             return false;
         }
@@ -530,8 +551,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
-        String path = getUrlByRequestInfo(newInfo).getPath();
-        String url = getReqHostByHttpService(service) + path;
+        String url = getUrlByRequestInfo(newInfo).toString();
         // 如果当前 URL 已经扫描，中止任务
         if (checkRepeatFilterByUrl(url)) {
             return;
@@ -672,7 +692,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 调用 BurpSuite 请求方式
      *
      * @param service     请求目标服务实例
-     * @param reqUrl      请求URL
+     * @param reqUrl      请求 URL
      * @param reqRawBytes 请求数据包
      * @param retryCount  重试次数（为0表示不重试）
      * @return 请求响应数据
@@ -726,7 +746,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 构建请求头
         StringBuilder requestRaw = new StringBuilder();
         // 根据数据来源区分两种请求头
-        if (from.equals("Scan")) {
+        if (from.equals(FROM_SCAN)) {
             requestRaw.append("GET ").append(pathWithQuery).append(" HTTP/1.1").append("\r\n");
         } else {
             String reqLine = headers.get(0);
@@ -746,11 +766,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 continue;
             }
             // 如果是扫描的请求（只有 GET 请求），将 Content-Length 移除
-            if (from.equals("Scan") && "Content-Length".equalsIgnoreCase(key)) {
+            if (from.equals(FROM_SCAN) && "Content-Length".equalsIgnoreCase(key)) {
                 continue;
             }
             // 检测配置中是否存在当前请求头字段
-            List<String> matchList = configHeader.stream().filter(configHeaderItem -> {
+            String matchItem = configHeader.stream().filter(configHeaderItem -> {
                 if (StringUtils.isNotEmpty(configHeaderItem) && configHeaderItem.contains(": ")) {
                     String configHeaderKey = configHeaderItem.split(": ")[0];
                     // 检测是否需要移除当前请求头字段
@@ -760,14 +780,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     return configHeaderKey.equals(key);
                 }
                 return false;
-            }).collect(Collectors.toList());
+            }).findFirst().orElse(null);
             // 配置中存在匹配项，替换为配置中的数据
-            if (!matchList.isEmpty()) {
-                for (String matchItem : matchList) {
-                    requestRaw.append(matchItem).append("\r\n");
-                }
+            if (matchItem != null) {
+                requestRaw.append(matchItem).append("\r\n");
                 // 将已经添加的数据从列表中移除
-                configHeader.removeAll(matchList);
+                configHeader.remove(matchItem);
             } else {
                 // 不存在匹配项，填充原数据
                 requestRaw.append(item).append("\r\n");
@@ -777,14 +795,13 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         for (String item : configHeader) {
             String key = item.split(": ")[0];
             // 检测是否需要移除当前KEY
-            if (removeHeaders.contains(key)) {
-                continue;
+            if (!removeHeaders.contains(key)) {
+                requestRaw.append(item).append("\r\n");
             }
-            requestRaw.append(item).append("\r\n");
         }
         requestRaw.append("\r\n");
         // 如果当前数据来源不是 Scan，可能会包含 POST 请求，判断是否存在 body 数据
-        if (!from.equals("Scan")) {
+        if (!from.equals(FROM_SCAN)) {
             byte[] httpRequest = httpReqResp.getRequest();
             int bodyOffset = info.getBodyOffset();
             int bodySize = httpRequest.length - bodyOffset;
@@ -1162,11 +1179,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         byte[] respBytes = httpReqResp.getResponse();
         // 获取所需要的参数
         String method = info.getMethod();
-        URL url = getUrlByRequestInfo(info);
-        String reqHost = getReqHostByUrl(url);
-        String reqUrl = url.getFile();
+        IHttpService service = httpReqResp.getHttpService();
+        String reqHost = getReqHostByHttpService(service);
+        String reqUrl = getReqPathByRequestInfo(info);
         String title = HtmlUtils.findTitleByHtmlBody(respBytes);
-        String ip = findIpByHost(url.getHost());
+        String ip = findIpByHost(service.getHost());
         int status = -1;
         int length = -1;
         // 存在响应对象，获取状态和响应包大小
@@ -1206,19 +1223,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String protocol = service.getProtocol();
         String host = service.getHost();
         int port = service.getPort();
-        return concatReqHost(protocol, host, port);
-    }
-
-    /**
-     * 通过 URL 实例，获取请求的 Host 地址（http://xxxxxx.com、http://xxxxxx.com:8080）
-     *
-     * @param url URL 实例
-     * @return 返回请求的 Host 地址
-     */
-    private String getReqHostByUrl(URL url) {
-        String protocol = url.getProtocol();
-        String host = url.getHost();
-        int port = url.getPort();
         return concatReqHost(protocol, host, port);
     }
 
@@ -1264,8 +1268,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private URL getUrlByRequestInfo(IRequestInfo info) {
         URL url = info.getUrl();
         try {
-            // IRequestInfo.getUrl 方法有时候获取的值不准确，重新解析一下
-            return new URL(url.toString());
+            // 分两种情况，一种是完整 Host 地址，还有一种是普通请求路径
+            String reqPath = getReqPathByRequestInfo(info);
+            if (reqPath.startsWith("http://") || reqPath.startsWith("https://")) {
+                return new URL(reqPath);
+            }
+            // 普通请求路径因为 IRequestInfo.getUrl 方法有时候获取的值不准确，重新解析一下
+            String reqHost = UrlUtils.getReqHostByURL(url);
+            return new URL(reqHost + reqPath);
         } catch (Exception e) {
             Logger.error("getUrlByRequestInfo: convert url error: %s", e.getMessage());
             return url;
@@ -1460,8 +1470,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         new Thread(() -> {
             for (Object item : list) {
                 try {
-                    IHttpRequestResponse httpReqResp = new HttpReqRespAdapter(String.valueOf(item));
-                    doScan(httpReqResp, "Import");
+                    String url = String.valueOf(item);
+                    IHttpRequestResponse httpReqResp = new HttpReqRespAdapter(url);
+                    doScan(httpReqResp, FROM_IMPORT);
                 } catch (IllegalArgumentException e) {
                     Logger.error("Import error: " + e.getMessage());
                 }

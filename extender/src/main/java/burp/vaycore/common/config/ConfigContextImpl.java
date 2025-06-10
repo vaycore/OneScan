@@ -34,11 +34,10 @@ public class ConfigContextImpl implements ConfigContext {
         if (dir.exists()) {
             return;
         }
-        boolean mkdirs = FileUtils.mkdirs(dir);
-        if (mkdirs) {
-            return;
+        boolean state = FileUtils.mkdirs(dir);
+        if (!state) {
+            throw new IllegalArgumentException("config path check error!");
         }
-        throw new IllegalArgumentException("config path check error!");
     }
 
     private void loadConfigByFile() {
