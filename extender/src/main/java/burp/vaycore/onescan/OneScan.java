@@ -89,7 +89,7 @@ public class OneScan extends JTabbedPane {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.error(e.getMessage());
         }
     }
 }

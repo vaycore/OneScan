@@ -310,10 +310,19 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 一级目录一级目录递减访问
         for (int i = pathDict.size() - 1; i >= 0; i--) {
             String path = pathDict.get(i);
+            // 去除结尾的 '/' 符号
+            if (path.endsWith("/")) {
+                path = path.substring(0, path.length() - 1);
+            }
             // 拼接字典，发起请求
             for (String item : payloads) {
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
+                // 对完整 Host 地址的字典取消递归扫描（直接替换请求路径扫描）
+                if (StringUtils.isNotEmpty(path) && UrlUtils.isHTTP(item)) {
+                    continue;
+                }
+                // 如果配置的字典不含 '/' 前缀，在根目录下扫描时，自动添加 '/' 符号
+                if (StringUtils.isEmpty(path) && !item.startsWith("/") && !UrlUtils.isHTTP(item)) {
+                    path = "/";
                 }
                 String urlPath = path + item;
                 // 检测一下是否携带完整的 Host 地址（兼容一下携带了完整的 Host 地址的情况）
