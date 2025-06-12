@@ -3,10 +3,7 @@ package burp.vaycore.onescan.ui.tab;
 import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnTabEventListener;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
-import burp.vaycore.onescan.ui.tab.config.HostTab;
-import burp.vaycore.onescan.ui.tab.config.OtherTab;
-import burp.vaycore.onescan.ui.tab.config.PayloadTab;
-import burp.vaycore.onescan.ui.tab.config.RequestTab;
+import burp.vaycore.onescan.ui.tab.config.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -34,6 +31,7 @@ public class ConfigPanel extends JTabbedPane implements OnTabEventListener {
         addConfigTab(new RequestTab());
         mHostTab = new HostTab();
         addConfigTab(mHostTab);
+        addConfigTab(new RedirectTab());
         addConfigTab(new OtherTab());
     }
 

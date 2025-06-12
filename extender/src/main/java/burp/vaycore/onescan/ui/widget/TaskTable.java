@@ -42,7 +42,7 @@ public class TaskTable extends JTable implements ActionListener {
      */
     private static final int[] PRE_COLUMN_WIDTH = {
             70, // #
-            50, // From
+            65, // From
             70, // Method
             200, // Host
             200, // Url

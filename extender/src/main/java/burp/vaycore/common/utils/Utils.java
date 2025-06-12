@@ -1,5 +1,7 @@
 package burp.vaycore.common.utils;
 
+import burp.vaycore.common.log.Logger;
+
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -48,7 +50,7 @@ public class Utils {
         try {
             result = (String) t.getTransferData(DataFlavor.stringFlavor);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.error(e.getMessage());
         }
         return result;
     }
@@ -131,7 +133,7 @@ public class Utils {
             byte[] digest = md.digest();
             return bytesToHex(digest);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.error(e.getMessage());
         }
         return "";
     }
@@ -153,5 +155,16 @@ public class Utils {
             hexChars[i * 2 + 1] = HEX_CHARS[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    /**
+     * 是否可以忽略端口号
+     * <p>例如：port<0、port>65535、port=80、port=443</p>
+     *
+     * @param port 端口号
+     * @return true=可以；false=不可以
+     */
+    public static boolean isIgnorePort(int port) {
+        return port < 0 || port > 65535 || port == 80 || port == 443;
     }
 }

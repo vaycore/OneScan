@@ -45,6 +45,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
     private JCheckBox mPayloadProcessing;
+    private JCheckBox mFollowRedirect;
     private ImportUrlWindow mImportUrlWindow;
 
     @Override
@@ -89,56 +90,10 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         setLayout(new VLayout(0));
-        // 控制栏
-        JPanel controlPanel = new JPanel(new HLayout(5, true));
-        controlPanel.setBorder(new EmptyBorder(0, 0, 0, 5));
-        controlPanel.setFocusable(false);
-        add(controlPanel);
-        // 代理监听开关
-        mListenProxyMessage = newJCheckBox(controlPanel, L.get("listen_proxy_message"), Config.KEY_ENABLE_LISTEN_PROXY);
-        // 请求头移除开关
-        mRemoveHeader = newJCheckBox(controlPanel, L.get("remove_header"), Config.KEY_ENABLE_REMOVE_HEADER);
-        // 请求头替换开关
-        mReplaceHeader = newJCheckBox(controlPanel, L.get("replace_header"), Config.KEY_ENABLE_REPLACE_HEADER);
-        // 递归扫描开关
-        mDirScan = newJCheckBox(controlPanel, L.get("dir_scan"), Config.KEY_ENABLE_DIR_SCAN);
-        // 启用Payload Processing
-        mPayloadProcessing = newJCheckBox(controlPanel, L.get("payload_processing"), Config.KEY_ENABLE_PAYLOAD_PROCESSING);
-        // 导入Url
-        JButton importUrlBtn = new JButton(L.get("import_url"));
-        importUrlBtn.setToolTipText(L.get("import_url"));
-        importUrlBtn.addActionListener((e) -> importUrl());
-        controlPanel.add(importUrlBtn);
-        // 停止按钮
-        JButton stopBtn = new JButton(L.get("stop"));
-        stopBtn.setToolTipText(L.get("stop_all_task"));
-        stopBtn.addActionListener((e) -> stopTask());
-        controlPanel.add(stopBtn);
-        // 清空历史记录按钮
-        JButton clearBtn = new JButton(L.get("clear_record"));
-        clearBtn.setToolTipText(L.get("clear_history"));
-        clearBtn.addActionListener((e) -> clearHistory());
-        controlPanel.add(clearBtn);
-        // 操作菜单按钮
-        JButton actionsBtn = new JButton(L.get("actions"));
-        actionsBtn.setToolTipText(L.get("actions_menu"));
-        actionsBtn.addActionListener((e) -> {
-            JButton btn = (JButton) e.getSource();
-            if (mTaskTable != null) {
-                mTaskTable.showPopupMenu(btn, 0, btn.getHeight());
-            }
-        });
-        controlPanel.add(actionsBtn);
-        // 过滤设置
-        controlPanel.add(new JPanel(), "1w");
-        mFilterRuleText = new HintTextField();
-        mFilterRuleText.setEditable(false);
-        mFilterRuleText.setHintText(L.get("no_filter_rules"));
-        controlPanel.add(mFilterRuleText, "2w");
-        JButton filterBtn = new JButton(L.get("filter"));
-        filterBtn.setToolTipText(L.get("filter_data"));
-        filterBtn.addActionListener(e -> showSetupFilterDialog());
-        controlPanel.add(filterBtn, "65px");
+        // 初始化开关控制栏
+        initControlPanel();
+        // 初始化按钮控制栏
+        initButtonPanel();
         // 主面板
         JSplitPane mainSplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         mainSplitPanel.setResizeWeight(0.55D);
@@ -160,6 +115,74 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         add(mainSplitPanel, "100%");
         // 加载过滤规则
         loadFilterRules();
+    }
+
+    /**
+     * 初始化开关控制栏
+     */
+    private void initControlPanel() {
+        JPanel panel = new JPanel(new HLayout(5, true));
+        panel.setBorder(new EmptyBorder(0, 0, 0, 5));
+        panel.setFocusable(false);
+        add(panel);
+        // 代理监听开关
+        mListenProxyMessage = newJCheckBox(panel, L.get("listen_proxy_message"), Config.KEY_ENABLE_LISTEN_PROXY);
+        // 请求头移除开关
+        mRemoveHeader = newJCheckBox(panel, L.get("remove_header"), Config.KEY_ENABLE_REMOVE_HEADER);
+        // 请求头替换开关
+        mReplaceHeader = newJCheckBox(panel, L.get("replace_header"), Config.KEY_ENABLE_REPLACE_HEADER);
+        // 递归扫描开关
+        mDirScan = newJCheckBox(panel, L.get("dir_scan"), Config.KEY_ENABLE_DIR_SCAN);
+        // 启用Payload Processing
+        mPayloadProcessing = newJCheckBox(panel, L.get("payload_processing"), Config.KEY_ENABLE_PAYLOAD_PROCESSING);
+        // 启用跟随重定向
+        mFollowRedirect = newJCheckBox(panel, L.get("follow_redirect"), Config.KEY_ENABLE_FOLLOW_REDIRECT);
+        // 撑开布局
+        panel.add(new JPanel(), "1w");
+        // 过滤设置
+        mFilterRuleText = new HintTextField();
+        mFilterRuleText.setEditable(false);
+        mFilterRuleText.setHintText(L.get("no_filter_rules"));
+        panel.add(mFilterRuleText, "1w");
+        JButton filterBtn = new JButton(L.get("filter"));
+        filterBtn.setToolTipText(L.get("filter_data"));
+        filterBtn.addActionListener(e -> showSetupFilterDialog());
+        panel.add(filterBtn, "65px");
+    }
+
+    /**
+     * 初始化按钮控制栏
+     */
+    private void initButtonPanel() {
+        JPanel panel = new JPanel(new HLayout(5, true));
+        panel.setBorder(new EmptyBorder(0, 5, 5, 0));
+        panel.setFocusable(false);
+        add(panel);
+        // 导入Url
+        JButton importUrlBtn = new JButton(L.get("import_url"));
+        importUrlBtn.setToolTipText(L.get("import_url"));
+        importUrlBtn.addActionListener((e) -> importUrl());
+        panel.add(importUrlBtn);
+        // 停止按钮
+        JButton stopBtn = new JButton(L.get("stop"));
+        stopBtn.setToolTipText(L.get("stop_all_task"));
+        stopBtn.addActionListener((e) -> stopTask());
+        panel.add(stopBtn);
+        // 清空历史记录按钮
+        JButton clearBtn = new JButton(L.get("clear_record"));
+        clearBtn.setToolTipText(L.get("clear_history"));
+        clearBtn.addActionListener((e) -> clearHistory());
+        panel.add(clearBtn);
+        // 操作菜单按钮
+        JButton actionsBtn = new JButton(L.get("actions"));
+        actionsBtn.setToolTipText(L.get("actions_menu"));
+        actionsBtn.addActionListener((e) -> {
+            JButton btn = (JButton) e.getSource();
+            if (mTaskTable != null) {
+                mTaskTable.showPopupMenu(btn, 0, btn.getHeight());
+            }
+        });
+        panel.add(actionsBtn);
     }
 
     /**
@@ -296,6 +319,13 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
      */
     public boolean hasPayloadProcessing() {
         return mPayloadProcessing != null && mPayloadProcessing.isSelected();
+    }
+
+    /**
+     * 是否开启跟随重定向开关
+     */
+    public boolean hasFollowRedirect() {
+        return mFollowRedirect != null && mFollowRedirect.isSelected();
     }
 
     /**

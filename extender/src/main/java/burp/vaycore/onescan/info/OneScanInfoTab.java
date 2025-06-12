@@ -5,6 +5,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.JsonUtils;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.widget.FpTestResultPanel;
@@ -66,7 +67,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
         IRequestInfo info = mHelpers.analyzeRequest(content);
         // 是否存在指纹识别历史记录
         if (FpManager.getHistoryCount() > 0) {
-            String host = getRequestHost(info);
+            String host = getHostByRequestInfo(info);
             List<FpData> historyResults = FpManager.findHistoryByHost(host);
             hasEnabled = historyResults != null && !historyResults.isEmpty();
         }
@@ -125,7 +126,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
         }
         // 指纹识别的历史记录
         if (FpManager.getHistoryCount() > 0) {
-            String host = getRequestHost(info);
+            String host = getHostByRequestInfo(info);
             List<FpData> historyResults = FpManager.findHistoryByHost(host);
             if (historyResults != null && !historyResults.isEmpty()) {
                 mTabPanel.addTab("Fingerprint-History", new FpTestResultPanel(historyResults));
@@ -213,7 +214,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
      *
      * @return 失败返回null
      */
-    private String getRequestHost(IRequestInfo info) {
+    private String getHostByRequestInfo(IRequestInfo info) {
         if (info == null) {
             return null;
         }
@@ -225,7 +226,7 @@ public class OneScanInfoTab implements IMessageEditorTab {
             }
         }
         // 从 IHttpService 获取的 Host 值
-        String host = getRequestHost();
+        String host = getHostByHttpService();
         if (StringUtils.isNotEmpty(host)) {
             return host;
         }
@@ -237,14 +238,14 @@ public class OneScanInfoTab implements IMessageEditorTab {
      *
      * @return 失败返回null
      */
-    private String getRequestHost() {
+    private String getHostByHttpService() {
         IHttpService service = mController.getHttpService();
         if (service == null) {
             return null;
         }
         String host = service.getHost();
         int port = service.getPort();
-        if (port < 0 || port == 80 || port == 443 || port > 65535) {
+        if (Utils.isIgnorePort(port)) {
             return host;
         }
         return host + ":" + port;
