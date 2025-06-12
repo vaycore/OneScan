@@ -39,6 +39,7 @@ public class Config {
     public static final String KEY_INCLUDE_METHOD = "include-method";
     public static final String KEY_WORDLIST_PATH = "dict-path";
     public static final String KEY_DATABOARD_FILTER_RULES = "databoard-filter-rules";
+    public static final String KEY_FOLLOW_REDIRECT = "follow-redirect";
     public static final String KEY_REDIRECT_COOKIES_FOLLOW = "redirect-cookies-follow";
     public static final String KEY_REDIRECT_TARGET_HOST_LIMIT = "redirect-target-host-limit";
     // 首页开关配置项
@@ -47,7 +48,6 @@ public class Config {
     public static final String KEY_ENABLE_REPLACE_HEADER = "enable-replace-header";
     public static final String KEY_ENABLE_DIR_SCAN = "enable-dir-scan";
     public static final String KEY_ENABLE_PAYLOAD_PROCESSING = "payload-processing";
-    public static final String KEY_ENABLE_FOLLOW_REDIRECT = "follow-redirect";
     // 配置常量值
     public static final String DIRECT_LEFT = "left";
     public static final String DIRECT_RIGHT = "right";
@@ -75,6 +75,7 @@ public class Config {
                 "woff2|xbm|xls|xlsx|xpm|xul|xwd|zip");
         initDefaultConfig(Config.KEY_INCLUDE_METHOD, "GET|POST");
         initDefaultConfig(Config.KEY_WORDLIST_PATH, getWorkDir() + "wordlist");
+        initDefaultConfig(Config.KEY_FOLLOW_REDIRECT, "true");
         initDefaultConfig(Config.KEY_REDIRECT_COOKIES_FOLLOW, "true");
         initDefaultConfig(Config.KEY_REDIRECT_TARGET_HOST_LIMIT, "true");
         // 默认开关配置
@@ -83,7 +84,6 @@ public class Config {
         initDefaultConfig(Config.KEY_ENABLE_REPLACE_HEADER, "true");
         initDefaultConfig(Config.KEY_ENABLE_DIR_SCAN, "true");
         initDefaultConfig(Config.KEY_ENABLE_PAYLOAD_PROCESSING, "true");
-        initDefaultConfig(Config.KEY_ENABLE_FOLLOW_REDIRECT, "true");
         // 初始化数据收集管理
         CollectManager.init(get(Config.KEY_COLLECT_PATH));
         // 初始化字典管理

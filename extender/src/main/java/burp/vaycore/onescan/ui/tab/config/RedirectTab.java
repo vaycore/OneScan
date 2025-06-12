@@ -17,6 +17,8 @@ import java.awt.event.ItemEvent;
 public class RedirectTab extends BaseConfigTab {
 
     protected void initView() {
+        addEnabledConfigPanel(L.get("follow_redirect"), L.get("follow_redirect_sub_title"),
+                Config.KEY_FOLLOW_REDIRECT);
         addEnabledConfigPanel(L.get("cookies_follow"), L.get("cookies_follow_sub_title"),
                 Config.KEY_REDIRECT_COOKIES_FOLLOW);
         addEnabledConfigPanel(L.get("target_host_limit"), L.get("target_host_limit_sub_title"),

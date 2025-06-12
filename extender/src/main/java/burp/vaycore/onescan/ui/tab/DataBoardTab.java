@@ -45,7 +45,6 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     private ArrayList<FilterRule> mLastFilters;
     private HintTextField mFilterRuleText;
     private JCheckBox mPayloadProcessing;
-    private JCheckBox mFollowRedirect;
     private ImportUrlWindow mImportUrlWindow;
 
     @Override
@@ -90,10 +89,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         setLayout(new VLayout(0));
-        // 初始化开关控制栏
+        // 初始化控制栏
         initControlPanel();
-        // 初始化按钮控制栏
-        initButtonPanel();
         // 主面板
         JSplitPane mainSplitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         mainSplitPanel.setResizeWeight(0.55D);
@@ -118,7 +115,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     }
 
     /**
-     * 初始化开关控制栏
+     * 初始化控制栏
      */
     private void initControlPanel() {
         JPanel panel = new JPanel(new HLayout(5, true));
@@ -135,29 +132,6 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         mDirScan = newJCheckBox(panel, L.get("dir_scan"), Config.KEY_ENABLE_DIR_SCAN);
         // 启用Payload Processing
         mPayloadProcessing = newJCheckBox(panel, L.get("payload_processing"), Config.KEY_ENABLE_PAYLOAD_PROCESSING);
-        // 启用跟随重定向
-        mFollowRedirect = newJCheckBox(panel, L.get("follow_redirect"), Config.KEY_ENABLE_FOLLOW_REDIRECT);
-        // 撑开布局
-        panel.add(new JPanel(), "1w");
-        // 过滤设置
-        mFilterRuleText = new HintTextField();
-        mFilterRuleText.setEditable(false);
-        mFilterRuleText.setHintText(L.get("no_filter_rules"));
-        panel.add(mFilterRuleText, "1w");
-        JButton filterBtn = new JButton(L.get("filter"));
-        filterBtn.setToolTipText(L.get("filter_data"));
-        filterBtn.addActionListener(e -> showSetupFilterDialog());
-        panel.add(filterBtn, "65px");
-    }
-
-    /**
-     * 初始化按钮控制栏
-     */
-    private void initButtonPanel() {
-        JPanel panel = new JPanel(new HLayout(5, true));
-        panel.setBorder(new EmptyBorder(0, 5, 5, 0));
-        panel.setFocusable(false);
-        add(panel);
         // 导入Url
         JButton importUrlBtn = new JButton(L.get("import_url"));
         importUrlBtn.setToolTipText(L.get("import_url"));
@@ -183,6 +157,17 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             }
         });
         panel.add(actionsBtn);
+        // 撑开布局
+        panel.add(new JPanel(), "1w");
+        // 过滤设置
+        mFilterRuleText = new HintTextField();
+        mFilterRuleText.setEditable(false);
+        mFilterRuleText.setHintText(L.get("no_filter_rules"));
+        panel.add(mFilterRuleText, "2w");
+        JButton filterBtn = new JButton(L.get("filter"));
+        filterBtn.setToolTipText(L.get("filter_data"));
+        filterBtn.addActionListener(e -> showSetupFilterDialog());
+        panel.add(filterBtn, "65px");
     }
 
     /**
@@ -319,13 +304,6 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
      */
     public boolean hasPayloadProcessing() {
         return mPayloadProcessing != null && mPayloadProcessing.isSelected();
-    }
-
-    /**
-     * 是否开启跟随重定向开关
-     */
-    public boolean hasFollowRedirect() {
-        return mFollowRedirect != null && mFollowRedirect.isSelected();
     }
 
     /**

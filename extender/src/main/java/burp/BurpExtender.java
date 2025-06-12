@@ -703,7 +703,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void handleFollowRedirect(TaskData data) {
         // 如果未启用“跟随重定向”功能，不继续执行
-        if (!mDataBoardTab.hasFollowRedirect()) {
+        if (!Config.getBoolean(Config.KEY_FOLLOW_REDIRECT)) {
             return;
         }
         int status = data.getStatus();
