@@ -287,7 +287,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 开启线程识别指纹，将识别结果缓存起来
-        mFpThreadPool.execute(() -> FpManager.check(request, response));
+        if (!mFpThreadPool.isShutdown()) {
+            mFpThreadPool.execute(() -> FpManager.check(request, response));
+        }
         // 准备生成任务
         URL url = getUrlByRequestInfo(info);
         // 原始请求也需要经过 Payload Process 处理（不过需要过滤一些后缀的流量）
@@ -727,8 +729,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (location == null) {
             return;
         }
-        IHttpService service = reqResp.getHttpService();
-        IRequestInfo reqInfo = mHelpers.analyzeRequest(service, reqResp.getRequest());
+        IRequestInfo reqInfo = mHelpers.analyzeRequest(reqResp);
         // 如果启用了 Cookie 跟随，获取响应头中的 Cookie 值
         List<String> cookies = null;
         if (Config.getBoolean(Config.KEY_REDIRECT_COOKIES_FOLLOW)) {

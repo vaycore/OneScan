@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.widget;
 
+import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
@@ -159,7 +160,7 @@ public class FpTestWindow extends JPanel implements ActionListener {
         mFrame.setContentPane(this);
         // 其它设置
         mFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        mFrame.setLocationRelativeTo(null);
+        mFrame.setLocationRelativeTo(UIHelper.getMainFrame());
         mFrame.setVisible(true);
     }
 

@@ -245,7 +245,7 @@ public class FpColumnManagerWindow extends JPanel implements ActionListener {
         mFrame.setContentPane(this);
         // 其它设置
         mFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        mFrame.setLocationRelativeTo(null);
+        mFrame.setLocationRelativeTo(UIHelper.getMainFrame());
         mFrame.setResizable(false);
         mFrame.setVisible(true);
     }

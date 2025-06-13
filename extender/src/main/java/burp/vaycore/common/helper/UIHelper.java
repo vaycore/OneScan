@@ -17,6 +17,11 @@ import java.util.*;
  */
 public class UIHelper {
 
+    /**
+     * 当前主窗口实例缓存
+     */
+    private static Frame sMainFrame;
+
     private UIHelper() {
         throw new IllegalAccessError("UIHelper class not support create instance.");
     }
@@ -88,7 +93,7 @@ public class UIHelper {
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setDialogTitle(title);
         chooser.setSelectedFile(defaultFile);
-        int resultCode = chooser.showOpenDialog(null);
+        int resultCode = chooser.showOpenDialog(UIHelper.getMainFrame());
         // 状态检测
         if (resultCode != JFileChooser.APPROVE_OPTION) {
             return defaultFile.toString();
@@ -119,7 +124,7 @@ public class UIHelper {
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         chooser.setDialogTitle(title);
         chooser.setSelectedFile(defaultDir);
-        int resultCode = chooser.showOpenDialog(null);
+        int resultCode = chooser.showOpenDialog(UIHelper.getMainFrame());
         // 状态检测
         if (resultCode != JFileChooser.APPROVE_OPTION) {
             return defaultDir.toString();
@@ -162,7 +167,7 @@ public class UIHelper {
     }
 
     public static void showTipsDialog(String title, String message) {
-        showTipsDialog(title, message, null);
+        showTipsDialog(title, message, UIHelper.getMainFrame());
     }
 
     public static void showTipsDialog(String title, String message, Component parentComponent) {
@@ -198,7 +203,7 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showOkCancelDialog(String title, String message) {
-        return showOkCancelDialog(title, message, null);
+        return showOkCancelDialog(title, message, UIHelper.getMainFrame());
     }
 
     /**
@@ -222,7 +227,7 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showCustomDialog(String title, JComponent c) {
-        return showCustomDialog(title, c, null);
+        return showCustomDialog(title, c, UIHelper.getMainFrame());
     }
 
     /**
@@ -246,7 +251,7 @@ public class UIHelper {
      * @return 用户的选择（{@link JOptionPane#OK_OPTION} or {@link JOptionPane#CANCEL_OPTION}）
      */
     public static int showCustomDialog(String title, String[] options, JComponent c) {
-        return showCustomDialog(title, options, c, null);
+        return showCustomDialog(title, options, c, UIHelper.getMainFrame());
     }
 
     /**
@@ -306,6 +311,28 @@ public class UIHelper {
         c.invalidate();
         c.validate();
         c.repaint();
+    }
+
+    /**
+     * 获取当前程序的主窗口
+     *
+     * @return 失败返回 null
+     */
+    public static Frame getMainFrame() {
+        if (sMainFrame != null) {
+            return sMainFrame;
+        }
+        Frame[] frames = Frame.getFrames();
+        JFrame mainFrame = null;
+        for (Frame frame : frames) {
+            // 取第一个可见的 JFrame 实例
+            if (frame instanceof JFrame && frame.isVisible()) {
+                mainFrame = (JFrame) frame;
+                break;
+            }
+        }
+        sMainFrame = mainFrame;
+        return mainFrame;
     }
 
     /**
