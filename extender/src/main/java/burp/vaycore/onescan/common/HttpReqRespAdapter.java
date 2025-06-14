@@ -116,11 +116,11 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
         // 合并 Cookie 值
         for (String cookie : cookies) {
             String[] split = cookie.split("=");
-            String key = split[0];
-            String value = "";
-            if (split.length > 1) {
-                value = split[1];
+            if (split.length < 2) {
+                continue;
             }
+            String key = split[0];
+            String value = split[1];
             int index = cookieKeyIndexOf(oldCookies, key);
             if (index >= 0) {
                 oldCookies[index] = null;
