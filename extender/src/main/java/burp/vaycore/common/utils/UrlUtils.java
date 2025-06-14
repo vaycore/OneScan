@@ -24,6 +24,8 @@ public class UrlUtils {
         if (StringUtils.isEmpty(url)) {
             return false;
         }
+        // 转换为小写进行检测（忽略大小写）
+        url = url.toLowerCase();
         return url.startsWith("http://") || url.startsWith("https://");
     }
 
