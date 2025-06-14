@@ -268,19 +268,6 @@ public class UIHelper {
     }
 
     /**
-     * 创建分隔线UI
-     *
-     * @return UI对象
-     */
-    public static JPanel newDividerLine() {
-        JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(0, 1));
-        panel.setOpaque(true);
-        panel.setBackground(Color.LIGHT_GRAY);
-        return panel;
-    }
-
-    /**
      * 将 JRadioButton 组件进行分组
      *
      * @param buttons 一个或多个 JRadioButton 组件

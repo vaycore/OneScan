@@ -1,5 +1,6 @@
 package burp;
 
+import burp.vaycore.common.helper.DataTableItemLoader;
 import burp.vaycore.common.helper.DomainHelper;
 import burp.vaycore.common.helper.QpsLimiter;
 import burp.vaycore.common.helper.UIHelper;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -99,6 +101,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
     private QpsLimiter mQpsLimit;
+    private final AtomicInteger mTaskOverCounter = new AtomicInteger(0);
+    private final AtomicInteger mTaskWaitCounter = new AtomicInteger(0);
+    private DataTableItemLoader<Object> mStatusRefresh;
 
     @Override
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
@@ -173,6 +178,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mCallbacks.registerProxyListener(this);
         // 注册菜单
         mCallbacks.registerContextMenuFactory(this);
+        // 刷新状态栏的数据
+        mStatusRefresh = new DataTableItemLoader<>(items -> {
+            if (mDataBoardTab == null) {
+                return;
+            }
+            mDataBoardTab.refreshTaskStatus(mTaskOverCounter.get(), mTaskWaitCounter.get());
+            mDataBoardTab.refreshTaskHistoryStatus();
+            mDataBoardTab.refreshFpCacheStatus();
+        }, 1000);
     }
 
     @Override
@@ -700,11 +714,17 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
                 // 处理重定向
                 handleFollowRedirect(data);
+                // 进度条处理
+                mTaskOverCounter.incrementAndGet();
+                // 刷新状态栏
+                mStatusRefresh.pushItem(1);
             }
         };
         // 将任务添加线程池
         try {
             mThreadPool.execute(task);
+            mTaskWaitCounter.incrementAndGet();
+            mStatusRefresh.pushItem(1);
         } catch (Exception e) {
             Logger.error("doBurpRequest thread execute error: %s", e.getMessage());
         }
@@ -1590,6 +1610,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 String taskUrl = task.getTaskUrl();
                 // 将未执行的任务从去重过滤集合中移除
                 sRepeatFilter.remove(taskUrl);
+                mTaskOverCounter.incrementAndGet();
             }
         }
         // 提示信息

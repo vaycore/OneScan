@@ -124,7 +124,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         panel.add(newButton(L.get("up"), "up-item"));
         panel.add(newButton(L.get("down"), "down-item"));
         panel.add(newButton(L.get("unique"), "unique-item"));
-        panel.add(new Panel(), "1w");
+        panel.add(new JPanel(), "1w");
         panel.add(newButton(L.get("add"), "add-input-item"));
         return panel;
     }

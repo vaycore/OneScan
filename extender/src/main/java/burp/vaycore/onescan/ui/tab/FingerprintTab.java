@@ -66,7 +66,7 @@ public class FingerprintTab extends BaseTab implements ActionListener, KeyListen
         reload.addActionListener(this);
         panel.add(reload);
         // 指纹数量展示
-        panel.add(new JLabel(L.get("count")));
+        panel.add(new JLabel(L.get("fingerprint_count")));
         mCountLabel = new JLabel(String.valueOf(FpManager.getCount()));
         panel.add(mCountLabel);
         panel.add(new JPanel(), "1w");

@@ -12,6 +12,7 @@ import burp.vaycore.onescan.common.PopupMenuListenerAdapter;
 import burp.vaycore.onescan.manager.CollectManager;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.tab.config.OtherTab;
+import burp.vaycore.onescan.ui.widget.DividerLine;
 import burp.vaycore.onescan.ui.widget.SimpleWordlist;
 
 import javax.swing.*;
@@ -68,7 +69,7 @@ public abstract class BaseConfigTab extends BaseTab {
             }
         }
         add(new JPanel(), "10px");
-        add(UIHelper.newDividerLine());
+        add(DividerLine.h());
     }
 
     /**

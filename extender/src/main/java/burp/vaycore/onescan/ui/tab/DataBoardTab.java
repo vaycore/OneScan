@@ -17,6 +17,7 @@ import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.common.OnFpColumnModifyListener;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.base.BaseTab;
+import burp.vaycore.onescan.ui.widget.DividerLine;
 import burp.vaycore.onescan.ui.widget.ImportUrlWindow;
 import burp.vaycore.onescan.ui.widget.TaskTable;
 
@@ -46,6 +47,9 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     private HintTextField mFilterRuleText;
     private JCheckBox mPayloadProcessing;
     private ImportUrlWindow mImportUrlWindow;
+    private JLabel mTaskStatus;
+    private JLabel mFpCacheStatus;
+    private JLabel mTaskHistoryStatus;
 
     @Override
     protected void initData() {
@@ -109,7 +113,9 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         mainSplitPanel.add(scrollPane, JSplitPane.LEFT);
         mainSplitPanel.add(dataSplitPanel, JSplitPane.RIGHT);
         // 将布局进行展示
-        add(mainSplitPanel, "100%");
+        add(mainSplitPanel, "1w");
+        // 状态栏
+        initStatusPanel();
         // 加载过滤规则
         loadFilterRules();
     }
@@ -171,6 +177,41 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     }
 
     /**
+     * 初始化状态栏
+     */
+    private void initStatusPanel() {
+        add(DividerLine.h());
+        JPanel panel = new JPanel(new HLayout(10));
+        panel.setBorder(new EmptyBorder(5, 10, 5, 10));
+        panel.setFocusable(false);
+        panel.add(new JPanel(), "1w");
+        add(panel);
+        // 添加状态信息组件
+        mTaskStatus = addStatusInfoPanel(panel);
+        mTaskHistoryStatus = addStatusInfoPanel(panel);
+        mFpCacheStatus = addStatusInfoPanel(panel);
+        // 刷新默认显示的信息
+        refreshTaskStatus(0, 0);
+        refreshTaskHistoryStatus();
+        refreshFpCacheStatus();
+    }
+
+    /**
+     * 添加状态信息组件
+     *
+     * @param panel 状态栏布局
+     * @return 返回 JLabel 组件
+     */
+    private JLabel addStatusInfoPanel(JPanel panel) {
+        // 分隔线
+        panel.add(DividerLine.v());
+        // 显示的内容
+        JLabel label = new JLabel();
+        panel.add(label);
+        return label;
+    }
+
+    /**
      * 从配置文件中加载过滤规则
      */
     private void loadFilterRules() {
@@ -187,6 +228,14 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         mLastFilters = rules;
     }
 
+    /**
+     * 创建开关组件
+     *
+     * @param panel     控制栏布局
+     * @param text      开关标签
+     * @param configKey 要绑定的配置 key
+     * @return 开关组件实例
+     */
     private JCheckBox newJCheckBox(JPanel panel, String text, String configKey) {
         JCheckBox checkBox = new JCheckBox(text, Config.getBoolean(configKey));
         checkBox.setFocusable(false);
@@ -262,6 +311,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         mTaskTable.clearAll();
+        refreshTaskHistoryStatus();
     }
 
     /**
@@ -304,6 +354,49 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
      */
     public boolean hasPayloadProcessing() {
         return mPayloadProcessing != null && mPayloadProcessing.isSelected();
+    }
+
+    /**
+     * 刷新任务状态
+     *
+     * @param over 任务完成数量
+     * @param wait 等待任务数量
+     */
+    public void refreshTaskStatus(int over, int wait) {
+        if (mTaskTable == null) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            String message = L.get("status_bar_task", over, wait);
+            mTaskStatus.setText(message);
+        });
+    }
+
+    /**
+     * 刷新任务状态
+     */
+    public void refreshTaskHistoryStatus() {
+        if (mTaskHistoryStatus == null || mTaskTable == null) {
+            return;
+        }
+        int count = mTaskTable.getTaskCount();
+        SwingUtilities.invokeLater(() -> {
+            String message = L.get("status_bar_task_history", count);
+            mTaskHistoryStatus.setText(message);
+        });
+    }
+
+    /**
+     * 刷新指纹缓存状态
+     */
+    public void refreshFpCacheStatus() {
+        if (mFpCacheStatus == null) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            String message = L.get("status_bar_fingerprint_cache", FpManager.getCacheCount());
+            mFpCacheStatus.setText(message);
+        });
     }
 
     /**
