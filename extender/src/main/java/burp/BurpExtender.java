@@ -763,11 +763,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 失败返回null
      */
     private String getLocationByResponseInfo(IResponseInfo info) {
-        String headerPrefix = "Location: ";
+        String headerPrefix = "location: ";
         List<String> headers = info.getHeaders();
         for (int i = 1; i < headers.size(); i++) {
             String header = headers.get(i);
-            if (header.startsWith(headerPrefix)) {
+            // 检测时忽略大小写
+            if (header.toLowerCase().startsWith(headerPrefix)) {
                 return header.substring(headerPrefix.length());
             }
         }
