@@ -570,7 +570,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
-        String url = getUrlByRequestInfo(newInfo).toString();
+        URL u = getUrlByRequestInfo(newInfo);
+        String url = UrlUtils.getReqHostByURL(u) + u.getPath();
         // 如果当前 URL 已经扫描，中止任务
         if (checkRepeatFilterByUrl(url)) {
             return;
@@ -910,8 +911,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 请求头构建完成后，对里面包含的动态变量进行赋值
-        URL url = getUrlByRequestInfo(info);
         IHttpService service = httpReqResp.getHttpService();
+        URL url = getUrlByRequestInfo(info);
         String newRequestRaw = setupVariable(service, url, requestRaw.toString());
         if (newRequestRaw == null) {
             return null;
@@ -1153,6 +1154,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * @return 失败返回null
      */
     private String getWebrootByURL(URL url) {
+        if (url == null) {
+            return null;
+        }
         String path = url.getPath();
         // 没有根目录名，直接返回null
         if (StringUtils.isEmpty(path) || "/".equals(path)) {
@@ -1179,10 +1183,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return null;
         }
         IRequestInfo info = mHelpers.analyzeRequest(service, requestBytes);
-        URL u = getUrlByRequestInfo(info);
         int bodyOffset = info.getBodyOffset();
         int bodySize = requestBytes.length - bodyOffset;
-        String url = UrlUtils.toPQF(u);
+        String url = getReqPathByRequestInfo(info);
         String header = new String(requestBytes, 0, bodyOffset - 4);
         String body = bodySize <= 0 ? "" : new String(requestBytes, bodyOffset, bodySize);
         String request = mHelpers.bytesToString(requestBytes);
@@ -1228,6 +1231,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         // 动态变量赋值
+        URL u = getUrlByRequestInfo(info);
         String newRequest = setupVariable(service, u, request);
         if (newRequest == null) {
             return null;
