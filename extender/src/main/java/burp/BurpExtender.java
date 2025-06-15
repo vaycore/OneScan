@@ -71,14 +71,24 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private static final String FROM_PROXY = "Proxy";
 
     /**
-     * 请求来源：扫描
+     * 请求来源：发送到 OneScan 扫描
      */
-    private static final String FROM_SCAN = "Scan";
+    private static final String FROM_SEND = "Send";
+
+    /**
+     * 请求来源：Payload Processing
+     */
+    private static final String FROM_PROCESS = "Process";
 
     /**
      * 请求来源：导入
      */
     private static final String FROM_IMPORT = "Import";
+
+    /**
+     * 请求来源：扫描
+     */
+    private static final String FROM_SCAN = "Scan";
 
     /**
      * 请求来源：重定向
@@ -198,7 +208,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         sendToOneScanItem.addActionListener((event) -> new Thread(() -> {
             IHttpRequestResponse[] messages = invocation.getSelectedMessages();
             for (IHttpRequestResponse httpReqResp : messages) {
-                doScan(httpReqResp, "Send");
+                doScan(httpReqResp, FROM_SEND);
                 // 线程池关闭后，停止发送扫描任务
                 if (mThreadPool.isShutdown()) {
                     Logger.debug("sendToPlugin: thread pool is shutdown, stop sending scan task");
@@ -215,7 +225,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 String action = event.getActionCommand();
                 IHttpRequestResponse[] messages = invocation.getSelectedMessages();
                 for (IHttpRequestResponse httpReqResp : messages) {
-                    doScan(httpReqResp, "Send", action);
+                    doScan(httpReqResp, FROM_SEND, action);
                     // 线程池关闭后，停止发送扫描任务
                     if (mThreadPool.isShutdown()) {
                         Logger.debug("usePayloadScan: thread pool is shutdown, stop sending scan task");
@@ -644,7 +654,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             // 检测是否未进行任何处理
             boolean equals = Arrays.equals(reqRawBytes, resultBytes);
             // 未进行任何处理时，不变更 from 值
-            String newFrom = equals ? from : from + "（Process）";
+            String newFrom = equals ? from : from + "（" + FROM_PROCESS + "）";
             doBurpRequest(service, url, resultBytes, newFrom);
         } else {
             // 如果规则处理异常导致数据返回为空，则发送原来的请求
@@ -674,7 +684,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     if (equals) {
                         return;
                     }
-                    doBurpRequest(service, url, requestBytes, "Process" + "（" + item.getName() + "）");
+                    doBurpRequest(service, url, requestBytes, FROM_PROCESS + "（" + item.getName() + "）");
                 });
     }
 
@@ -1024,13 +1034,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String subdomain = getSubdomain(domain);
         String subdomains = getSubdomains(domain);
         String webroot = getWebrootByURL(url);
-        String ip = findIpByHost(domain);
         // 替换变量
         try {
             requestRaw = fillVariable(requestRaw, "protocol", protocol);
             requestRaw = fillVariable(requestRaw, "host", host);
             requestRaw = fillVariable(requestRaw, "webroot", webroot);
-            requestRaw = fillVariable(requestRaw, "ip", ip);
+            // 需要填充再取值
+            if (requestRaw.contains("{{ip}}")) {
+                String ip = findIpByHost(domain);
+                requestRaw = fillVariable(requestRaw, "ip", ip);
+            }
             // 填充域名相关动态变量
             requestRaw = fillVariable(requestRaw, "domain", domain);
             requestRaw = fillVariable(requestRaw, "domain.main", domainMain);
@@ -1161,6 +1174,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return null;
         }
         String parseDomain = DomainHelper.getDomain(domain, null);
+        if (StringUtils.isEmpty(parseDomain)) {
+            return null;
+        }
         int endIndex = domain.lastIndexOf(parseDomain) - 1;
         if (endIndex < 0) {
             return null;
