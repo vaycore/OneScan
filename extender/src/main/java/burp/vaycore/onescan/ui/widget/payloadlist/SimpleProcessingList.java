@@ -53,7 +53,7 @@ public class SimpleProcessingList extends JPanel implements ActionListener {
      * @param list 数据列表
      */
     public void setListData(ArrayList<ProcessingItem> list) {
-        if (list == null || list.isEmpty()) {
+        if (list == null) {
             return;
         }
         mListModel.clearAll();

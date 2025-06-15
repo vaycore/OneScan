@@ -372,7 +372,7 @@ public class FpColumnManagerWindow extends JPanel implements ActionListener {
         }
 
         public void setList(List<FpColumn> list) {
-            if (list == null || list.isEmpty()) {
+            if (list == null) {
                 return;
             }
             synchronized (mList) {
