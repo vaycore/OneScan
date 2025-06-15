@@ -56,7 +56,7 @@ public class TaskTable extends JTable implements ActionListener {
     private static Vector<String> sColumnNames;
 
     private final TaskTableModel mTaskTableModel;
-    private final TableRowSorter<TaskTableModel> mTableRowSorter;
+    private TableRowSorter<TaskTableModel> mTableRowSorter;
     private ArrayList<TableFilter<AbstractTableModel>> mTableFilters = new ArrayList<>();
     private final ArrayList<TableFilter<AbstractTableModel>> mTempFilters = new ArrayList<>();
     private OnTaskTableEventListener mOnTaskTableEventListener;
@@ -116,15 +116,15 @@ public class TaskTable extends JTable implements ActionListener {
         mLastSelectedRow = -1;
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
-        mTableRowSorter.setMaxSortKeys(1);
-        setRowSorter(mTableRowSorter);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
+        mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
         // 初始化颜色等级排序
         initColorLevelSorter();
         // 初始化列宽
         initColumnWidth();
+        // 设置排序器
+        setRowSorter(mTableRowSorter);
         // 初始化监听器
         initEvent();
     }
@@ -298,7 +298,9 @@ public class TaskTable extends JTable implements ActionListener {
             // 保留有效的过滤规则
             result.add(filter);
         }
-        mTableRowSorter.setRowFilter(RowFilter.andFilter(result));
+        synchronized (mTaskTableModel) {
+            mTableRowSorter.setRowFilter(RowFilter.andFilter(result));
+        }
     }
 
     /**
@@ -669,8 +671,12 @@ public class TaskTable extends JTable implements ActionListener {
         if (mTaskTableModel == null) {
             return;
         }
+        // 重新初始化列名列表
         initColumnNames();
+        // 重新初始化排序器实例
+        mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
         updateRowFilter();
+        setRowSorter(mTableRowSorter);
         mTaskTableModel.fireTableStructureChanged();
         initColorLevelSorter();
         initColumnWidth();
@@ -810,9 +816,9 @@ public class TaskTable extends JTable implements ActionListener {
             if (validItems.isEmpty()) {
                 return;
             }
-            synchronized (this.mData) {
+            synchronized (this) {
                 int firstRow = getRowCount();
-                this.mData.addAll(validItems);
+                mData.addAll(validItems);
                 int lastRow = getRowCount() - 1;
                 if (firstRow > 0) {
                     fireTableRowsInserted(firstRow, lastRow);
@@ -822,29 +828,23 @@ public class TaskTable extends JTable implements ActionListener {
             }
         }
 
-        public void removeItems(List<TaskData> list) {
+        public synchronized void removeItems(List<TaskData> list) {
             if (list == null || list.isEmpty()) {
                 return;
             }
-            synchronized (this.mData) {
-                this.mData.removeAll(list);
-                fireTableDataChanged();
-            }
+            mData.removeAll(list);
+            fireTableDataChanged();
         }
 
-        public void clearAll() {
-            synchronized (this.mData) {
-                mData.clear();
-                fireTableDataChanged();
-                mCounter.set(0);
-            }
+        public synchronized void clearAll() {
+            mData.clear();
+            fireTableDataChanged();
+            mCounter.set(0);
         }
 
         @Override
-        public int getRowCount() {
-            synchronized (this.mData) {
-                return mData.size();
-            }
+        public synchronized int getRowCount() {
+            return mData.size();
         }
 
         @Override
@@ -857,13 +857,11 @@ public class TaskTable extends JTable implements ActionListener {
             return getColumnNames().get(column);
         }
 
-        private TaskData getItemData(int rowIndex) {
+        private synchronized TaskData getItemData(int rowIndex) {
             if (rowIndex < 0 || rowIndex >= getRowCount()) {
                 return null;
             }
-            synchronized (this.mData) {
-                return mData.get(rowIndex);
-            }
+            return mData.get(rowIndex);
         }
 
         @Override
