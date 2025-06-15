@@ -128,15 +128,16 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         panel.setFocusable(false);
         add(panel);
         // 代理监听开关
-        mListenProxyMessage = newJCheckBox(panel, L.get("listen_proxy_message"), Config.KEY_ENABLE_LISTEN_PROXY);
+        mListenProxyMessage = newJCheckBox(panel, L.get("listen_proxy"), Config.KEY_ENABLE_LISTEN_PROXY);
         // 请求头移除开关
         mRemoveHeader = newJCheckBox(panel, L.get("remove_header"), Config.KEY_ENABLE_REMOVE_HEADER);
         // 请求头替换开关
         mReplaceHeader = newJCheckBox(panel, L.get("replace_header"), Config.KEY_ENABLE_REPLACE_HEADER);
         // 递归扫描开关
         mDirScan = newJCheckBox(panel, L.get("dir_scan"), Config.KEY_ENABLE_DIR_SCAN);
-        // 启用Payload Processing
-        mPayloadProcessing = newJCheckBox(panel, L.get("payload_processing"), Config.KEY_ENABLE_PAYLOAD_PROCESSING);
+        // 请求包处理开关
+        mPayloadProcessing = newJCheckBox(panel, L.get("databoard_payload_processing"),
+                Config.KEY_ENABLE_PAYLOAD_PROCESSING);
         // 导入Url
         JButton importUrlBtn = new JButton(L.get("import_url"));
         importUrlBtn.setToolTipText(L.get("import_url"));
