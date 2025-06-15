@@ -3,7 +3,6 @@ package burp.vaycore.onescan.ui.tab;
 import burp.vaycore.common.filter.FilterRule;
 import burp.vaycore.common.filter.TableFilter;
 import burp.vaycore.common.filter.TableFilterPanel;
-import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.IPUtils;
@@ -279,7 +278,6 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         sendTabEvent(EVENT_IMPORT_URL, data);
-        UIHelper.showTipsDialog(L.get("import_url_success"), mImportUrlWindow);
     }
 
     @Override

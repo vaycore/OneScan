@@ -34,14 +34,22 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
     private OnDataChangeListener mOnDataChangeListener;
 
     public SimpleWordlist() {
-        this(null);
+        this(null, "350px");
     }
 
     public SimpleWordlist(List<String> wordlist) {
+        this(wordlist, "350px");
+    }
+
+    public SimpleWordlist(String rightPanelWidth) {
+        this(null, rightPanelWidth);
+    }
+
+    public SimpleWordlist(List<String> wordlist, String rightPanelWidth) {
         mListModel = new DefaultListModel<>();
         mListModel.addListDataListener(this);
         initData(wordlist);
-        initView();
+        initView(rightPanelWidth);
     }
 
     public void setActionCommand(String action) {
@@ -108,12 +116,12 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
         this.mOnDataChangeListener = l;
     }
 
-    private void initView() {
+    private void initView(String rightPanelWidth) {
         setLayout(new HLayout(5));
         setPreferredSize(new Dimension(0, 240));
 
         add(newLeftPanel(), "85px");
-        add(newRightPanel(), "350px");
+        add(newRightPanel(), rightPanelWidth);
     }
 
     private JPanel newLeftPanel() {
@@ -167,7 +175,7 @@ public class SimpleWordlist extends JPanel implements ActionListener, ListDataLi
                 mTfInputItem.requestFocus();
                 break;
             case "clear-item":
-                int state = UIHelper.showOkCancelDialog(L.get("confirm_clear_the_list_hint"));
+                int state = UIHelper.showOkCancelDialog(L.get("confirm_clear_the_list_hint"), this);
                 if (state == JOptionPane.OK_OPTION) {
                     mListModel.removeAllElements();
                 }

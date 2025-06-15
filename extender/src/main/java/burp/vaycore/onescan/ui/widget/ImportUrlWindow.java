@@ -4,6 +4,7 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.HLayout;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.StringUtils;
+import burp.vaycore.common.utils.UrlUtils;
 import burp.vaycore.common.widget.HintTextField;
 import burp.vaycore.onescan.common.L;
 
@@ -35,14 +36,15 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         setLayout(new VLayout());
         setBorder(new EmptyBorder(10, 10, 10, 10));
         // URL前缀
-        JPanel prefixPanel = new JPanel(new HLayout(0, true));
+        JPanel prefixPanel = new JPanel(new HLayout(5, true));
         add(prefixPanel);
         prefixPanel.add(new JLabel(L.get("url_prefix_label")));
         mTextField = new HintTextField();
         mTextField.setHintText(L.get("url_prefix_input_hint"));
+        mTextField.setToolTipText(L.get("url_prefix_input_hint"));
         prefixPanel.add(mTextField, "1w");
         // URL字典列表
-        mWordlist = new SimpleWordlist();
+        mWordlist = new SimpleWordlist("1w");
         add(mWordlist, "1w");
         // 底部按钮布局
         JPanel bottomPanel = new JPanel(new HLayout(5, true));
@@ -88,6 +90,11 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         List<String> data = mWordlist.getListData();
         // 如果存在前缀，对每一项进行拼接；如果不存在，直接使用列表的数据
         if (StringUtils.isNotEmpty(prefix)) {
+            // 检测格式
+            if (!UrlUtils.isHTTP(prefix)) {
+                UIHelper.showTipsDialog(L.get("url_prefix_invalid_hint"), this);
+                return false;
+            }
             // 检测列表是否不为空
             if (!data.isEmpty()) {
                 data.replaceAll(item -> {
@@ -105,8 +112,20 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
             UIHelper.showTipsDialog(L.get("data_is_empty_hint"), this);
             return false;
         }
+        // 查询是否存在无效的 URL 数据
+        String invalidItem = data.parallelStream().filter(item -> !UrlUtils.isHTTP(item))
+                .findFirst().orElse(null);
+        // 如果存在，提醒用户存在无效的 URL 数据
+        if (StringUtils.isNotEmpty(invalidItem)) {
+            int ret = UIHelper.showOkCancelDialog(L.get("import_invalid_item_hint"), this);
+            if (ret != JOptionPane.OK_OPTION) {
+                return false;
+            }
+        }
         // 调用监听器
         invokeOnImportUrlListener(data);
+        // 提示导入成功
+        UIHelper.showTipsDialog(L.get("import_url_success_hint"), this);
         return true;
     }
 
@@ -183,7 +202,7 @@ public class ImportUrlWindow extends JPanel implements ActionListener {
         /**
          * 导入 Url 事件
          *
-         * @param data   字典数据
+         * @param data 字典数据
          */
         void onImportUrl(List<String> data);
     }
