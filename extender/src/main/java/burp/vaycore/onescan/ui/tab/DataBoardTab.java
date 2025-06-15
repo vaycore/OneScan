@@ -365,10 +365,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         if (mTaskTable == null) {
             return;
         }
-        SwingUtilities.invokeLater(() -> {
-            String message = L.get("status_bar_task", over, wait);
-            mTaskStatus.setText(message);
-        });
+        String message = L.get("status_bar_task", over, wait);
+        mTaskStatus.setText(message);
     }
 
     /**
@@ -379,10 +377,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             return;
         }
         int count = mTaskTable.getTaskCount();
-        SwingUtilities.invokeLater(() -> {
-            String message = L.get("status_bar_task_history", count);
-            mTaskHistoryStatus.setText(message);
-        });
+        String message = L.get("status_bar_task_history", count);
+        mTaskHistoryStatus.setText(message);
     }
 
     /**
@@ -392,10 +388,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         if (mFpCacheStatus == null) {
             return;
         }
-        SwingUtilities.invokeLater(() -> {
-            String message = L.get("status_bar_fingerprint_cache", FpManager.getCacheCount());
-            mFpCacheStatus.setText(message);
-        });
+        String message = L.get("status_bar_fingerprint_cache", FpManager.getCacheCount());
+        mFpCacheStatus.setText(message);
     }
 
     /**
