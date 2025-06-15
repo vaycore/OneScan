@@ -839,7 +839,6 @@ public class TaskTable extends JTable implements ActionListener {
         public synchronized void clearAll() {
             mData.clear();
             fireTableDataChanged();
-            mCounter.set(0);
         }
 
         @Override

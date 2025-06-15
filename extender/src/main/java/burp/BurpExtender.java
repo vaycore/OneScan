@@ -780,7 +780,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 URL redirectUrl = UrlUtils.parseRedirectTargetURL(originUrl, location);
                 httpReqResp = HttpReqRespAdapter.from(redirectUrl, reqInfo, UrlUtils.toPQF(redirectUrl), cookies);
             }
-            doScan(httpReqResp, FROM_REDIRECT);
+            doScan(httpReqResp, FROM_REDIRECT + "（" + data.getId() + "）");
         } catch (IllegalArgumentException e) {
             Logger.error("Follow redirect error: " + e.getMessage());
         }
