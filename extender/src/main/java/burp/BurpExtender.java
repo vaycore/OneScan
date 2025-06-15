@@ -304,7 +304,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             CollectManager.collect(false, host, response);
         }
         // 如果启用，对来自重定向的包进行检测
-        if (from.equals(FROM_REDIRECT) && Config.getBoolean(Config.KEY_REDIRECT_TARGET_HOST_LIMIT)) {
+        if (from.startsWith(FROM_REDIRECT) && Config.getBoolean(Config.KEY_REDIRECT_TARGET_HOST_LIMIT)) {
             // 检测 Host 是否在白名单、黑名单列表中
             if (hostAllowlistFilter(host) || hostBlocklistFilter(host)) {
                 Logger.debug("doScan allowlist and blocklist filter host: %s", host);
