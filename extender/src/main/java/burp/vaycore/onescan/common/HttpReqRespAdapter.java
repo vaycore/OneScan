@@ -1,8 +1,8 @@
 package burp.vaycore.onescan.common;
 
+import burp.BurpExtender;
 import burp.IHttpRequestResponse;
 import burp.IHttpService;
-import burp.IRequestInfo;
 import burp.vaycore.common.utils.StringUtils;
 import burp.vaycore.common.utils.UrlUtils;
 
@@ -43,12 +43,11 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
         }
     }
 
-    public static HttpReqRespAdapter from(URL url, IRequestInfo info, String reqPQF, List<String> cookies) {
-        IHttpService service = buildHttpServiceByURL(url);
-        List<String> headers = info.getHeaders();
+    public static HttpReqRespAdapter from(IHttpService service, String reqPQF,
+                                          List<String> headers, List<String> cookies) {
         boolean existsCookie = existsCookieByHeader(headers);
         StringBuilder builder = new StringBuilder();
-        String host = UrlUtils.getHostByURL(url);
+        String host = BurpExtender.getHostByHttpService(service);
         builder.append("GET ").append(reqPQF).append(" HTTP/1.1").append("\r\n");
         builder.append("Host: ").append(host).append("\r\n");
         for (int i = 1; i < headers.size(); i++) {

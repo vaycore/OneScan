@@ -5,7 +5,6 @@ import burp.vaycore.common.helper.UIHelper;
 import burp.vaycore.common.layout.VLayout;
 import burp.vaycore.common.utils.JsonUtils;
 import burp.vaycore.common.utils.StringUtils;
-import burp.vaycore.common.utils.Utils;
 import burp.vaycore.onescan.bean.FpData;
 import burp.vaycore.onescan.manager.FpManager;
 import burp.vaycore.onescan.ui.widget.FpTestResultPanel;
@@ -240,14 +239,6 @@ public class OneScanInfoTab implements IMessageEditorTab {
      */
     private String getHostByHttpService() {
         IHttpService service = mController.getHttpService();
-        if (service == null) {
-            return null;
-        }
-        String host = service.getHost();
-        int port = service.getPort();
-        if (Utils.isIgnorePort(port)) {
-            return host;
-        }
-        return host + ":" + port;
+        return BurpExtender.getHostByHttpService(service);
     }
 }

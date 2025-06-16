@@ -763,7 +763,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         if (location == null) {
             return;
         }
-        IRequestInfo reqInfo = mHelpers.analyzeRequest(reqResp);
         // 如果启用了 Cookie 跟随，获取响应头中的 Cookie 值
         List<String> cookies = null;
         if (Config.getBoolean(Config.KEY_REDIRECT_COOKIES_FOLLOW)) {
@@ -773,15 +772,18 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         String reqPath = data.getUrl();
         try {
             HttpReqRespAdapter httpReqResp;
+            IRequestInfo reqInfo = mHelpers.analyzeRequest(reqResp);
+            IHttpService service = reqResp.getHttpService();
+            List<String> headers = reqInfo.getHeaders();
             // 兼容完整 Host 地址
             if (UrlUtils.isHTTP(reqPath)) {
                 URL originUrl = UrlUtils.parseURL(reqPath);
                 URL redirectUrl = UrlUtils.parseRedirectTargetURL(originUrl, location);
-                httpReqResp = HttpReqRespAdapter.from(redirectUrl, reqInfo, redirectUrl.toString(), cookies);
+                httpReqResp = HttpReqRespAdapter.from(service, redirectUrl.toString(), headers, cookies);
             } else {
                 URL originUrl = UrlUtils.parseURL(reqHost + reqPath);
                 URL redirectUrl = UrlUtils.parseRedirectTargetURL(originUrl, location);
-                httpReqResp = HttpReqRespAdapter.from(redirectUrl, reqInfo, UrlUtils.toPQF(redirectUrl), cookies);
+                httpReqResp = HttpReqRespAdapter.from(service, UrlUtils.toPQF(redirectUrl), headers, cookies);
             }
             doScan(httpReqResp, FROM_REDIRECT + "（" + data.getId() + "）");
         } catch (IllegalArgumentException e) {
@@ -1376,6 +1378,23 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return protocol + "://" + host;
         }
         return protocol + "://" + host + ":" + port;
+    }
+
+    /**
+     * 通过 IHttpService 实例，获取请求的 Host 值（示例格式：x.x.x.x、x.x.x.x:8080）
+     *
+     * @return 失败返回null
+     */
+    public static String getHostByHttpService(IHttpService service) {
+        if (service == null) {
+            return null;
+        }
+        String host = service.getHost();
+        int port = service.getPort();
+        if (Utils.isIgnorePort(port)) {
+            return host;
+        }
+        return host + ":" + port;
     }
 
     /**
