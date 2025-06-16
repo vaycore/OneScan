@@ -56,7 +56,7 @@ Extensions -> Installed -> Add -> Select File -> Next
 
 ![](imgs/install_success.png)
 
-插件配置文件默认存放路径如下（优先检测当前插件 JAR 包所在目录下是否存在 `OneScan` 目录，如果存在，将使用该目录作为工作目录；否则，使用如下路径作为工作目录）：
+插件配置文件默认存放路径如下（优先检测当前插件 `jar` 包所在目录下是否存在 `OneScan` 目录，如果存在，将使用该目录作为工作目录；否则，使用如下路径作为工作目录）：
 
 ```text
 linux、macOS：
@@ -80,9 +80,13 @@ C:\Users\<用户名>\.config\OneScan\
 
 ### 辅助面板
 
-提取请求和响应包中 **JSON** 格式的字段，插件 `1.0.0` 版本新增 `Fingerprint` 指纹信息展示
+提取请求和响应包中 **JSON** 格式的字段（插件 `1.0.0` 版本新增 `Fingerprint` 指纹信息展示）
 
 ![](imgs/onescan_info.png)
+
+- `Fingerprint` 当前请求、响应包识别的指纹信息
+- `Fingerprint-History` 当前 Host 的所有历史指纹信息
+- `Json` 当前数据包的所有 `JSON` 字段
 
 ### 动态变量
 
