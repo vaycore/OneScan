@@ -135,15 +135,19 @@ C:\Users\<用户名>\.config\OneScan\
 
 ![](imgs/main_panel.png)
 
-- `Listen Proxy Message` 开关被动扫描（默认禁用），代理的请求包都会经过 OneScan 插件（建议配置白名单后启用）
+- `Listen Proxy` 开关被动扫描（默认禁用），代理的请求包都会经过 OneScan 插件（建议配置白名单后启用）
 - `Remove Header` 开关移除请求头（默认禁用），根据 `Request -> Remove header` 里的配置，移除请求头中对应的值
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
-- `DirScan` 开关递归扫描（默认启用），对目标进行递归扫描
-- `Payload Processing` 开关请求包处理功能（默认启用）
+- `Dir Scan` 开关递归扫描（默认启用），对目标进行递归扫描
+- `Processing` 开关请求包处理功能（默认启用）
 - `Filter` 设置数据过滤规则
 - `Import url` 导入 URL 目标扫描
 - `Stop` 停止正在扫描的任务
+- `Clear` 清空历史记录（与右键菜单里的 `Clear history` 功能一致）
 - `Actions` 操作菜单（列表鼠标右键菜单的所有功能）
+- `Task status` 任务状态（任务完成总数 / 任务提交总数）
+- `Task history` 任务历史记录（任务列表的数据量）
+- `FP cache` 指纹缓存数据量
 
 #### 过滤规则配置
 
@@ -205,6 +209,16 @@ Host配置界面如下
 
 - `Allowlist` 配置白名单列表，如果该列表不为空，插件只对匹配的 Host 进行请求
 - `Blocklist` 配置黑名单列表，如果该列表不为空，插件不会向匹配的 Host 发起请求
+
+#### Redirect（重定向配置）
+
+Redirect配置界面如下（插件 `2.1.0` 版本新增）
+
+![](imgs/config_redirect.png)
+
+- `Follow redirect` 跟随重定向（启用后，将自动解析并访问 `30x` 响应包中的 `Location` 地址）
+- `Cookies follow` Cookie跟随（启用后，将重定向响应包中的 `Cookie` 值带入重定向目标的请求包）
+- `Target host limit` 目标主机限制（启用后，重定向目标主机地址会被黑、白名单列表拦截）
 
 #### Other（其它配置）
 
