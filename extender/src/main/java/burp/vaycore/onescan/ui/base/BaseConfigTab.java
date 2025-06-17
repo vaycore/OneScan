@@ -19,6 +19,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.PopupMenuEvent;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -78,7 +79,7 @@ public abstract class BaseConfigTab extends BaseTab {
      * @param title     配置项标题
      * @param subTitle  配置项说明
      * @param columns   文本框大概展示的文字数（宽度调整）
-     * @param configKey 配置文件中的Key
+     * @param configKey 配置文件中的 Key
      * @return 文件框组件对象
      */
     protected JTextField addTextConfigPanel(String title, String subTitle, int columns, String configKey) {
@@ -102,7 +103,7 @@ public abstract class BaseConfigTab extends BaseTab {
      *
      * @param title     配置项标题
      * @param subTitle  配置项说明
-     * @param configKey 配置文件中的Key
+     * @param configKey 配置文件中的 Key
      */
     protected void addFileConfigPanel(String title, String subTitle, String configKey) {
         JPanel panel = new JPanel(new HLayout(3));
@@ -129,7 +130,7 @@ public abstract class BaseConfigTab extends BaseTab {
      *
      * @param title     配置项标题
      * @param subTitle  配置项说明
-     * @param configKey 配置文件中的Key
+     * @param configKey 配置文件中的 Key
      */
     protected void addDirectoryConfigPanel(String title, String subTitle, String configKey) {
         JPanel panel = new JPanel(new HLayout(3));
@@ -169,7 +170,7 @@ public abstract class BaseConfigTab extends BaseTab {
      *
      * @param title     配置项标题
      * @param subTitle  配置项说明
-     * @param configKey 配置文件中的Key
+     * @param configKey 配置文件中的 Key
      */
     protected void addWordListPanel(String title, String subTitle, String configKey) {
         SimpleWordlist wordlist = new SimpleWordlist(WordlistManager.getList(configKey));
@@ -274,9 +275,37 @@ public abstract class BaseConfigTab extends BaseTab {
     }
 
     /**
+     * 添加启用/禁用配置项
+     *
+     * @param title     配置项标题
+     * @param subTitle  配置项说明
+     * @param configKey 配置文件中的 Key
+     */
+    protected void addEnabledConfigPanel(String title, String subTitle, String configKey) {
+        boolean state = Config.getBoolean(configKey);
+        // 启用选项
+        JPanel panel = new JPanel(new HLayout(10));
+        JRadioButton enabledBtn = new JRadioButton(L.get("enabled"));
+        panel.add(enabledBtn);
+        enabledBtn.setSelected(state);
+        // 禁用选项
+        JRadioButton disabledBtn = new JRadioButton(L.get("disabled"));
+        panel.add(disabledBtn);
+        disabledBtn.setSelected(!state);
+        UIHelper.createRadioGroup(enabledBtn, disabledBtn);
+        // 选项变更，保存配置
+        enabledBtn.addItemListener(e -> {
+            int stateChange = e.getStateChange();
+            boolean newState = stateChange == ItemEvent.SELECTED;
+            Config.put(configKey, String.valueOf(newState));
+        });
+        addConfigItem(title, subTitle, panel);
+    }
+
+    /**
      * 文本配置保存事件
      *
-     * @param configKey 配置文件中的Key
+     * @param configKey 配置文件中的 Key
      * @param text      输入框中的文本
      * @return 用户定义保存状态（true=保存成功；false=保存取消）
      */

@@ -42,6 +42,7 @@ public class Config {
     public static final String KEY_FOLLOW_REDIRECT = "follow-redirect";
     public static final String KEY_REDIRECT_COOKIES_FOLLOW = "redirect-cookies-follow";
     public static final String KEY_REDIRECT_TARGET_HOST_LIMIT = "redirect-target-host-limit";
+    public static final String KEY_INTERCEPT_TIMEOUT_HOST = "intercept-timeout-host";
     // 首页开关配置项
     public static final String KEY_ENABLE_LISTEN_PROXY = "enable-listen-proxy";
     public static final String KEY_ENABLE_REMOVE_HEADER = "enable-remove-header";
@@ -78,6 +79,7 @@ public class Config {
         initDefaultConfig(Config.KEY_FOLLOW_REDIRECT, "true");
         initDefaultConfig(Config.KEY_REDIRECT_COOKIES_FOLLOW, "true");
         initDefaultConfig(Config.KEY_REDIRECT_TARGET_HOST_LIMIT, "true");
+        initDefaultConfig(Config.KEY_INTERCEPT_TIMEOUT_HOST, "false");
         // 默认开关配置
         initDefaultConfig(Config.KEY_ENABLE_LISTEN_PROXY, "false");
         initDefaultConfig(Config.KEY_ENABLE_REMOVE_HEADER, "false");

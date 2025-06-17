@@ -100,6 +100,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
 
+    /**
+     * 超时的请求主机集合
+     */
+    private final Set<String> sTimeoutReqHost = Collections.synchronizedSet(new HashSet<>());
+
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
     private OneScan mOneScan;
@@ -837,6 +842,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private IHttpRequestResponse doMakeHttpRequest(IHttpService service, byte[] reqRawBytes, int retryCount) {
         IHttpRequestResponse reqResp;
         String reqHost = getReqHostByHttpService(service);
+        // 如果启用拦截超时主机，并检测到当前请求主机超时，直接拦截
+        if (Config.getBoolean(Config.KEY_INTERCEPT_TIMEOUT_HOST) && checkTimeoutByReqHost(reqHost)) {
+            return HttpReqRespAdapter.from(service, reqRawBytes);
+        }
         try {
             reqResp = mCallbacks.makeHttpRequest(service, reqRawBytes);
             byte[] respRawBytes = reqResp.getResponse();
@@ -855,6 +864,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         Logger.debug("Check retry request host: %s, count: %d", reqHost, retryCount);
         // 检测是否需要重试
         if (retryCount <= 0) {
+            // 超时的请求，直接添加到集合中
+            sTimeoutReqHost.add(reqHost);
             return reqResp;
         }
         try {
@@ -866,6 +877,19 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 请求重试
         return doMakeHttpRequest(service, reqRawBytes, retryCount - 1);
+    }
+
+    /**
+     * 检测当前请求主机是否超时
+     *
+     * @param reqHost Host（格式：http://x.x.x.x、http://x.x.x.x:8080）
+     * @return true=存在；false=不存在
+     */
+    private boolean checkTimeoutByReqHost(String reqHost) {
+        if (sTimeoutReqHost.isEmpty()) {
+            return false;
+        }
+        return sTimeoutReqHost.contains(reqHost);
     }
 
     /**
@@ -1480,6 +1504,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mCurrentReqResp = null;
         // 清空去重过滤集合
         sRepeatFilter.clear();
+        // 清空超时的请求主机集合
+        sTimeoutReqHost.clear();
         // 清空显示的请求、响应数据包
         mRequestTextEditor.setMessage(EMPTY_BYTES, true);
         mResponseTextEditor.setMessage(EMPTY_BYTES, false);
@@ -1704,6 +1730,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         count = sRepeatFilter.size();
         sRepeatFilter.clear();
         Logger.info("Clear: repeat filter list completed. Total %d records.", count);
+        // 清除超时的请求主机集合
+        count = sTimeoutReqHost.size();
+        sTimeoutReqHost.clear();
+        Logger.info("Clear: timeout request host list completed. Total %d records.", count);
         // 清除任务列表
         count = 0;
         if (mDataBoardTab != null) {

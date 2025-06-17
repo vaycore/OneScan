@@ -1,5 +1,6 @@
 package burp.vaycore.onescan.ui.tab.config;
 
+import burp.vaycore.onescan.common.Config;
 import burp.vaycore.onescan.common.L;
 import burp.vaycore.onescan.manager.WordlistManager;
 import burp.vaycore.onescan.ui.base.BaseConfigTab;
@@ -13,10 +14,15 @@ public class HostTab extends BaseConfigTab {
 
     @Override
     protected void initView() {
-        // Host白名单配置
-        addWordListPanel(L.get("host_allowlist"), L.get("host_allowlist_sub_title"), WordlistManager.KEY_HOST_ALLOWLIST);
-        // Host黑名单配置
-        addWordListPanel(L.get("host_blocklist"), L.get("host_blocklist_sub_title"), WordlistManager.KEY_HOST_BLOCKLIST);
+        // 拦截超时主机
+        addEnabledConfigPanel(L.get("intercept_timeout_host"), L.get("intercept_timeout_host_sub_title"),
+                Config.KEY_INTERCEPT_TIMEOUT_HOST);
+        // Host 白名单
+        addWordListPanel(L.get("host_allowlist"), L.get("host_allowlist_sub_title"),
+                WordlistManager.KEY_HOST_ALLOWLIST);
+        // Host 黑名单
+        addWordListPanel(L.get("host_blocklist"), L.get("host_blocklist_sub_title"),
+                WordlistManager.KEY_HOST_BLOCKLIST);
     }
 
     @Override
