@@ -211,8 +211,8 @@ Host配置界面如下
 
 ![](imgs/config_host.png)
 
-- `Allowlist` 配置白名单列表，如果该列表不为空，插件只对匹配的 Host 进行请求
-- `Blocklist` 配置黑名单列表，如果该列表不为空，插件不会向匹配的 Host 发起请求
+- `Allowlist` 配置白名单，如果该列表不为空，插件只对匹配的 Host 进行请求
+- `Blocklist` 配置黑名单，如果该列表不为空，插件不会向匹配的 Host 发起请求
 
 #### Redirect（重定向配置）
 
@@ -222,7 +222,7 @@ Redirect配置界面如下（插件 `2.1.0` 版本新增）
 
 - `Follow redirect` 跟随重定向（启用后，将自动解析并访问 `30x` 响应包中的 `Location` 地址）
 - `Cookies follow` Cookie跟随（启用后，将重定向响应包中的 `Cookie` 值带入重定向目标的请求包）
-- `Target host limit` 目标主机限制（启用后，重定向目标主机地址会被黑、白名单列表拦截）
+- `Target host limit` 目标主机限制（启用后，重定向目标主机地址会被黑、白名单拦截）
 
 #### Other（其它配置）
 
