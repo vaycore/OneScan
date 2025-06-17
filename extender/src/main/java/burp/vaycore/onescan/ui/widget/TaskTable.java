@@ -206,7 +206,7 @@ public class TaskTable extends JTable implements ActionListener {
         addPopupMenuItem(menu, L.get("task_table_menu.get_body_hash"), "fetch-body-hash");
         addPopupMenuItem(menu, L.get("task_table_menu.copy_url"), "copy-url");
         addPopupMenuItem(menu, L.get("task_table_menu.send_to_repeater"), "send-to-repeater");
-        addPopupMenuItem(menu, L.get("task_table_menu.add_host_to_blocklist"), "add-to-black-host");
+        addPopupMenuItem(menu, L.get("task_table_menu.add_host_to_blocklist"), "add-host-to-blocklist");
         addPopupMenuItem(menu, L.get("task_table_menu.delete_selected_items"), "remove-items");
         addPopupMenuItem(menu, L.get("task_table_menu.clear_history"), "clean-all");
         addTempFilterMenuItem(menu);
@@ -351,8 +351,8 @@ public class TaskTable extends JTable implements ActionListener {
             case "send-to-repeater":
                 doSendToRepeater(selectedRows);
                 break;
-            case "add-to-black-host":
-                doAddToBlackHost(selectedRows);
+            case "add-host-to-blocklist":
+                doAddHostToBlocklist(selectedRows);
                 break;
             case "remove-items":
                 doRemoveItems(selectedRows);
@@ -463,12 +463,12 @@ public class TaskTable extends JTable implements ActionListener {
      *
      * @param selectedRows 选中行
      */
-    private void doAddToBlackHost(int[] selectedRows) {
+    private void doAddHostToBlocklist(int[] selectedRows) {
         if (mOnTaskTableEventListener == null) {
             return;
         }
         ArrayList<String> hosts = getSelectedHosts(selectedRows);
-        mOnTaskTableEventListener.addToBlackHost(hosts);
+        mOnTaskTableEventListener.addHostToBlocklist(hosts);
     }
 
     /**
@@ -760,11 +760,11 @@ public class TaskTable extends JTable implements ActionListener {
         byte[] getBodyByTaskData(TaskData data);
 
         /**
-         * 添加 Host 列表到黑名单
+         * 添加 Host 到黑名单
          *
-         * @param hosts 黑名单列表
+         * @param hosts Host 列表
          */
-        void addToBlackHost(ArrayList<String> hosts);
+        void addHostToBlocklist(ArrayList<String> hosts);
     }
 
     /**

@@ -254,10 +254,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         return mOneScan;
     }
 
-    public IBurpExtenderCallbacks getCallbacks() {
-        return mCallbacks;
-    }
-
     @Override
     public void processProxyMessage(boolean messageIsRequest, IInterceptedProxyMessage message) {
         // 当请求和响应都有的时候，才进行下一步操作
@@ -294,7 +290,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 Logger.debug("doScan filter request method: %s, host: %s", method, host);
                 return;
             }
-            // 检测 Host 是否在白名单、黑名单列表中
+            // 检测 Host 是否在白名单、黑名单中
             if (hostAllowlistFilter(host) || hostBlocklistFilter(host)) {
                 Logger.debug("doScan allowlist and blocklist filter host: %s", host);
                 return;
@@ -305,7 +301,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 如果启用，对来自重定向的包进行检测
         if (from.startsWith(FROM_REDIRECT) && Config.getBoolean(Config.KEY_REDIRECT_TARGET_HOST_LIMIT)) {
-            // 检测 Host 是否在白名单、黑名单列表中
+            // 检测 Host 是否在白名单、黑名单中
             if (hostAllowlistFilter(host) || hostBlocklistFilter(host)) {
                 Logger.debug("doScan allowlist and blocklist filter host: %s", host);
                 return;
@@ -426,7 +422,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * Host过滤白名单
+     * Host 白名单过滤
      *
      * @param host Host
      * @return true=拦截；false=不拦截
@@ -447,7 +443,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * Host黑名单过滤
+     * Host 黑名单过滤
      *
      * @param host Host
      * @return true=拦截；false=不拦截
@@ -470,7 +466,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 检测 Host 是否匹配规则
      *
-     * @param host Host
+     * @param host Host（不包含协议、端口号）
      * @param rule 规则
      * @return true=匹配；false=不匹配
      */
@@ -710,7 +706,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             @Override
             public void run() {
                 String url = getTaskUrl();
-                if (checkQPSLimit(url)) {
+                if (checkQPSLimit()) {
+                    // 拦截后，将未执行的任务从去重过滤集合中移除
+                    sRepeatFilter.remove(url);
                     return;
                 }
                 Logger.debug("Do Send Request url: %s", url);
@@ -996,16 +994,14 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 检测 QPS 限制
      *
-     * @param url 请求 URL
      * @return true=拦截；false=不拦截
      */
-    private boolean checkQPSLimit(String url) {
+    private boolean checkQPSLimit() {
         if (mQpsLimit != null) {
             try {
                 mQpsLimit.limit();
             } catch (InterruptedException e) {
-                // 线程强制停止时，将未执行的任务从去重过滤集合中移除
-                sRepeatFilter.remove(url);
+                // 线程强制停止时，拦截请求
                 return true;
             }
         }
@@ -1558,7 +1554,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     @Override
-    public void addToBlackHost(ArrayList<String> hosts) {
+    public void addHostToBlocklist(ArrayList<String> hosts) {
         if (hosts == null || hosts.isEmpty()) {
             return;
         }
