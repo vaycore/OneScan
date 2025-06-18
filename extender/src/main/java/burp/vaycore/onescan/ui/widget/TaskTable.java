@@ -116,6 +116,8 @@ public class TaskTable extends JTable implements ActionListener {
         mLastSelectedRow = -1;
         setModel(mTaskTableModel);
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        // 使组件垂直填充父容器
+        setFillsViewportHeight(true);
         // 不可拖动表头
         getTableHeader().setReorderingAllowed(false);
         mTableRowSorter = new TableRowSorter<>(mTaskTableModel);
@@ -197,10 +199,6 @@ public class TaskTable extends JTable implements ActionListener {
     }
 
     private void showPopupMenu(int x, int y) {
-        showPopupMenu(this, x, y);
-    }
-
-    public void showPopupMenu(Component invoker, int x, int y) {
         JPopupMenu menu = new JPopupMenu();
         addPopupMenuItem(menu, L.get("task_table_menu.get_body_md5"), "fetch-body-md5");
         addPopupMenuItem(menu, L.get("task_table_menu.get_body_hash"), "fetch-body-hash");
@@ -213,7 +211,7 @@ public class TaskTable extends JTable implements ActionListener {
         addPopupMenuItem(menu, L.get("task_table_menu.clear_temp_filter_rules"), "clean-temp-filter");
         menu.setLightWeightPopupEnabled(true);
         // 显示菜单
-        menu.show(invoker, x, y);
+        menu.show(this, x, y);
     }
 
     private void addPopupMenuItem(JPopupMenu menu, String name, String actionCommand) {
@@ -820,11 +818,7 @@ public class TaskTable extends JTable implements ActionListener {
                 int firstRow = getRowCount();
                 mData.addAll(validItems);
                 int lastRow = getRowCount() - 1;
-                if (firstRow > 0) {
-                    fireTableRowsInserted(firstRow, lastRow);
-                } else {
-                    fireTableDataChanged();
-                }
+                fireTableRowsInserted(firstRow, lastRow);
             }
         }
 

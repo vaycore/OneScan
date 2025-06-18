@@ -24,6 +24,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +34,7 @@ import java.util.List;
  * <p>
  * Created by vaycore on 2022-08-07.
  */
-public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrlListener, OnFpColumnModifyListener {
+public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrlListener, OnFpColumnModifyListener, ActionListener {
 
     public static final String EVENT_IMPORT_URL = "event-import-url";
     public static final String EVENT_STOP_TASK = "event-stop-task";
@@ -141,28 +143,21 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         // 导入Url
         JButton importUrlBtn = new JButton(L.get("import_url"));
         importUrlBtn.setToolTipText(L.get("import_url"));
-        importUrlBtn.addActionListener((e) -> importUrl());
+        importUrlBtn.setActionCommand("import-url");
+        importUrlBtn.addActionListener(this);
         panel.add(importUrlBtn);
         // 停止按钮
         JButton stopBtn = new JButton(L.get("stop"));
         stopBtn.setToolTipText(L.get("stop_all_task"));
-        stopBtn.addActionListener((e) -> stopTask());
+        stopBtn.setActionCommand("stop-task");
+        stopBtn.addActionListener(this);
         panel.add(stopBtn);
         // 清空历史记录按钮
         JButton clearBtn = new JButton(L.get("clear_record"));
         clearBtn.setToolTipText(L.get("clear_history"));
-        clearBtn.addActionListener((e) -> clearHistory());
+        clearBtn.setActionCommand("clear-history");
+        clearBtn.addActionListener(this);
         panel.add(clearBtn);
-        // 操作菜单按钮
-        JButton actionsBtn = new JButton(L.get("actions"));
-        actionsBtn.setToolTipText(L.get("actions_menu"));
-        actionsBtn.addActionListener((e) -> {
-            JButton btn = (JButton) e.getSource();
-            if (mTaskTable != null) {
-                mTaskTable.showPopupMenu(btn, 0, btn.getHeight());
-            }
-        });
-        panel.add(actionsBtn);
         // 撑开布局
         panel.add(new JPanel(), "1w");
         // 过滤设置
@@ -172,7 +167,8 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         panel.add(mFilterRuleText, "2w");
         JButton filterBtn = new JButton(L.get("filter"));
         filterBtn.setToolTipText(L.get("filter_data"));
-        filterBtn.addActionListener(e -> showSetupFilterDialog());
+        filterBtn.setActionCommand("filter-data");
+        filterBtn.addActionListener(this);
         panel.add(filterBtn, "65px");
     }
 
@@ -251,6 +247,24 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
             Config.put(configKey, String.valueOf(selected));
         });
         return checkBox;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        switch (e.getActionCommand()) {
+            case "import-url":
+                importUrl();
+                break;
+            case "stop-task":
+                stopTask();
+                break;
+            case "clear-history":
+                clearHistory();
+                break;
+            case "filter-data":
+                showSetupFilterDialog();
+                break;
+        }
     }
 
     /**
