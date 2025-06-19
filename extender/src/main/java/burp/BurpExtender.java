@@ -358,11 +358,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 if (StringUtils.isNotEmpty(path) && UrlUtils.isHTTP(item)) {
                     continue;
                 }
+                String urlPath = path + item;
                 // 如果配置的字典不含 '/' 前缀，在根目录下扫描时，自动添加 '/' 符号
                 if (StringUtils.isEmpty(path) && !item.startsWith("/") && !UrlUtils.isHTTP(item)) {
-                    path = "/";
+                    urlPath = "/" + item;
                 }
-                String urlPath = path + item;
                 // 检测一下是否携带完整的 Host 地址（兼容一下携带了完整的 Host 地址的情况）
                 // 但有个前提：如果字典存在完整的 Host 地址，直接不做处理
                 if (UrlUtils.isHTTP(reqPath) && !UrlUtils.isHTTP(item)) {
