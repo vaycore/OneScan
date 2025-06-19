@@ -56,6 +56,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private static final int TASK_THREAD_COUNT = 50;
 
     /**
+     * 低频任务线程数量
+     */
+    private static final int LF_TASK_THREAD_COUNT = 25;
+
+    /**
      * 指纹识别线程数量
      */
     private static final int FP_THREAD_COUNT = 10;
@@ -111,13 +116,16 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private DataBoardTab mDataBoardTab;
     private IMessageEditor mRequestTextEditor;
     private IMessageEditor mResponseTextEditor;
-    private ExecutorService mThreadPool;
+    private ExecutorService mTaskThreadPool;
+    private ExecutorService mLFTaskThreadPool;
     private ExecutorService mFpThreadPool;
     private ExecutorService mRefreshMsgTask;
     private IHttpRequestResponse mCurrentReqResp;
     private QpsLimiter mQpsLimit;
     private final AtomicInteger mTaskOverCounter = new AtomicInteger(0);
-    private final AtomicInteger mTaskWaitCounter = new AtomicInteger(0);
+    private final AtomicInteger mTaskCommitCounter = new AtomicInteger(0);
+    private final AtomicInteger mLFTaskOverCounter = new AtomicInteger(0);
+    private final AtomicInteger mLFTaskCommitCounter = new AtomicInteger(0);
     private Timer mStatusRefresh;
 
     @Override
@@ -131,7 +139,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     private void initData(IBurpExtenderCallbacks callbacks) {
         this.mCallbacks = callbacks;
         this.mHelpers = callbacks.getHelpers();
-        this.mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        this.mTaskThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        this.mLFTaskThreadPool = Executors.newFixedThreadPool(LF_TASK_THREAD_COUNT);
         this.mFpThreadPool = Executors.newFixedThreadPool(FP_THREAD_COUNT);
         this.mRefreshMsgTask = Executors.newSingleThreadExecutor();
         this.mCallbacks.setExtensionName(Constants.PLUGIN_NAME + " v" + Constants.PLUGIN_VERSION);
@@ -198,7 +207,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             if (mDataBoardTab == null) {
                 return;
             }
-            mDataBoardTab.refreshTaskStatus(mTaskOverCounter.get(), mTaskWaitCounter.get());
+            mDataBoardTab.refreshTaskStatus(mTaskOverCounter.get(), mTaskCommitCounter.get());
+            mDataBoardTab.refreshLFTaskStatus(mLFTaskOverCounter.get(), mLFTaskCommitCounter.get());
             mDataBoardTab.refreshTaskHistoryStatus();
             mDataBoardTab.refreshFpCacheStatus();
         });
@@ -216,7 +226,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             for (IHttpRequestResponse httpReqResp : messages) {
                 doScan(httpReqResp, FROM_SEND);
                 // 线程池关闭后，停止发送扫描任务
-                if (mThreadPool.isShutdown()) {
+                if (isTaskThreadPoolShutdown()) {
                     Logger.debug("sendToPlugin: thread pool is shutdown, stop sending scan task");
                     return;
                 }
@@ -233,7 +243,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 for (IHttpRequestResponse httpReqResp : messages) {
                     doScan(httpReqResp, FROM_SEND, action);
                     // 线程池关闭后，停止发送扫描任务
-                    if (mThreadPool.isShutdown()) {
+                    if (isTaskThreadPoolShutdown()) {
                         Logger.debug("usePayloadScan: thread pool is shutdown, stop sending scan task");
                         return;
                     }
@@ -700,7 +710,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void doBurpRequest(IHttpService service, String url, byte[] reqRawBytes, String from) {
         // 线程池关闭后，不接收任何任务
-        if (mThreadPool.isShutdown()) {
+        if (isTaskThreadPoolShutdown()) {
             Logger.debug("doBurpRequest: thread pool is shutdown, intercept url: %s", url);
             // 将未执行的任务从去重过滤集合中移除
             sRepeatFilter.remove(url);
@@ -711,7 +721,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             @Override
             public void run() {
                 String url = getTaskUrl();
-                if (checkQPSLimit()) {
+                // 低频任务不进行 QPS 限制
+                if (!isLowFrequencyTask(from) && checkQPSLimit()) {
                     // 拦截后，将未执行的任务从去重过滤集合中移除
                     sRepeatFilter.remove(url);
                     return;
@@ -728,17 +739,53 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
                 // 处理重定向
                 handleFollowRedirect(data);
-                // 进度条处理
-                mTaskOverCounter.incrementAndGet();
+                if (isLowFrequencyTask(from)) {
+                    // 低频任务完成计数
+                    mLFTaskOverCounter.incrementAndGet();
+                } else {
+                    // 任务完成计数
+                    mTaskOverCounter.incrementAndGet();
+                }
             }
         };
         // 将任务添加线程池
         try {
-            mThreadPool.execute(task);
-            mTaskWaitCounter.incrementAndGet();
+            // 如果是低频任务，使用低频的任务线程池
+            if (isLowFrequencyTask(from)) {
+                mLFTaskThreadPool.execute(task);
+                // 低频任务提交计数
+                mLFTaskCommitCounter.incrementAndGet();
+            } else {
+                // 否则使用常规的任务线程池
+                mTaskThreadPool.execute(task);
+                // 任务提交计数
+                mTaskCommitCounter.incrementAndGet();
+            }
         } catch (Exception e) {
             Logger.error("doBurpRequest thread execute error: %s", e.getMessage());
         }
+    }
+
+    /**
+     * 任务线程池是否关闭
+     *
+     * @return true=是；false=否
+     */
+    private boolean isTaskThreadPoolShutdown() {
+        return mTaskThreadPool.isShutdown() || mLFTaskThreadPool.isShutdown();
+    }
+
+    /**
+     * 当前请求来源，是否为低频任务
+     *
+     * @param from 请求来源
+     * @return true=是；false=否
+     */
+    private boolean isLowFrequencyTask(String from) {
+        if (StringUtils.isEmpty(from)) {
+            return false;
+        }
+        return from.startsWith(FROM_PROXY) || from.startsWith(FROM_SEND) || from.startsWith(FROM_REDIRECT);
     }
 
     /**
@@ -1655,7 +1702,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     Logger.error("Import error: " + e.getMessage());
                 }
                 // 线程池关闭后，停止导入 Url 数据
-                if (mThreadPool.isShutdown()) {
+                if (isTaskThreadPoolShutdown()) {
                     Logger.debug("importUrl: thread pool is shutdown, stop import url");
                     return;
                 }
@@ -1668,7 +1715,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void stopAllTask() {
         // 关闭线程池，处理未执行的任务
-        List<Runnable> taskList = mThreadPool.shutdownNow();
+        List<Runnable> taskList = mTaskThreadPool.shutdownNow();
+        List<Runnable> lfTaskList = mLFTaskThreadPool.shutdownNow();
+        // 合并
+        if (!lfTaskList.isEmpty()) {
+            taskList.addAll(lfTaskList);
+        }
         for (Runnable run : taskList) {
             if (run instanceof TaskRunnable) {
                 TaskRunnable task = (TaskRunnable) run;
@@ -1680,8 +1732,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         }
         // 提示信息
         UIHelper.showTipsDialog(L.get("stop_task_tips"));
-        // 停止后，重新初始化线程池
-        mThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        // 停止后，重新初始化任务线程池
+        mTaskThreadPool = Executors.newFixedThreadPool(TASK_THREAD_COUNT);
+        // 停止后，重新初始化低频任务线程池
+        mLFTaskThreadPool = Executors.newFixedThreadPool(LF_TASK_THREAD_COUNT);
         // 重新初始化 QPS 限制器
         initQpsLimiter();
     }
@@ -1704,8 +1758,11 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 停止状态栏刷新定时器
         mStatusRefresh.stop();
         // 关闭任务线程池
-        int count = mThreadPool.shutdownNow().size();
+        int count = mTaskThreadPool.shutdownNow().size();
         Logger.info("Close: task thread pool completed. Task %d records.", count);
+        // 关闭低频任务线程池
+        count = mLFTaskThreadPool.shutdownNow().size();
+        Logger.info("Close: low frequency task thread pool completed. Task %d records.", count);
         // 关闭指纹识别线程池
         count = mFpThreadPool.shutdownNow().size();
         Logger.info("Close: fingerprint recognition thread pool completed. Task %d records.", count);

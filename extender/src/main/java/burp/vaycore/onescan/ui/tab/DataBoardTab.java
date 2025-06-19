@@ -49,6 +49,7 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     private JCheckBox mPayloadProcessing;
     private ImportUrlWindow mImportUrlWindow;
     private JLabel mTaskStatus;
+    private JLabel mLFTaskStatus;
     private JLabel mFpCacheStatus;
     private JLabel mTaskHistoryStatus;
 
@@ -184,10 +185,12 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
         add(panel);
         // 添加状态信息组件
         mTaskStatus = addStatusInfoPanel(panel);
+        mLFTaskStatus = addStatusInfoPanel(panel);
         mTaskHistoryStatus = addStatusInfoPanel(panel);
         mFpCacheStatus = addStatusInfoPanel(panel);
         // 刷新默认显示的信息
         refreshTaskStatus(0, 0);
+        refreshLFTaskStatus(0, 0);
         refreshTaskHistoryStatus();
         refreshFpCacheStatus();
     }
@@ -372,15 +375,29 @@ public class DataBoardTab extends BaseTab implements ImportUrlWindow.OnImportUrl
     /**
      * 刷新任务状态
      *
-     * @param over 任务完成数量
-     * @param wait 等待任务数量
+     * @param over   任务完成数量
+     * @param commit 任务提交数量
      */
-    public void refreshTaskStatus(int over, int wait) {
+    public void refreshTaskStatus(int over, int commit) {
         if (mTaskTable == null) {
             return;
         }
-        String message = L.get("status_bar_task", over, wait);
+        String message = L.get("status_bar_task", over, commit);
         mTaskStatus.setText(message);
+    }
+
+    /**
+     * 刷新低频任务状态
+     *
+     * @param over   任务完成数量
+     * @param commit 任务提交数量
+     */
+    public void refreshLFTaskStatus(int over, int commit) {
+        if (mLFTaskStatus == null) {
+            return;
+        }
+        String message = L.get("status_bar_low_frequency_task", over, commit);
+        mLFTaskStatus.setText(message);
     }
 
     /**

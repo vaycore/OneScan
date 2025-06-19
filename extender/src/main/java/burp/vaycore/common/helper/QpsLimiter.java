@@ -13,7 +13,7 @@ public class QpsLimiter {
     private static final long PERIOD = 1000;
 
     /**
-     * 接受请求时间窗口
+     * 接收请求时间数组
      */
     private final long[] accessTime;
 
@@ -25,7 +25,7 @@ public class QpsLimiter {
     /**
      * 限制延时（0 表示不延时）
      */
-    private int delay;
+    private final int delay;
 
     /**
      * 指向最早请求时间的位置
@@ -53,6 +53,10 @@ public class QpsLimiter {
      * 对执行点进行限制
      */
     public synchronized void limit() throws InterruptedException {
+        // 如果线程中断，不继续往下执行
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("Thread interrupted, can't limit it");
+        }
         long sleepMillis = 0;
         // 优先使用 delay 限制
         if (this.delay > 0) {
