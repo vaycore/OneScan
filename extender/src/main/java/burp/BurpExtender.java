@@ -823,16 +823,17 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         try {
             HttpReqRespAdapter httpReqResp;
             IRequestInfo reqInfo = mHelpers.analyzeRequest(reqResp);
-            IHttpService service = reqResp.getHttpService();
             List<String> headers = reqInfo.getHeaders();
             // 兼容完整 Host 地址
             if (UrlUtils.isHTTP(reqPath)) {
                 URL originUrl = UrlUtils.parseURL(reqPath);
                 URL redirectUrl = UrlUtils.parseRedirectTargetURL(originUrl, location);
+                IHttpService service = reqResp.getHttpService();
                 httpReqResp = HttpReqRespAdapter.from(service, redirectUrl.toString(), headers, cookies);
             } else {
                 URL originUrl = UrlUtils.parseURL(reqHost + reqPath);
                 URL redirectUrl = UrlUtils.parseRedirectTargetURL(originUrl, location);
+                IHttpService service = buildHttpServiceByURL(redirectUrl);
                 httpReqResp = HttpReqRespAdapter.from(service, UrlUtils.toPQF(redirectUrl), headers, cookies);
             }
             doScan(httpReqResp, FROM_REDIRECT + "（" + data.getId() + "）");
@@ -1457,6 +1458,38 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return host;
         }
         return host + ":" + port;
+    }
+
+    /**
+     * 通过 URL 实例，构建 IHttpService 实例
+     *
+     * @return 失败返回null
+     */
+    public static IHttpService buildHttpServiceByURL(URL url) {
+        if (url == null) {
+            return null;
+        }
+        return new IHttpService() {
+            @Override
+            public String getHost() {
+                return url.getHost();
+            }
+
+            @Override
+            public int getPort() {
+                String protocol = getProtocol();
+                int port = url.getPort();
+                if (port == -1) {
+                    port = protocol.equals("https") ? 443 : 80;
+                }
+                return port;
+            }
+
+            @Override
+            public String getProtocol() {
+                return url.getProtocol();
+            }
+        };
     }
 
     /**

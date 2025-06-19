@@ -34,7 +34,7 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
         }
         try {
             URL u = new URL(url);
-            IHttpService service = buildHttpServiceByURL(u);
+            IHttpService service = BurpExtender.buildHttpServiceByURL(u);
             String host = UrlUtils.getHostByURL(u);
             byte[] requestBytes = buildRequestBytes(host, UrlUtils.toPQF(u));
             return new HttpReqRespAdapter(service, requestBytes);
@@ -198,30 +198,6 @@ public class HttpReqRespAdapter implements IHttpRequestResponse {
                 .append("Accept-Encoding: ").append("gzip, deflate").append("\r\n")
                 .append("Cache-Control: ").append("max-age=0").append("\r\n")
                 .append("\r\n");
-    }
-
-    private static IHttpService buildHttpServiceByURL(URL url) {
-        return new IHttpService() {
-            @Override
-            public String getHost() {
-                return url.getHost();
-            }
-
-            @Override
-            public int getPort() {
-                String protocol = getProtocol();
-                int port = url.getPort();
-                if (port == -1) {
-                    port = protocol.equals("https") ? 443 : 80;
-                }
-                return port;
-            }
-
-            @Override
-            public String getProtocol() {
-                return url.getProtocol();
-            }
-        };
     }
 
     @Override
