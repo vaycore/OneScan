@@ -175,8 +175,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private void initQpsLimiter() {
         // 检测范围，如果不符合条件，不创建限制器
-        int limit = StringUtils.parseInt(Config.get(Config.KEY_QPS_LIMIT));
-        int delay = StringUtils.parseInt(Config.get(Config.KEY_REQUEST_DELAY));
+        int limit = Config.getInt(Config.KEY_QPS_LIMIT);
+        int delay = Config.getInt(Config.KEY_REQUEST_DELAY);
         if (limit > 0 && limit <= 9999) {
             this.mQpsLimit = new QpsLimiter(limit, delay);
         }
@@ -548,7 +548,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      */
     private ArrayList<String> getUrlPathDict(String urlPath) {
         String direct = Config.get(Config.KEY_SCAN_LEVEL_DIRECT);
-        int scanLevel = StringUtils.parseInt(Config.get(Config.KEY_SCAN_LEVEL));
+        int scanLevel = Config.getInt(Config.KEY_SCAN_LEVEL);
         ArrayList<String> result = new ArrayList<>();
         result.add("/");
         if (StringUtils.isEmpty(urlPath) || "/".equals(urlPath)) {
@@ -728,8 +728,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     return;
                 }
                 Logger.debug("Do Send Request url: %s", url);
-                // 请求配置的请求重试次数
-                int retryCount = getReqRetryCount();
+                // 获取配置的请求重试次数
+                int retryCount = Config.getInt(Config.KEY_RETRY_COUNT);
                 // 发起请求
                 IHttpRequestResponse newReqResp = doMakeHttpRequest(service, reqRawBytes, retryCount);
                 // 构建展示的数据包
@@ -915,12 +915,15 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             sTimeoutReqHost.add(reqHost);
             return reqResp;
         }
-        try {
-            // 重试前先延迟
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            // 如果线程中断，返回目前的响应结果
-            return reqResp;
+        // 获取配置的请求重试间隔时间
+        int retryInterval = Config.getInt(Config.KEY_RETRY_INTERVAL);
+        if (retryInterval > 0) {
+            try {
+                Thread.sleep(retryInterval);
+            } catch (InterruptedException e) {
+                // 如果线程中断，返回目前的响应结果
+                return reqResp;
+            }
         }
         // 请求重试
         return doMakeHttpRequest(service, reqRawBytes, retryCount - 1);
@@ -1077,14 +1080,6 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
         }
         return false;
-    }
-
-    /**
-     * 从配置中获取请求重试次数
-     */
-    private int getReqRetryCount() {
-        String value = Config.get(Config.KEY_RETRY_COUNT);
-        return StringUtils.parseInt(value, 0);
     }
 
     /**
@@ -1573,7 +1568,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             response = EMPTY_BYTES;
         }
         // 检测是否超过配置的显示长度限制
-        int maxLength = StringUtils.parseInt(Config.get(Config.KEY_MAX_DISPLAY_LENGTH));
+        int maxLength = Config.getInt(Config.KEY_MAX_DISPLAY_LENGTH);
         if (maxLength >= 100000 && request.length >= maxLength) {
             String hint = L.get("message_editor_request_length_limit_hint");
             request = mHelpers.stringToBytes(hint);

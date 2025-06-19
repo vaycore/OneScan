@@ -40,8 +40,11 @@ public class RequestTab extends BaseConfigTab {
         // 控制递归层数
         addScanLevelConfigPanel();
         // 请求重试配置
-        addTextConfigPanel(L.get("retry"), L.get("retry_sub_title"),
+        addTextConfigPanel(L.get("request_retry"), L.get("request_retry_sub_title"),
                 20, Config.KEY_RETRY_COUNT).addKeyListener(new NumberFilter(1));
+        // 重试间隔时间配置
+        addTextConfigPanel(L.get("request_retry_interval"), L.get("request_retry_interval_sub_title"),
+                20, Config.KEY_RETRY_INTERVAL).addKeyListener(new NumberFilter(5));
         // 过滤请求方法
         addTextConfigPanel(L.get("include_method"), L.get("include_method_sub_title"), 20, Config.KEY_INCLUDE_METHOD);
         // 根据后缀过滤请求包
@@ -122,7 +125,13 @@ public class RequestTab extends BaseConfigTab {
             text = String.valueOf(value);
         } else if (Config.KEY_RETRY_COUNT.equals(configKey)) {
             if (value < 0 || value > 9) {
-                UIHelper.showTipsDialog(L.get("retry_count_value_invalid"));
+                UIHelper.showTipsDialog(L.get("request_retry_count_value_invalid"));
+                return false;
+            }
+            text = String.valueOf(value);
+        } else if (Config.KEY_RETRY_INTERVAL.equals(configKey)) {
+            if (value < 0 || value > 99999) {
+                UIHelper.showTipsDialog(L.get("request_retry_interval_value_invalid"));
                 return false;
             }
             text = String.valueOf(value);
