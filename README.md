@@ -85,7 +85,7 @@ C:\Users\<用户名>\.config\OneScan\
 ![](imgs/onescan_info.png)
 
 - `Fingerprint` 当前请求、响应包识别的指纹信息
-- `Fingerprint-History` 当前 Host 的所有历史指纹信息
+- `Fingerprint-History` 当前 `Host` 的所有历史指纹信息
 - `Json` 当前数据包的所有 `JSON` 字段
 
 ### 动态变量
@@ -144,12 +144,12 @@ C:\Users\<用户名>\.config\OneScan\
 - `Replace Header` 开关请求头替换（默认启用），使用 `Request -> Header` 中配置的请求头请求数据
 - `Dir Scan` 开关递归扫描（默认启用），对目标进行递归扫描
 - `Processing` 开关请求包处理功能（默认启用）
-- `Filter` 设置数据过滤规则
-- `Import url` 导入 URL 目标扫描
+- `Import url` 导入 `URL` 目标扫描
 - `Stop` 停止正在扫描的任务
 - `Clear` 清空历史记录（与右键菜单里的 `Clear history` 功能一致）
-- `Actions` 操作菜单（列表鼠标右键菜单的所有功能）
+- `Filter` 设置数据过滤规则
 - `Task status` 任务状态（任务完成总数 / 任务提交总数）
+- `LF-Task status` 低频任务状态（请求来源 `Proxy`、`Send`、`Redirect` 属于低频任务）
 - `Task history` 任务历史记录（任务列表的数据量）
 - `FP cache` 指纹缓存数据量
 
@@ -199,6 +199,7 @@ Request 配置界面如下
 - `Request delay` 请求延时限制，限制每次请求的间隔时间，范围（`0-99999`）。（单位：毫秒）
 - `Scan level` 限制目录扫描层级，范围（`1-99`）。限制方向：`Left to right`（从左往右），`Right to left`（从右往左）
 - `Retry` 请求失败时重试次数配置，范围（`0-9`）
+- `Retry interval` 请求重试间隔时间配置，范围（`0-99999`）。（单位：毫秒）
 - `Include method` 配置请求方法白名单
 - `Exclude suffix` 排除指定后缀的数据包
 - `Header` 设置扫描的请求头（启用替换请求头时生效）
@@ -211,6 +212,7 @@ Host配置界面如下
 
 ![](imgs/config_host.png)
 
+- `Intercept timeout host` 拦截超时主机（启用后，如果目标主机请求超时，且请求重试无效，则将目标主机的任务全部丢弃，以提升扫描效率）
 - `Allowlist` 配置白名单，如果该列表不为空，插件只对匹配的 Host 进行请求
 - `Blocklist` 配置黑名单，如果该列表不为空，插件不会向匹配的 Host 发起请求
 
