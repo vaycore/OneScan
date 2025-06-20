@@ -9,15 +9,15 @@ package burp.vaycore.onescan.common;
 public abstract class TaskRunnable implements Runnable {
 
     /**
-     * 扫描任务的 URL
+     * 扫描任务请求的 ID
      */
-    private final String mUrl;
+    private final String mReqId;
 
-    public TaskRunnable(String url) {
-        this.mUrl = url;
+    public TaskRunnable(String reqId) {
+        this.mReqId = reqId;
     }
 
-    public String getTaskUrl() {
-        return mUrl;
+    public String getReqId() {
+        return mReqId;
     }
 }

@@ -14,6 +14,7 @@ import burp.vaycore.onescan.collect.WebNameCollect;
 import javax.swing.*;
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,7 +41,7 @@ public class CollectManager {
     /**
      * 去重过滤集合
      */
-    private static final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> sRepeatFilter = ConcurrentHashMap.newKeySet();
 
     private static String sDirPath;
     private static ExecutorService sThreadPool;

@@ -22,7 +22,6 @@ import burp.vaycore.onescan.ui.widget.payloadlist.PayloadItem;
 import burp.vaycore.onescan.ui.widget.payloadlist.PayloadRule;
 import burp.vaycore.onescan.ui.widget.payloadlist.ProcessingItem;
 
-import javax.swing.Timer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -33,8 +32,11 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.*;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,12 +105,12 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     /**
      * 去重过滤集合
      */
-    private final Set<String> sRepeatFilter = Collections.synchronizedSet(new HashSet<>(500000));
+    private final Set<String> sRepeatFilter = ConcurrentHashMap.newKeySet(500000);
 
     /**
      * 超时的请求主机集合
      */
-    private final Set<String> sTimeoutReqHost = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> sTimeoutReqHost = ConcurrentHashMap.newKeySet();
 
     private IBurpExtenderCallbacks mCallbacks;
     private IExtensionHelpers mHelpers;
@@ -594,6 +596,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 运行扫描任务
      *
      * @param httpReqResp   请求响应实例
+     * @param info          IRequestInfo 实例
      * @param pathWithQuery 路径+query参数
      * @param from          请求来源
      */
@@ -606,55 +609,79 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         IRequestInfo newInfo = mHelpers.analyzeRequest(service, request);
-        URL u = getUrlByRequestInfo(newInfo);
-        String url = UrlUtils.getReqHostByURL(u) + u.getPath();
+        String reqId = generateReqId(newInfo, from);
         // 如果当前 URL 已经扫描，中止任务
-        if (checkRepeatFilterByUrl(url)) {
+        if (checkRepeatFilterByReqId(reqId)) {
             return;
         }
         // 如果未启用“请求包处理”功能，直接对扫描的任务发起请求
         if (!mDataBoardTab.hasPayloadProcessing()) {
-            doBurpRequest(service, url, request, from);
+            doBurpRequest(service, reqId, request, from);
             return;
         }
         // 运行已经启用并且需要合并的任务
-        runEnableAndMergeTask(service, url, request, from);
+        runEnableAndMergeTask(service, reqId, request, from);
         // 运行已经启用并且不需要合并的任务
-        runEnabledWithoutMergeProcessingTask(service, url, request);
+        runEnabledWithoutMergeProcessingTask(service, reqId, request);
+    }
+
+    /**
+     * 生成请求 ID
+     *
+     * @param info IRequestInfo 实例
+     * @param from 请求来源
+     * @return 失败返回 "null" 字符串
+     */
+    private String generateReqId(IRequestInfo info, String from) {
+        if (info == null || StringUtils.isEmpty(from)) {
+            return "null";
+        }
+        String reqPath = getReqPathByRequestInfo(info);
+        // 生成携带完整的 Host 地址请求的请求 ID 值
+        if (UrlUtils.isHTTP(reqPath)) {
+            URL originUrl = info.getUrl();
+            String originReqHost = UrlUtils.getReqHostByURL(originUrl);
+            return originReqHost + "->" + reqPath;
+        }
+        URL url = getUrlByRequestInfo(info);
+        String reqHost = UrlUtils.getReqHostByURL(url);
+        // 生成重定向请求的请求 ID 值
+        if (from.startsWith(FROM_REDIRECT)) {
+            return reqHost + reqPath;
+        }
+        // 默认使用 http://x.x.x.x/path/to/index.html 格式作为请求 ID 值
+        return reqHost + url.getPath();
     }
 
     /**
      * 根据 Url 检测是否重复扫描
      *
-     * @param url 请求 url（建议不包含参数部分）
+     * @param reqId 请求 ID
      * @return true=重复；false=不重复
      */
-    private boolean checkRepeatFilterByUrl(String url) {
-        synchronized (sRepeatFilter) {
-            if (sRepeatFilter.contains(url)) {
-                return true;
-            }
-            sRepeatFilter.add(url);
-            return false;
+    private synchronized boolean checkRepeatFilterByReqId(String reqId) {
+        if (sRepeatFilter.contains(reqId)) {
+            return true;
         }
+        return !sRepeatFilter.add(reqId);
     }
 
     /**
      * 运行已经启用并且需要合并的任务
      *
      * @param service     请求目标服务实例
-     * @param url         请求URL
+     * @param reqId       请求 ID
      * @param reqRawBytes 请求数据包
      * @param from        请求来源
      */
-    private void runEnableAndMergeTask(IHttpService service, String url, byte[] reqRawBytes, String from) {
+    private void runEnableAndMergeTask(IHttpService service, String reqId, byte[] reqRawBytes, String from) {
         // 获取已经启用并且需要合并的“请求包处理”规则
         List<ProcessingItem> processList = getPayloadProcess()
                 .stream().filter(ProcessingItem::isEnabledAndMerge)
                 .collect(Collectors.toList());
         // 如果规则为空，直接发起请求
         if (processList.isEmpty()) {
-            doBurpRequest(service, url, reqRawBytes, from);
+            doBurpRequest(service, reqId, reqRawBytes, from);
             return;
         }
         byte[] resultBytes = reqRawBytes;
@@ -667,10 +694,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             boolean equals = Arrays.equals(reqRawBytes, resultBytes);
             // 未进行任何处理时，不变更 from 值
             String newFrom = equals ? from : from + "（" + FROM_PROCESS + "）";
-            doBurpRequest(service, url, resultBytes, newFrom);
+            doBurpRequest(service, reqId, resultBytes, newFrom);
         } else {
             // 如果规则处理异常导致数据返回为空，则发送原来的请求
-            doBurpRequest(service, url, reqRawBytes, from);
+            doBurpRequest(service, reqId, reqRawBytes, from);
         }
     }
 
@@ -678,10 +705,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 运行已经启用并且不需要合并的任务
      *
      * @param service     请求目标服务实例
-     * @param url         请求URL
+     * @param reqId       请求 ID
      * @param reqRawBytes 请求数据包
      */
-    private void runEnabledWithoutMergeProcessingTask(IHttpService service, String url, byte[] reqRawBytes) {
+    private void runEnabledWithoutMergeProcessingTask(IHttpService service, String reqId, byte[] reqRawBytes) {
         // 遍历规则列表，进行 Payload Processing 处理后，再次请求数据包
         getPayloadProcess().parallelStream().filter(ProcessingItem::isEnabledWithoutMerge)
                 .forEach((item) -> {
@@ -696,7 +723,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                     if (equals) {
                         return;
                     }
-                    doBurpRequest(service, url, requestBytes, FROM_PROCESS + "（" + item.getName() + "）");
+                    doBurpRequest(service, reqId, requestBytes, FROM_PROCESS + "（" + item.getName() + "）");
                 });
     }
 
@@ -704,30 +731,30 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
      * 使用 Burp 自带的方式请求
      *
      * @param service     请求目标服务实例
-     * @param url         请求 URL
+     * @param reqId       请求 ID
      * @param reqRawBytes 请求数据包
      * @param from        请求来源
      */
-    private void doBurpRequest(IHttpService service, String url, byte[] reqRawBytes, String from) {
+    private void doBurpRequest(IHttpService service, String reqId, byte[] reqRawBytes, String from) {
         // 线程池关闭后，不接收任何任务
         if (isTaskThreadPoolShutdown()) {
-            Logger.debug("doBurpRequest: thread pool is shutdown, intercept url: %s", url);
+            Logger.debug("doBurpRequest: thread pool is shutdown, intercept req id: %s", reqId);
             // 将未执行的任务从去重过滤集合中移除
-            sRepeatFilter.remove(url);
+            sRepeatFilter.remove(reqId);
             return;
         }
         // 创建任务运行实例
-        TaskRunnable task = new TaskRunnable(url) {
+        TaskRunnable task = new TaskRunnable(reqId) {
             @Override
             public void run() {
-                String url = getTaskUrl();
+                String reqId = getReqId();
                 // 低频任务不进行 QPS 限制
                 if (!isLowFrequencyTask(from) && checkQPSLimit()) {
                     // 拦截后，将未执行的任务从去重过滤集合中移除
-                    sRepeatFilter.remove(url);
+                    sRepeatFilter.remove(reqId);
                     return;
                 }
-                Logger.debug("Do Send Request url: %s", url);
+                Logger.debug("Do Send Request id: %s", reqId);
                 // 获取配置的请求重试次数
                 int retryCount = Config.getInt(Config.KEY_RETRY_COUNT);
                 // 发起请求
@@ -1711,9 +1738,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
     }
 
     /**
-     * 导入URL
+     * 导入 URL
      *
-     * @param list URL列表
+     * @param list URL 列表
      */
     private void importUrl(List<?> list) {
         if (list == null || list.isEmpty()) {
@@ -1752,9 +1779,9 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         for (Runnable run : taskList) {
             if (run instanceof TaskRunnable) {
                 TaskRunnable task = (TaskRunnable) run;
-                String taskUrl = task.getTaskUrl();
+                String reqId = task.getReqId();
                 // 将未执行的任务从去重过滤集合中移除
-                sRepeatFilter.remove(taskUrl);
+                sRepeatFilter.remove(reqId);
                 mTaskOverCounter.incrementAndGet();
             }
         }
