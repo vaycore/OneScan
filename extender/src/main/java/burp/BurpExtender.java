@@ -356,6 +356,10 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             }
             // 拼接字典，发起请求
             for (String item : payloads) {
+                // 线程池关闭后，停止继续生成任务
+                if (isTaskThreadPoolShutdown()) {
+                    return;
+                }
                 // 对完整 Host 地址的字典取消递归扫描（直接替换请求路径扫描）
                 if (StringUtils.isNotEmpty(path) && UrlUtils.isHTTP(item)) {
                     continue;
