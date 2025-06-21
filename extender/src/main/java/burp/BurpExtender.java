@@ -752,6 +752,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 if (!isLowFrequencyTask(from) && checkQPSLimit()) {
                     // 拦截后，将未执行的任务从去重过滤集合中移除
                     sRepeatFilter.remove(reqId);
+                    // 任务完成计数
+                    incrementTaskOverCounter(from);
                     return;
                 }
                 Logger.debug("Do Send Request id: %s", reqId);
@@ -766,13 +768,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
                 CollectManager.collect(false, service.getHost(), newReqResp.getResponse());
                 // 处理重定向
                 handleFollowRedirect(data);
-                if (isLowFrequencyTask(from)) {
-                    // 低频任务完成计数
-                    mLFTaskOverCounter.incrementAndGet();
-                } else {
-                    // 任务完成计数
-                    mTaskOverCounter.incrementAndGet();
-                }
+                // 任务完成计数
+                incrementTaskOverCounter(from);
             }
         };
         // 将任务添加线程池
@@ -813,6 +810,21 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return false;
         }
         return from.startsWith(FROM_PROXY) || from.startsWith(FROM_SEND) || from.startsWith(FROM_REDIRECT);
+    }
+
+    /**
+     * 增加任务完成计数
+     *
+     * @param from 请求来源
+     */
+    private void incrementTaskOverCounter(String from) {
+        if (isLowFrequencyTask(from)) {
+            // 低频任务完成计数
+            mLFTaskOverCounter.incrementAndGet();
+        } else {
+            // 任务完成计数
+            mTaskOverCounter.incrementAndGet();
+        }
     }
 
     /**
