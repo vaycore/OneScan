@@ -13,11 +13,21 @@ public abstract class TaskRunnable implements Runnable {
      */
     private final String mReqId;
 
-    public TaskRunnable(String reqId) {
+    /**
+     * 扫描任务的请求来源
+     */
+    private final String mFrom;
+
+    public TaskRunnable(String reqId, String from) {
         this.mReqId = reqId;
+        this.mFrom = from;
     }
 
     public String getReqId() {
         return mReqId;
+    }
+
+    public String getFrom() {
+        return mFrom;
     }
 }

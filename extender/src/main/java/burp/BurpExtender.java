@@ -744,7 +744,7 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
             return;
         }
         // 创建任务运行实例
-        TaskRunnable task = new TaskRunnable(reqId) {
+        TaskRunnable task = new TaskRunnable(reqId, from) {
             @Override
             public void run() {
                 String reqId = getReqId();
@@ -1772,19 +1772,8 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         // 关闭线程池，处理未执行的任务
         List<Runnable> taskList = mTaskThreadPool.shutdownNow();
         List<Runnable> lfTaskList = mLFTaskThreadPool.shutdownNow();
-        // 合并
-        if (!lfTaskList.isEmpty()) {
-            taskList.addAll(lfTaskList);
-        }
-        for (Runnable run : taskList) {
-            if (run instanceof TaskRunnable) {
-                TaskRunnable task = (TaskRunnable) run;
-                String reqId = task.getReqId();
-                // 将未执行的任务从去重过滤集合中移除
-                sRepeatFilter.remove(reqId);
-                mTaskOverCounter.incrementAndGet();
-            }
-        }
+        handleStopTasks(taskList);
+        handleStopTasks(lfTaskList);
         // 提示信息
         UIHelper.showTipsDialog(L.get("stop_task_tips"));
         // 停止后，重新初始化任务线程池
@@ -1793,6 +1782,32 @@ public class BurpExtender implements IBurpExtender, IProxyListener, IMessageEdit
         mLFTaskThreadPool = Executors.newFixedThreadPool(LF_TASK_THREAD_COUNT);
         // 重新初始化 QPS 限制器
         initQpsLimiter();
+    }
+
+    /**
+     * 处理停止的任务列表
+     *
+     * @param list 任务列表
+     */
+    private void handleStopTasks(List<Runnable> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        for (Runnable run : list) {
+            if (run instanceof TaskRunnable) {
+                TaskRunnable task = (TaskRunnable) run;
+                String reqId = task.getReqId();
+                String from = task.getFrom();
+                // 将未执行的任务从去重过滤集合中移除
+                sRepeatFilter.remove(reqId);
+                // 将未执行的任务计数
+                if (isLowFrequencyTask(from)) {
+                    mLFTaskOverCounter.incrementAndGet();
+                } else {
+                    mTaskOverCounter.incrementAndGet();
+                }
+            }
+        }
     }
 
     @Override
