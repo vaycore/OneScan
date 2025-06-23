@@ -341,7 +341,7 @@ Connection: close
 
 欢迎各位师傅加入 OneScan 交流群
 
-![772823734](imgs/chat_group.jpg)
+![772823734](imgs/chat_group.png)
 
 ## 项目热度
 
